@@ -88,6 +88,15 @@ export function getRandomWord(): VocabularyWord {
   return vocabularyDatabase[randomIndex];
 }
 
+export function getUniqueWords(count: number = 5): VocabularyWord[] {
+  if (count > vocabularyDatabase.length) {
+    throw new Error(`Cannot get ${count} unique words. Only ${vocabularyDatabase.length} words available in database.`);
+  }
+
+  const shuffled = shuffleArray(vocabularyDatabase);
+  return shuffled.slice(0, count);
+}
+
 export function shuffleArray<T>(array: T[]): T[] {
   const shuffled = [...array];
   for (let i = shuffled.length - 1; i > 0; i--) {

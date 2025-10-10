@@ -7,6 +7,8 @@ export interface VocabularyWord {
 
 export interface GameState {
   currentWord: VocabularyWord | null;
+  gameQuestions: VocabularyWord[];
+  currentQuestionIndex: number;
   score: number;
   streak: number;
   totalQuestions: number;

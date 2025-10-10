@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GameState, VocabularyWord } from '@/types/game';
-import { getRandomWord, shuffleArray } from '@/data/vocabulary';
+import { getUniqueWords, shuffleArray } from '@/data/vocabulary';
 import { useNeynar } from './NeynarProvider';
+import { sdk } from '@farcaster/miniapp-sdk';
 
 // Frame-optimized components
 import FrameWordBubble from './FrameWordBubble';
@@ -16,6 +17,8 @@ export default function LexipopMiniApp() {
 
   const [gameState, setGameState] = useState<GameState>({
     currentWord: null,
+    gameQuestions: [],
+    currentQuestionIndex: 0,
     score: 0,
     streak: 0,
     totalQuestions: 0,
@@ -28,6 +31,20 @@ export default function LexipopMiniApp() {
   const [shuffledDefinitions, setShuffledDefinitions] = useState<string[]>([]);
   const [gameId, setGameId] = useState<string>('');
   const [showShareModal, setShowShareModal] = useState(false);
+
+  // Initialize Farcaster miniapp SDK
+  useEffect(() => {
+    const initializeMiniApp = async () => {
+      try {
+        await sdk.actions.ready();
+        console.log('🎯 Farcaster miniapp ready');
+      } catch (error) {
+        console.error('❌ Failed to initialize Farcaster miniapp:', error);
+      }
+    };
+
+    initializeMiniApp();
+  }, []);
 
   const submitScore = async (score: number, streak: number, totalQuestions: number) => {
     if (!user) return;
@@ -57,15 +74,18 @@ export default function LexipopMiniApp() {
   };
 
   const startNewGame = () => {
-    const word = getRandomWord();
-    const allDefinitions = [word.correctDefinition, ...word.incorrectDefinitions];
+    const gameQuestions = getUniqueWords(5); // 5 questions per game
+    const firstWord = gameQuestions[0];
+    const allDefinitions = [firstWord.correctDefinition, ...firstWord.incorrectDefinitions];
     const shuffled = shuffleArray(allDefinitions);
     const newGameId = `game_${Date.now()}_${user?.fid || 'anon'}`;
 
     setShuffledDefinitions(shuffled);
     setGameId(newGameId);
     setGameState({
-      currentWord: word,
+      currentWord: firstWord,
+      gameQuestions,
+      currentQuestionIndex: 0,
       score: 0,
       streak: 0,
       totalQuestions: 0,
@@ -77,7 +97,13 @@ export default function LexipopMiniApp() {
   };
 
   const nextQuestion = () => {
-    const word = getRandomWord();
+    const nextIndex = gameState.currentQuestionIndex + 1;
+    if (nextIndex >= gameState.gameQuestions.length) {
+      // Game should be complete, but just in case
+      return;
+    }
+
+    const word = gameState.gameQuestions[nextIndex];
     const allDefinitions = [word.correctDefinition, ...word.incorrectDefinitions];
     const shuffled = shuffleArray(allDefinitions);
 
@@ -85,6 +111,7 @@ export default function LexipopMiniApp() {
     setGameState(prev => ({
       ...prev,
       currentWord: word,
+      currentQuestionIndex: nextIndex,
       selectedAnswer: null,
       showResult: false,
       isCorrect: null

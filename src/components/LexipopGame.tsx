@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GameState, VocabularyWord } from '@/types/game';
-import { getRandomWord, shuffleArray } from '@/data/vocabulary';
+import { getUniqueWords, shuffleArray } from '@/data/vocabulary';
 import WordBubble from './WordBubble';
 import AnswerOption from './AnswerOption';
 import { useNeynar } from '@/app/miniapp/components/NeynarProvider';
@@ -17,6 +17,8 @@ export default function LexipopGame() {
 
   const [gameState, setGameState] = useState<GameState>({
     currentWord: null,
+    gameQuestions: [],
+    currentQuestionIndex: 0,
     score: 0,
     streak: 0,
     totalQuestions: 0,
@@ -85,15 +87,18 @@ export default function LexipopGame() {
   };
 
   const startNewGame = () => {
-    const word = getRandomWord();
-    const allDefinitions = [word.correctDefinition, ...word.incorrectDefinitions];
+    const gameQuestions = getUniqueWords(QUESTIONS_PER_GAME);
+    const firstWord = gameQuestions[0];
+    const allDefinitions = [firstWord.correctDefinition, ...firstWord.incorrectDefinitions];
     const shuffled = shuffleArray(allDefinitions);
     const newGameId = `game_${Date.now()}_${user?.fid || 'anon'}`;
 
     setShuffledDefinitions(shuffled);
     setGameId(newGameId);
     setGameState({
-      currentWord: word,
+      currentWord: firstWord,
+      gameQuestions,
+      currentQuestionIndex: 0,
       score: 0,
       streak: 0,
       totalQuestions: 0,
@@ -105,7 +110,13 @@ export default function LexipopGame() {
   };
 
   const nextQuestion = () => {
-    const word = getRandomWord();
+    const nextIndex = gameState.currentQuestionIndex + 1;
+    if (nextIndex >= gameState.gameQuestions.length) {
+      // Game should be complete, but just in case
+      return;
+    }
+
+    const word = gameState.gameQuestions[nextIndex];
     const allDefinitions = [word.correctDefinition, ...word.incorrectDefinitions];
     const shuffled = shuffleArray(allDefinitions);
 
@@ -113,6 +124,7 @@ export default function LexipopGame() {
     setGameState(prev => ({
       ...prev,
       currentWord: word,
+      currentQuestionIndex: nextIndex,
       selectedAnswer: null,
       showResult: false,
       isCorrect: null
