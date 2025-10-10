@@ -1,0 +1,53 @@
+'use client';
+
+import { motion } from 'framer-motion';
+
+interface FrameWordBubbleProps {
+  word: string;
+  isVisible: boolean;
+  isCorrect?: boolean | null;
+  showResult?: boolean;
+}
+
+export default function FrameWordBubble({ word, isVisible, isCorrect, showResult }: FrameWordBubbleProps) {
+  const floatingAnimation = {
+    y: [0, -8, 0],
+    x: [0, 3, -3, 0],
+    transition: {
+      duration: 2.5,
+      repeat: Infinity,
+      ease: "easeInOut"
+    }
+  };
+
+  const getBubbleColor = () => {
+    if (!showResult) return 'bg-blue-500';
+    if (isCorrect) return 'bg-green-500';
+    return 'bg-red-500';
+  };
+
+  return (
+    <motion.div
+      className="flex justify-center items-center"
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: isVisible ? 1 : 0, scale: isVisible ? 1 : 0.8 }}
+      transition={{ duration: 0.5 }}
+    >
+      <motion.div
+        className={`
+          relative w-48 h-48 rounded-full
+          ${getBubbleColor()}
+          shadow-xl border-2 border-white/30
+          flex items-center justify-center
+          overflow-hidden
+        `}
+        animate={floatingAnimation}
+      >
+        {/* Word text */}
+        <h2 className="vocabulary-word text-white font-bold text-2xl text-center px-4 drop-shadow-lg">
+          {word}
+        </h2>
+      </motion.div>
+    </motion.div>
+  );
+}

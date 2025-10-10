@@ -1,0 +1,32 @@
+{
+  "accountAssociation": {
+    "header": "placeholder_header_will_be_generated",
+    "payload": "placeholder_payload_will_be_generated",
+    "signature": "placeholder_signature_will_be_generated"
+  },
+  "version": "1",
+  "appId": "lexipop-miniapp",
+  "name": "Lexipop",
+  "iconUrl": "https://lexipop.app/icon-192.png",
+  "buttonTitle": "Add to Farcaster",
+  "frame": {
+    "version": "1",
+    "name": "Lexipop",
+    "tagline": "Learn vocabulary the fun way!",
+    "iconUrl": "https://lexipop.app/icon-192.png",
+    "homeUrl": "https://lexipop.app/miniapp",
+    "imageUrl": "https://lexipop.app/farcaster-embed.png",
+    "splashImageUrl": "https://lexipop.app/lexipop-splash.png",
+    "buttonTitle": "Play Lexipop",
+    "splashBackgroundColor": "#2563eb",
+    "subtitle": "Test your vocabulary knowledge!",
+    "description": "Learn new words through interactive vocabulary games with floating bubbles. Challenge yourself and improve your word skills!",
+    "primaryCategory": "games",
+    "tags": ["vocabulary", "education", "quiz", "learning", "words"],
+    "ogImageUrl": "https://lexipop.app/og-image.png",
+    "castShareUrl": "https://lexipop.app/miniapp"
+  },
+  "other": {
+    "fc:miniapp": "{\"version\":\"1\",\"name\":\"Lexipop\",\"imageUrl\":\"https://lexipop.app/farcaster-embed.png\",\"aspectRatio\":\"3:2\",\"button\":{\"title\":\"Play\",\"action\":{\"type\":\"launch_frame\",\"name\":\"Play\",\"url\":\"https://lexipop.app/miniapp\",\"splashImageUrl\":\"https://lexipop.app/lexipop-splash.png\",\"splashBackgroundColor\":\"#2563eb\"}}}"
+  }
+}
