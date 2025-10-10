@@ -75,7 +75,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Rate limiting check
-    const clientIP = headers().get('x-forwarded-for') || 'unknown';
+    const headersList = await headers();
+    const clientIP = headersList.get('x-forwarded-for') || 'unknown';
     const rateLimitKey = `${userAddress}-${clientIP}`;
     const lastClaim = recentClaims.get(rateLimitKey);
 
@@ -198,18 +199,19 @@ export async function POST(request: NextRequest) {
         throw new Error('Transaction failed');
       }
 
-    } catch (contractError: any) {
+    } catch (contractError: unknown) {
       console.error('❌ Contract interaction failed:', contractError);
 
       // Handle specific error cases
-      if (contractError.message?.includes('insufficient funds')) {
+      const errorMessage = contractError instanceof Error ? contractError.message : String(contractError);
+      if (errorMessage?.includes('insufficient funds')) {
         return NextResponse.json(
           { success: false, error: 'Insufficient gas funds for transaction' },
           { status: 503 }
         );
       }
 
-      if (contractError.message?.includes('execution reverted')) {
+      if (errorMessage?.includes('execution reverted')) {
         return NextResponse.json(
           { success: false, error: 'Contract execution failed - please try again later' },
           { status: 503 }

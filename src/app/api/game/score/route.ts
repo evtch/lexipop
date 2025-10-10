@@ -205,7 +205,7 @@ async function updateLeaderboard(fid: number, score: number, streak: number, tot
   }
 }
 
-function calculateUserStats(games: any[]) {
+function calculateUserStats(games: Array<{score: number; streak: number; totalQuestions: number}>) {
   if (games.length === 0) {
     return {
       totalGames: 0,

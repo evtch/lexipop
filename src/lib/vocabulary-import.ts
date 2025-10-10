@@ -35,33 +35,41 @@ export interface ImportResult {
 /**
  * Validate a single vocabulary entry
  */
-function validateEntry(entry: any, index: number): { valid: boolean; errors: string[] } {
+function validateEntry(entry: unknown, index: number): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
 
+  // Type guard for entry
+  if (!entry || typeof entry !== 'object') {
+    errors.push(`Row ${index + 1}: Invalid entry format`);
+    return { valid: false, errors };
+  }
+
+  const typedEntry = entry as Record<string, unknown>;
+
   // Required fields
-  if (!entry.word || typeof entry.word !== 'string' || entry.word.trim().length === 0) {
+  if (!typedEntry.word || typeof typedEntry.word !== 'string' || typedEntry.word.trim().length === 0) {
     errors.push(`Row ${index + 1}: Missing or invalid word`);
   }
 
-  if (!entry.correctDefinition || typeof entry.correctDefinition !== 'string') {
+  if (!typedEntry.correctDefinition || typeof typedEntry.correctDefinition !== 'string') {
     errors.push(`Row ${index + 1}: Missing correct definition`);
   }
 
-  if (!entry.incorrectDefinition1 || typeof entry.incorrectDefinition1 !== 'string') {
+  if (!typedEntry.incorrectDefinition1 || typeof typedEntry.incorrectDefinition1 !== 'string') {
     errors.push(`Row ${index + 1}: Missing incorrect definition 1`);
   }
 
-  if (!entry.incorrectDefinition2 || typeof entry.incorrectDefinition2 !== 'string') {
+  if (!typedEntry.incorrectDefinition2 || typeof typedEntry.incorrectDefinition2 !== 'string') {
     errors.push(`Row ${index + 1}: Missing incorrect definition 2`);
   }
 
-  if (!entry.incorrectDefinition3 || typeof entry.incorrectDefinition3 !== 'string') {
+  if (!typedEntry.incorrectDefinition3 || typeof typedEntry.incorrectDefinition3 !== 'string') {
     errors.push(`Row ${index + 1}: Missing incorrect definition 3`);
   }
 
   // Validate difficulty level
-  if (entry.difficulty !== undefined) {
-    const difficulty = Number(entry.difficulty);
+  if (typedEntry.difficulty !== undefined) {
+    const difficulty = Number(typedEntry.difficulty);
     if (isNaN(difficulty) || difficulty < 1 || difficulty > 5) {
       errors.push(`Row ${index + 1}: Difficulty must be between 1-5`);
     }
@@ -69,10 +77,10 @@ function validateEntry(entry: any, index: number): { valid: boolean; errors: str
 
   // Check for duplicate definitions within the same entry
   const definitions = [
-    entry.correctDefinition,
-    entry.incorrectDefinition1,
-    entry.incorrectDefinition2,
-    entry.incorrectDefinition3
+    typedEntry.correctDefinition,
+    typedEntry.incorrectDefinition1,
+    typedEntry.incorrectDefinition2,
+    typedEntry.incorrectDefinition3
   ].filter(def => def && typeof def === 'string');
 
   const uniqueDefinitions = new Set(definitions.map(def => def.toLowerCase().trim()));
@@ -253,7 +261,7 @@ export function parseCSV(csvContent: string): VocabularyEntry[] {
       continue;
     }
 
-    const entry: any = {};
+    const entry: Record<string, string> = {};
     headers.forEach((header, index) => {
       entry[header] = values[index];
     });

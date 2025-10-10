@@ -126,7 +126,7 @@ export default function TokenClaimModal({
               {!isConnected && (
                 <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                   <p className="text-sm text-blue-800">
-                    💡 <strong>New to crypto?</strong> Don't worry! You can create a wallet in seconds and start earning LEXI tokens right away.
+                    💡 <strong>New to crypto?</strong> Don&apos;t worry! You can create a wallet in seconds and start earning LEXI tokens right away.
                   </p>
                 </div>
               )}

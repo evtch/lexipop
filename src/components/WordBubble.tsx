@@ -16,7 +16,7 @@ export default function WordBubble({ word, isVisible, isCorrect, showResult }: W
     transition: {
       duration: 3,
       repeat: Infinity,
-      ease: "easeInOut"
+      ease: [0.4, 0, 0.6, 1] as [number, number, number, number]
     }
   };
 

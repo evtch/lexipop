@@ -17,7 +17,7 @@ export function getNeynarClient(): NeynarAPIClient {
       throw new Error('🔒 SECURITY: NEYNAR_API_KEY is required but not configured');
     }
 
-    neynarClient = new NeynarAPIClient(serverEnv.NEYNAR_API_KEY);
+    neynarClient = new NeynarAPIClient({ apiKey: serverEnv.NEYNAR_API_KEY });
     console.log('✅ Neynar client initialized securely');
   }
 
@@ -28,16 +28,17 @@ export function getNeynarClient(): NeynarAPIClient {
 export async function getUserByFid(fid: number) {
   try {
     const client = getNeynarClient();
-    const response = await client.lookupUserByFid(fid);
+    const response = await client.fetchBulkUsers({ fids: [fid] });
 
     // Return only safe, non-sensitive user data
+    const user = response.users[0];
     return {
-      fid: response.result.user.fid,
-      username: response.result.user.username,
-      displayName: response.result.user.displayName,
-      pfpUrl: response.result.user.pfp?.url,
-      followerCount: response.result.user.followerCount,
-      followingCount: response.result.user.followingCount,
+      fid: user.fid,
+      username: user.username,
+      displayName: user.display_name,
+      pfpUrl: user.pfp_url,
+      followerCount: user.follower_count,
+      followingCount: user.following_count,
       // Never return private data like custody address
     };
   } catch (error) {
@@ -49,7 +50,7 @@ export async function getUserByFid(fid: number) {
 export async function getUserByUsername(username: string) {
   try {
     const client = getNeynarClient();
-    const response = await client.lookupUserByUsername(username);
+    const response = await client.lookupUserByUsername({ username });
 
     return {
       fid: response.result.user.fid,

@@ -16,7 +16,7 @@ export default function FrameWordBubble({ word, isVisible, isCorrect, showResult
     transition: {
       duration: 2.5,
       repeat: Infinity,
-      ease: "easeInOut"
+      ease: [0.4, 0, 0.6, 1] as [number, number, number, number]
     }
   };
 
