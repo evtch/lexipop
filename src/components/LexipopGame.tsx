@@ -176,7 +176,7 @@ export default function LexipopGame() {
             Lexipop
           </h1>
           <p className="text-xl text-gray-700 mb-8 max-w-md">
-            Test your vocabulary knowledge! Choose the correct definition for each word.
+            Test your vocabulary! Choose the correct definition for each word.
           </p>
 
           {/* Authentication Status */}

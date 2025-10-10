@@ -1,32 +1,32 @@
 {
   "accountAssociation": {
-    "header": "placeholder_header_will_be_generated",
-    "payload": "placeholder_payload_will_be_generated",
-    "signature": "placeholder_signature_will_be_generated"
+    "header": "eyJmaWQiOjE0ODIsInR5cGUiOiJjdXN0b2R5Iiwia2V5IjoiMHg0RkVjQjk3ZjRjMTI1N2VCQTgyOTZhYWNBNEVBOUVmMjI3ODg3YkI4In0",
+    "payload": "eyJkb21haW4iOiJsZXhpcG9wLnZlcmNlbC5hcHAifQ",
+    "signature": "MHg2YmJjNDRkYzNlNzk0MzkwMTZiNTVlMDQ3NjllYmRlOTczODlhZWJkNjZlZjUxNGQ3YTZmZWQzMGRmZDI5NzBiNzJhMzhiOGE0MWU4Y2FhYWRlNTQwOTlhZDcwN2I2MTljOGYyZDU3YTc3MzAwMjA3MTI4Mjc3ZjY0NDU0YzlhZDFj"
   },
   "version": "1",
   "appId": "lexipop-miniapp",
   "name": "Lexipop",
-  "iconUrl": "https://lexipop.app/icon-192.png",
+  "iconUrl": "https://lexipop.vercel.app/icon-192.png",
   "buttonTitle": "Add to Farcaster",
   "frame": {
     "version": "1",
     "name": "Lexipop",
     "tagline": "Learn vocabulary the fun way!",
-    "iconUrl": "https://lexipop.app/icon-192.png",
-    "homeUrl": "https://lexipop.app/miniapp",
-    "imageUrl": "https://lexipop.app/farcaster-embed.png",
-    "splashImageUrl": "https://lexipop.app/lexipop-splash.png",
+    "iconUrl": "https://lexipop.vercel.app/icon-192.png",
+    "homeUrl": "https://lexipop.vercel.app/miniapp",
+    "imageUrl": "https://lexipop.vercel.app/farcaster-embed.png",
+    "splashImageUrl": "https://lexipop.vercel.app/lexipop-splash.png",
     "buttonTitle": "Play Lexipop",
     "splashBackgroundColor": "#2563eb",
-    "subtitle": "Test your vocabulary knowledge!",
+    "subtitle": "Test your vocabulary!",
     "description": "Learn new words through interactive vocabulary games with floating bubbles. Challenge yourself and improve your word skills!",
     "primaryCategory": "games",
     "tags": ["vocabulary", "education", "quiz", "learning", "words"],
-    "ogImageUrl": "https://lexipop.app/og-image.png",
-    "castShareUrl": "https://lexipop.app/miniapp"
+    "ogImageUrl": "https://lexipop.vercel.app/og-image.png",
+    "castShareUrl": "https://lexipop.vercel.app/miniapp"
   },
   "other": {
-    "fc:miniapp": "{\"version\":\"1\",\"name\":\"Lexipop\",\"imageUrl\":\"https://lexipop.app/farcaster-embed.png\",\"aspectRatio\":\"3:2\",\"button\":{\"title\":\"Play\",\"action\":{\"type\":\"launch_frame\",\"name\":\"Play\",\"url\":\"https://lexipop.app/miniapp\",\"splashImageUrl\":\"https://lexipop.app/lexipop-splash.png\",\"splashBackgroundColor\":\"#2563eb\"}}}"
+    "fc:miniapp": "{\"version\":\"1\",\"name\":\"Lexipop\",\"imageUrl\":\"https://lexipop.vercel.app/farcaster-embed.png\",\"aspectRatio\":\"3:2\",\"button\":{\"title\":\"Play\",\"action\":{\"type\":\"launch_frame\",\"name\":\"Play\",\"url\":\"https://lexipop.vercel.app/miniapp\",\"splashImageUrl\":\"https://lexipop.vercel.app/lexipop-splash.png\",\"splashBackgroundColor\":\"#2563eb\"}}}"
   }
 }
