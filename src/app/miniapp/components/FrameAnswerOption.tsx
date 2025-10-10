@@ -24,20 +24,21 @@ export default function FrameAnswerOption({
   const getBackgroundColor = () => {
     if (!showResult) {
       return isSelected
-        ? 'bg-white/20 border-white/60'
-        : 'bg-white/10 border-white/30 hover:border-white/50 hover:bg-white/15';
+        ? 'bg-blue-600 border-blue-700'
+        : 'bg-blue-500 border-blue-600 hover:border-blue-700 hover:bg-blue-600';
     }
 
-    if (isSelected && isCorrect) return 'bg-green-500/80 border-green-400';
-    if (isSelected && !isCorrect) return 'bg-red-500/80 border-red-400';
-    if (!isSelected && isCorrect) return 'bg-green-500/40 border-green-400';
-    return 'bg-white/10 border-white/20';
+    if (isSelected && isCorrect) return 'bg-green-500 border-green-600';
+    if (isSelected && !isCorrect) return 'bg-red-500 border-red-600';
+    if (!isSelected && isCorrect) return 'bg-green-100 border-green-500';
+    return 'bg-blue-400 border-blue-500';
   };
 
   const getTextColor = () => {
     if (!showResult) return 'text-white';
-    if (isSelected || (!isSelected && isCorrect)) return 'text-white';
-    return 'text-white/70';
+    if (isSelected && (isCorrect || !isCorrect)) return 'text-white';
+    if (!isSelected && isCorrect) return 'text-green-800';
+    return 'text-white';
   };
 
   const getLetterColor = () => {
@@ -48,7 +49,7 @@ export default function FrameAnswerOption({
     if (isSelected && isCorrect) return 'bg-green-600 text-white';
     if (isSelected && !isCorrect) return 'bg-red-600 text-white';
     if (!isSelected && isCorrect) return 'bg-green-600 text-white';
-    return 'bg-white/20 text-white/60';
+    return 'bg-white/20 text-white';
   };
 
   return (
@@ -61,7 +62,6 @@ export default function FrameAnswerOption({
         ${getBackgroundColor()}
         ${showResult ? 'cursor-default' : 'cursor-pointer'}
       `}
-      whileHover={!showResult ? { scale: 1.02 } : {}}
       whileTap={!showResult ? { scale: 0.98 } : {}}
       disabled={showResult}
     >

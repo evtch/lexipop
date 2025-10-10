@@ -41,6 +41,7 @@ export const serverEnv = {
   // Neynar API credentials
   NEYNAR_API_KEY: getEnvVar('NEYNAR_API_KEY', false),
   NEYNAR_CLIENT_ID: getEnvVar('NEYNAR_CLIENT_ID', false),
+  NEYNAR_SIGNER_UUID: getEnvVar('NEYNAR_SIGNER_UUID', false),
 
   // Farcaster developer credentials
   FARCASTER_DEVELOPER_FID: getEnvVar('FARCASTER_DEVELOPER_FID', false),

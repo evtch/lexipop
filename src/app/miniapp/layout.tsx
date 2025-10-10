@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import '../globals.css';
+import NeynarProvider from './components/NeynarProvider';
 
 const inter = Inter({
   subsets: ["latin"],
@@ -58,7 +59,7 @@ export default function MiniAppLayout({
         margin: '0 auto',
         minHeight: '100vh',
         overflowY: 'auto',
-        background: 'linear-gradient(135deg, #3b82f6 0%, #1e40af 100%)'
+        background: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)'
       }}
     >
       <style dangerouslySetInnerHTML={{
@@ -115,7 +116,9 @@ export default function MiniAppLayout({
           }
         `
       }} />
-      {children}
+      <NeynarProvider>
+        {children}
+      </NeynarProvider>
     </div>
   );
 }

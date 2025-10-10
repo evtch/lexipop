@@ -24,32 +24,32 @@ export default function AnswerOption({
   const getBackgroundColor = () => {
     if (!showResult) {
       return isSelected
-        ? 'bg-blue-100 border-blue-500'
-        : 'bg-white border-gray-300 hover:border-blue-400 hover:bg-blue-50';
+        ? 'bg-blue-600 border-blue-700'
+        : 'bg-blue-500 border-blue-600 hover:border-blue-700 hover:bg-blue-600';
     }
 
     if (isSelected && isCorrect) return 'bg-green-500 border-green-600';
     if (isSelected && !isCorrect) return 'bg-red-500 border-red-600';
     if (!isSelected && isCorrect) return 'bg-green-100 border-green-500';
-    return 'bg-gray-100 border-gray-300';
+    return 'bg-blue-400 border-blue-500';
   };
 
   const getTextColor = () => {
-    if (!showResult) return 'text-gray-800';
+    if (!showResult) return 'text-white';
     if (isSelected && (isCorrect || !isCorrect)) return 'text-white';
     if (!isSelected && isCorrect) return 'text-green-800';
-    return 'text-gray-600';
+    return 'text-white';
   };
 
   const getLetterColor = () => {
     if (!showResult) {
-      return isSelected ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700';
+      return isSelected ? 'bg-white text-blue-600' : 'bg-white/20 text-white';
     }
 
     if (isSelected && isCorrect) return 'bg-green-600 text-white';
     if (isSelected && !isCorrect) return 'bg-red-600 text-white';
     if (!isSelected && isCorrect) return 'bg-green-600 text-white';
-    return 'bg-gray-400 text-gray-600';
+    return 'bg-white/20 text-white';
   };
 
   return (

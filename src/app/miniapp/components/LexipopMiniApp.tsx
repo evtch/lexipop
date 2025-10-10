@@ -4,12 +4,16 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GameState, VocabularyWord } from '@/types/game';
 import { getRandomWord, shuffleArray } from '@/data/vocabulary';
+import { useNeynar } from './NeynarProvider';
 
 // Frame-optimized components
 import FrameWordBubble from './FrameWordBubble';
 import FrameAnswerOption from './FrameAnswerOption';
+import ScoreShare from './ScoreShare';
 
 export default function LexipopMiniApp() {
+  const { user, isLoading, error, signIn, signOut, isAuthenticated } = useNeynar();
+
   const [gameState, setGameState] = useState<GameState>({
     currentWord: null,
     score: 0,
@@ -22,13 +26,44 @@ export default function LexipopMiniApp() {
   });
 
   const [shuffledDefinitions, setShuffledDefinitions] = useState<string[]>([]);
+  const [gameId, setGameId] = useState<string>('');
+  const [showShareModal, setShowShareModal] = useState(false);
+
+  const submitScore = async (score: number, streak: number, totalQuestions: number) => {
+    if (!user) return;
+
+    try {
+      const response = await fetch('/api/game/score', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          fid: user.fid,
+          score,
+          streak,
+          totalQuestions,
+          gameId
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        console.log('✅ Score submitted successfully');
+      }
+    } catch (error) {
+      console.error('❌ Failed to submit score:', error);
+    }
+  };
 
   const startNewGame = () => {
     const word = getRandomWord();
     const allDefinitions = [word.correctDefinition, ...word.incorrectDefinitions];
     const shuffled = shuffleArray(allDefinitions);
+    const newGameId = `game_${Date.now()}_${user?.fid || 'anon'}`;
 
     setShuffledDefinitions(shuffled);
+    setGameId(newGameId);
     setGameState({
       currentWord: word,
       score: 0,
@@ -71,15 +106,31 @@ export default function LexipopMiniApp() {
       totalQuestions: prev.totalQuestions + 1
     }));
 
+    // Submit score if user is authenticated
+    if (isAuthenticated && user) {
+      submitScore(gameState.score + (isCorrect ? 1 : 0), isCorrect ? gameState.streak + 1 : 0, gameState.totalQuestions + 1);
+    }
+
     // Auto-advance to next question after 2 seconds
     setTimeout(() => {
       nextQuestion();
     }, 2000);
   };
 
+  if (isLoading) {
+    return (
+      <div className="h-screen flex flex-col items-center justify-center p-4 text-gray-800">
+        <div className="text-center">
+          <div className="animate-spin w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p>Loading Lexipop...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!gameState.isGameActive) {
     return (
-      <div className="h-screen flex flex-col items-center justify-center p-4 text-white">
+      <div className="h-screen flex flex-col items-center justify-center p-4 text-gray-800">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -92,32 +143,112 @@ export default function LexipopMiniApp() {
             </p>
           </div>
 
-          <motion.button
-            onClick={startNewGame}
-            className="game-button bg-white text-blue-600 font-semibold py-3 px-8 rounded-full text-lg shadow-lg hover:shadow-xl transition-all"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            Start Playing
-          </motion.button>
+          {/* Authentication Status */}
+          <div className="mb-6">
+            {isAuthenticated && user ? (
+              <div className="bg-white/60 rounded-lg p-4 mb-4 border border-blue-200">
+                <div className="flex items-center gap-3 justify-center">
+                  {user.pfpUrl && (
+                    <img
+                      src={user.pfpUrl}
+                      alt={user.username}
+                      className="w-10 h-10 rounded-full"
+                    />
+                  )}
+                  <div>
+                    <div className="font-semibold text-gray-800">{user.displayName}</div>
+                    <div className="text-sm text-gray-600">@{user.username}</div>
+                  </div>
+                </div>
+                <button
+                  onClick={signOut}
+                  className="mt-3 text-sm text-gray-600 hover:text-gray-800 transition-colors"
+                >
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              <div className="bg-white/60 rounded-lg p-4 mb-4 border border-blue-200">
+                <p className="text-sm mb-3 text-gray-700">Sign in to track your scores!</p>
+                <button
+                  onClick={() => signIn()}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm transition-colors"
+                >
+                  Connect Farcaster
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-4">
+            <motion.button
+              onClick={startNewGame}
+              className="game-button bg-white text-blue-600 font-semibold py-3 px-8 rounded-full text-lg shadow-lg hover:shadow-xl transition-all"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              Start Playing
+            </motion.button>
+
+            <motion.a
+              href="/miniapp/leaderboard"
+              className="block text-center text-blue-600 hover:text-blue-700 transition-colors font-medium"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              🏆 View Leaderboard
+            </motion.a>
+          </div>
         </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="h-screen flex flex-col p-4 text-white overflow-hidden">
+    <div className="h-screen flex flex-col p-4 text-gray-800 overflow-hidden">
       {/* Header - Compact for Frame */}
       <div className="flex justify-between items-center mb-4">
-        <h1 className="text-xl font-bold">Lexipop</h1>
-        <div className="flex gap-4 text-sm">
-          <div className="text-center">
-            <div className="font-medium">Score</div>
-            <div className="text-lg font-bold">{gameState.score}</div>
+        <div className="flex items-center gap-2">
+          <h1 className="text-xl font-bold">Lexipop</h1>
+          {user && (
+            <div className="flex items-center gap-1">
+              {user.pfpUrl && (
+                <img
+                  src={user.pfpUrl}
+                  alt={user.username}
+                  className="w-6 h-6 rounded-full"
+                />
+              )}
+              <span className="text-sm text-gray-600">@{user.username}</span>
+            </div>
+          )}
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="flex gap-2">
+            <a
+              href="/miniapp/leaderboard"
+              className="text-blue-600 hover:text-blue-700 transition-colors text-sm font-medium"
+            >
+              🏆
+            </a>
+            {gameState.totalQuestions > 0 && (
+              <button
+                onClick={() => setShowShareModal(true)}
+                className="text-blue-600 hover:text-blue-700 transition-colors text-sm font-medium"
+              >
+                📤
+              </button>
+            )}
           </div>
-          <div className="text-center">
-            <div className="font-medium">Streak</div>
-            <div className="text-lg font-bold">{gameState.streak}</div>
+          <div className="flex gap-4 text-sm">
+            <div className="text-center">
+              <div className="font-medium">Score</div>
+              <div className="text-lg font-bold">{gameState.score}</div>
+            </div>
+            <div className="text-center">
+              <div className="font-medium">Streak</div>
+              <div className="text-lg font-bold">{gameState.streak}</div>
+            </div>
           </div>
         </div>
       </div>
@@ -138,8 +269,8 @@ export default function LexipopMiniApp() {
       </div>
 
       {/* Instructions */}
-      <div className="text-center mb-4">
-        <p className="text-sm opacity-90">Choose the correct definition:</p>
+      <div className="text-center mb-6">
+        <p className="text-sm text-gray-600">Choose the correct definition:</p>
       </div>
 
       {/* Answer Options - Compact for Frame */}
@@ -167,26 +298,15 @@ export default function LexipopMiniApp() {
         })}
       </div>
 
-      {/* Result Feedback */}
-      <AnimatePresence>
-        {gameState.showResult && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="text-center mt-4"
-          >
-            <div className={`text-lg font-bold ${gameState.isCorrect ? 'text-green-300' : 'text-red-300'}`}>
-              {gameState.isCorrect ? '🎉 Correct!' : '❌ Incorrect'}
-            </div>
-            {!gameState.isCorrect && (
-              <div className="text-sm opacity-80 mt-1">
-                Correct: <span className="font-semibold">{gameState.currentWord?.correctDefinition}</span>
-              </div>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Score Share Modal */}
+      <ScoreShare
+        score={gameState.score}
+        streak={gameState.streak}
+        totalQuestions={gameState.totalQuestions}
+        isVisible={showShareModal}
+        onClose={() => setShowShareModal(false)}
+      />
+
     </div>
   );
 }

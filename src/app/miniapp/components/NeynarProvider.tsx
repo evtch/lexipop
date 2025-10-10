@@ -5,12 +5,23 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 // 🔒 SECURITY NOTE: This component only handles CLIENT-SIDE Neynar interactions
 // Server-side API calls should use the serverEnv configuration
 
+interface FarcasterUser {
+  fid: number;
+  username: string;
+  displayName: string;
+  pfpUrl?: string;
+  followerCount: number;
+  followingCount: number;
+}
+
 interface NeynarContextType {
-  user: any | null;
+  user: FarcasterUser | null;
   isLoading: boolean;
-  signIn: () => Promise<void>;
+  error: string | null;
+  signIn: (fid?: number) => Promise<void>;
   signOut: () => void;
   isAuthenticated: boolean;
+  refreshUser: () => Promise<void>;
 }
 
 const NeynarContext = createContext<NeynarContextType | undefined>(undefined);
@@ -20,8 +31,9 @@ interface NeynarProviderProps {
 }
 
 export default function NeynarProvider({ children }: NeynarProviderProps) {
-  const [user, setUser] = useState<any | null>(null);
+  const [user, setUser] = useState<FarcasterUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     checkAuthStatus();
@@ -29,49 +41,85 @@ export default function NeynarProvider({ children }: NeynarProviderProps) {
 
   const checkAuthStatus = async () => {
     try {
-      // 🔒 SECURITY: Never expose API keys to client-side code
-      // This would typically call our own API endpoint that uses server-side credentials
+      // 🔒 SECURITY: Check if user has existing session
+      const savedFid = localStorage.getItem('lexipop_fid');
 
-      // For now, simulate auth check
+      if (savedFid && !isNaN(parseInt(savedFid))) {
+        await loadUserByFid(parseInt(savedFid));
+      }
+
       setIsLoading(false);
-
-      // TODO: Implement actual Neynar auth check via our secure API endpoint
-      console.log('🔒 Checking Neynar auth status via secure API...');
-
     } catch (error) {
       console.error('Auth check failed:', error);
+      setError('Failed to check authentication status');
       setIsLoading(false);
     }
   };
 
-  const signIn = async () => {
+  const loadUserByFid = async (fid: number) => {
+    try {
+      setError(null);
+      const response = await fetch(`/api/neynar/user?fid=${fid}`);
+      const data = await response.json();
+
+      if (data.success && data.user) {
+        setUser(data.user);
+        localStorage.setItem('lexipop_fid', fid.toString());
+        console.log('✅ User loaded:', data.user.username);
+      } else {
+        throw new Error(data.error || 'Failed to load user');
+      }
+    } catch (error) {
+      console.error('❌ Failed to load user:', error);
+      setError('Failed to load user profile');
+      throw error;
+    }
+  };
+
+  const signIn = async (fid?: number) => {
     try {
       setIsLoading(true);
+      setError(null);
 
-      // 🔒 SECURITY: Client calls our secure API endpoint, not Neynar directly
-      console.log('🔒 Initiating secure sign-in flow...');
-
-      // TODO: Implement Farcaster auth flow via our secure endpoints
-      // This will redirect to Farcaster auth, then back to our callback
+      if (fid) {
+        // Direct FID login (for development/testing)
+        await loadUserByFid(fid);
+      } else {
+        // 🔒 TODO: Implement full Farcaster auth flow
+        // For now, use demo FID
+        console.log('🔒 Using demo authentication...');
+        await loadUserByFid(1482); // Demo FID
+      }
 
       setIsLoading(false);
     } catch (error) {
       console.error('Sign-in failed:', error);
+      setError('Sign-in failed');
       setIsLoading(false);
     }
   };
 
   const signOut = () => {
     setUser(null);
+    setError(null);
+    localStorage.removeItem('lexipop_fid');
     console.log('🔒 User signed out securely');
+  };
+
+  const refreshUser = async () => {
+    if (user) {
+      await loadUserByFid(user.fid);
+    }
   };
 
   const value: NeynarContextType = {
     user,
     isLoading,
+    error,
     signIn,
     signOut,
-    isAuthenticated: !!user
+    isAuthenticated: !!user,
+    refreshUser
   };
 
   return (
