@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     description: 'Learn vocabulary the fun way! Test your word knowledge with floating bubbles and interactive games.',
     images: [
       {
-        url: 'https://lexipop.app/og-image.png',
+        url: 'https://lexipop.vercel.app/og-image.png',
         width: 1200,
         height: 630,
         alt: 'Lexipop - Vocabulary Learning Game'
@@ -25,17 +25,17 @@ export const metadata: Metadata = {
     ],
     siteName: 'Lexipop',
     type: 'website',
-    url: 'https://lexipop.app/miniapp'
+    url: 'https://lexipop.vercel.app/miniapp'
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Lexipop - Vocabulary Learning Game',
     description: 'Learn vocabulary the fun way! Test your word knowledge with floating bubbles.',
-    images: ['https://lexipop.app/og-image.png']
+    images: ['https://lexipop.vercel.app/og-image.png']
   },
   other: {
     // Mini App embed metadata for Farcaster Frames v2
-    'fc:miniapp': '{"version":"1","name":"Lexipop","imageUrl":"https://lexipop.app/farcaster-embed.png","aspectRatio":"3:2","button":{"title":"Play","action":{"type":"launch_frame","name":"Play","url":"https://lexipop.app/miniapp","splashImageUrl":"https://lexipop.app/lexipop-splash.png","splashBackgroundColor":"#2563eb"}}}'
+    'fc:miniapp': '{"version":"1","name":"Lexipop","imageUrl":"https://lexipop.vercel.app/farcaster-embed.png","aspectRatio":"3:2","button":{"title":"Play","action":{"type":"launch_frame","name":"Play","url":"https://lexipop.vercel.app/miniapp","splashImageUrl":"https://lexipop.vercel.app/lexipop-splash.png","splashBackgroundColor":"#2563eb"}}}'
   }
 };
 
