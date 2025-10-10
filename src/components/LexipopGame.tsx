@@ -8,6 +8,7 @@ import WordBubble from './WordBubble';
 import AnswerOption from './AnswerOption';
 import { useNeynar } from '@/app/miniapp/components/NeynarProvider';
 import ScoreShare from '@/app/miniapp/components/ScoreShare';
+import SpinningWheel from './SpinningWheel';
 
 export default function LexipopGame() {
   const { user, isLoading, error, signIn, signOut, isAuthenticated } = useNeynar();
@@ -26,6 +27,11 @@ export default function LexipopGame() {
   const [shuffledDefinitions, setShuffledDefinitions] = useState<string[]>([]);
   const [gameId, setGameId] = useState<string>('');
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showSpinningWheel, setShowSpinningWheel] = useState(false);
+  const [totalTokensEarned, setTotalTokensEarned] = useState(0);
+
+  // Game configuration
+  const QUESTIONS_PER_GAME = 5;
 
   const submitScore = async (score: number, streak: number, totalQuestions: number) => {
     if (!user) return;
@@ -52,6 +58,19 @@ export default function LexipopGame() {
     } catch (error) {
       console.error('❌ Failed to submit score:', error);
     }
+  };
+
+  const handleRewardClaimed = (tokens: number) => {
+    setTotalTokensEarned(prev => prev + tokens);
+    console.log(`✅ Claimed ${tokens} $LEXIPOP tokens! Total: ${totalTokensEarned + tokens}`);
+  };
+
+  const shouldShowSpinningWheel = () => {
+    return gameState.totalQuestions >= QUESTIONS_PER_GAME;
+  };
+
+  const isGameComplete = () => {
+    return gameState.totalQuestions >= QUESTIONS_PER_GAME;
   };
 
   const startNewGame = () => {
@@ -109,10 +128,18 @@ export default function LexipopGame() {
       submitScore(gameState.score + (isCorrect ? 1 : 0), isCorrect ? gameState.streak + 1 : 0, gameState.totalQuestions + 1);
     }
 
-    // Auto-advance to next question after 2 seconds
-    setTimeout(() => {
-      nextQuestion();
-    }, 2000);
+    // Check if game is complete after this question
+    if (gameState.totalQuestions + 1 >= QUESTIONS_PER_GAME) {
+      // Game complete - show spinning wheel after 2 seconds
+      setTimeout(() => {
+        setShowSpinningWheel(true);
+      }, 2000);
+    } else {
+      // Continue to next question after 2 seconds
+      setTimeout(() => {
+        nextQuestion();
+      }, 2000);
+    }
   };
 
   if (isLoading) {
@@ -237,8 +264,22 @@ export default function LexipopGame() {
                 📤 Share
               </button>
             )}
+            {shouldShowSpinningWheel() && (
+              <button
+                onClick={() => setShowSpinningWheel(true)}
+                className="bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-white px-3 py-1 rounded-full text-sm font-medium transition-all animate-pulse"
+              >
+                🎰 Claim Tokens
+              </button>
+            )}
           </div>
           <div className="flex gap-6 text-blue-900">
+            {totalTokensEarned > 0 && (
+              <div className="text-center">
+                <div className="text-sm font-medium">Tokens</div>
+                <div className="text-xl font-bold text-yellow-600">{totalTokensEarned.toLocaleString()}</div>
+              </div>
+            )}
             <div className="text-center">
               <div className="text-sm font-medium">Score</div>
               <div className="text-xl font-bold">{gameState.score}</div>
@@ -246,6 +287,10 @@ export default function LexipopGame() {
             <div className="text-center">
               <div className="text-sm font-medium">Streak</div>
               <div className="text-xl font-bold">{gameState.streak}</div>
+            </div>
+            <div className="text-center">
+              <div className="text-sm font-medium">Progress</div>
+              <div className="text-xl font-bold">{gameState.totalQuestions}/{QUESTIONS_PER_GAME}</div>
             </div>
           </div>
         </div>
@@ -318,6 +363,16 @@ export default function LexipopGame() {
         totalQuestions={gameState.totalQuestions}
         isVisible={showShareModal}
         onClose={() => setShowShareModal(false)}
+      />
+
+      {/* Spinning Wheel Modal */}
+      <SpinningWheel
+        isVisible={showSpinningWheel}
+        onClose={() => setShowSpinningWheel(false)}
+        onRewardClaimed={handleRewardClaimed}
+        gameScore={gameState.score}
+        gameStreak={gameState.streak}
+        totalQuestions={gameState.totalQuestions}
       />
     </div>
   );

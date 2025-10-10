@@ -57,7 +57,8 @@ export const serverEnv = {
 // ✅ CLIENT-SAFE - These can be exposed to browser (prefixed with NEXT_PUBLIC_)
 export const clientEnv = {
   APP_URL: getEnvVar('NEXT_PUBLIC_APP_URL', false) || 'http://localhost:3003',
-  MINIAPP_URL: getEnvVar('NEXT_PUBLIC_MINIAPP_URL', false) || 'http://localhost:3003/miniapp'
+  MINIAPP_URL: getEnvVar('NEXT_PUBLIC_MINIAPP_URL', false) || 'http://localhost:3003/miniapp',
+  BASE_RPC_URL: getEnvVar('NEXT_PUBLIC_BASE_RPC_URL', false) || 'https://mainnet.base.org'
 };
 
 // Security validation on module load

@@ -6,17 +6,30 @@
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio",
+    "db:seed": "tsx src/scripts/seed-database.ts"
   },
   "dependencies": {
+    "@coinbase/onchainkit": "^1.1.1",
+    "@libsql/client": "^0.15.15",
     "@neynar/nodejs-sdk": "^3.34.0",
+    "@pythnetwork/entropy-sdk-solidity": "^2.0.0",
+    "@rainbow-me/rainbowkit": "^2.2.8",
     "clsx": "^2.1.1",
+    "drizzle-kit": "^0.31.5",
+    "drizzle-orm": "^0.44.6",
+    "ethers": "^6.15.0",
     "framer-motion": "^12.23.24",
     "lucide-react": "^0.545.0",
     "next": "15.5.4",
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "tailwind-merge": "^3.3.1"
+    "tailwind-merge": "^3.3.1",
+    "viem": "^2.38.0",
+    "wagmi": "^2.18.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
@@ -27,6 +40,7 @@
     "eslint": "^9",
     "eslint-config-next": "15.5.4",
     "tailwindcss": "^4",
+    "tsx": "^4.20.6",
     "typescript": "^5"
   }
 }
