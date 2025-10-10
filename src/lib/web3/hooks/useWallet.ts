@@ -41,7 +41,7 @@ export function useWallet(): WalletState {
   const account = useAccount();
   const { disconnect } = useDisconnect();
   const { openConnectModal } = useConnectModal();
-  const { isLoading: isConnecting } = useConnect();
+  const { isPending: isConnecting } = useConnect();
   const {
     data: balanceData,
     isLoading: isLoadingBalance,

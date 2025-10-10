@@ -83,7 +83,7 @@ function validateEntry(entry: unknown, index: number): { valid: boolean; errors:
     typedEntry.incorrectDefinition3
   ].filter(def => def && typeof def === 'string');
 
-  const uniqueDefinitions = new Set(definitions.map(def => def.toLowerCase().trim()));
+  const uniqueDefinitions = new Set(definitions.map(def => (def as string).toLowerCase().trim()));
   if (uniqueDefinitions.size !== definitions.length) {
     errors.push(`Row ${index + 1}: Duplicate definitions found within entry`);
   }
@@ -268,10 +268,10 @@ export function parseCSV(csvContent: string): VocabularyEntry[] {
 
     // Convert difficulty to number if present
     if (entry.difficulty) {
-      entry.difficulty = parseInt(entry.difficulty, 10);
+      (entry as Record<string, string | number>).difficulty = parseInt(entry.difficulty, 10);
     }
 
-    entries.push(entry as VocabularyEntry);
+    entries.push(entry as unknown as VocabularyEntry);
   }
 
   return entries;

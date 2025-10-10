@@ -17,7 +17,7 @@ export const ENTROPY_ABI = parseAbi([
   'function getFee(address provider) external view returns (uint128)',
   'function requestWithCallback(address provider, bytes32 userCommitment, bool useBlockhash, bytes calldata) external payable returns (uint64)',
   'function revealWithCallback(address provider, uint64 sequenceNumber, bytes32 userRandomness, bytes32 providerRevelation, bytes calldata) external',
-]) as const;
+]);
 
 // Base RPC configuration
 export const BASE_RPC_URL = process.env.NEXT_PUBLIC_BASE_RPC_URL || 'https://mainnet.base.org';
@@ -77,7 +77,7 @@ export function generateCommitment(userInput: string, timestamp: number): {
  */
 export function getRewardFromRandomness(randomNumber: bigint): RewardTier {
   // Convert to 0-99 range
-  const normalized = Number(randomNumber % 100n);
+  const normalized = Number(randomNumber % BigInt(100));
 
   // Find matching tier
   const tier = REWARD_TIERS.find(tier =>

@@ -10,7 +10,20 @@ import { headers } from 'next/headers';
 import { createPublicClient, createWalletClient, http, parseEther } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { base, baseSepolia } from 'viem/chains';
-import { tokenContracts, defaultChain } from '@/lib/web3/config';
+// Server-side token contract addresses (avoiding client-side wagmi config)
+const tokenContracts = {
+  [base.id]: {
+    lexipopToken: '0xf732f31f73e7DC21299f3ab42BD22E8a7C6b4B07' as const,
+    moneyTree: '0xE636BaaF2c390A591EdbffaF748898EB3f6FF9A1' as const,
+  },
+  [baseSepolia.id]: {
+    lexipopToken: '0xf732f31f73e7DC21299f3ab42BD22E8a7C6b4B07' as const,
+    moneyTree: '0xE636BaaF2c390A591EdbffaF748898EB3f6FF9A1' as const,
+  }
+} as const;
+
+// Server-side default chain
+const defaultChain = process.env.NODE_ENV === 'production' ? base : baseSepolia;
 import {
   moneyTreeABI,
   lexipopTokenABI,

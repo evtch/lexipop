@@ -53,12 +53,12 @@ export async function getUserByUsername(username: string) {
     const response = await client.lookupUserByUsername({ username });
 
     return {
-      fid: response.result.user.fid,
-      username: response.result.user.username,
-      displayName: response.result.user.displayName,
-      pfpUrl: response.result.user.pfp?.url,
-      followerCount: response.result.user.followerCount,
-      followingCount: response.result.user.followingCount,
+      fid: response.user.fid,
+      username: response.user.username,
+      displayName: response.user.display_name,
+      pfpUrl: response.user.pfp_url,
+      followerCount: response.user.follower_count,
+      followingCount: response.user.following_count,
     };
   } catch (error) {
     console.error('❌ Failed to fetch user by username:', error);
@@ -70,7 +70,7 @@ export async function getUserByUsername(username: string) {
 export async function validateFrameMessage(messageBytes: string) {
   try {
     const client = getNeynarClient();
-    const response = await client.validateFrameMessage(messageBytes);
+    const response = await client.validateFrameAction({ messageBytesInHex: messageBytes });
 
     if (!response.valid) {
       throw new Error('Invalid frame message');
@@ -78,13 +78,12 @@ export async function validateFrameMessage(messageBytes: string) {
 
     return {
       valid: response.valid,
-      message: response.message,
       // Return safe frame context data
-      interactor: response.message?.interactor ? {
-        fid: response.message.interactor.fid,
-        username: response.message.interactor.username,
-        displayName: response.message.interactor.displayName,
-        pfpUrl: response.message.interactor.pfp?.url,
+      interactor: response.action?.interactor ? {
+        fid: response.action.interactor.fid,
+        username: response.action.interactor.username,
+        displayName: response.action.interactor.display_name,
+        pfpUrl: response.action.interactor.pfp_url,
       } : null
     };
   } catch (error) {

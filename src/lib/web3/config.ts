@@ -59,8 +59,8 @@ export const tokenContracts = {
 // Gas configuration
 export const gasConfig = {
   // Standard gas limits for different operations
-  tokenClaim: 100000n,
-  tokenTransfer: 21000n,
+  tokenClaim: BigInt(100000),
+  tokenTransfer: BigInt(21000),
 
   // Gas price multipliers
   standardMultiplier: 1.1,
