@@ -57,7 +57,7 @@ export default function WalletConnect({
       if (data.success && data.transactionHash) {
         setClaimSuccess(data.transactionHash);
         onTokensClaimed?.(data.transactionHash);
-        console.log(`🎉 Successfully claimed ${tokensToClaimgame} LEXI tokens!`);
+        console.log(`🎉 Successfully claimed ${tokensToClaimgame} LEXIPOP tokens!`);
         console.log(`Transaction: ${data.transactionHash}`);
       } else {
         throw new Error(data.error || 'Claim failed');
@@ -160,7 +160,7 @@ export default function WalletConnect({
                       ) : (
                         <>
                           <Coins className="w-5 h-5" />
-                          Claim {tokensToClaimgame} LEXI Tokens
+                          Claim {tokensToClaimgame} LEXIPOP Tokens
                         </>
                       )}
                     </button>

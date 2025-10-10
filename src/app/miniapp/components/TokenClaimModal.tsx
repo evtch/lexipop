@@ -3,7 +3,7 @@
 /**
  * 🪙 TOKEN CLAIM MODAL
  *
- * Modal component for claiming LEXI tokens after game completion
+ * Modal component for claiming LEXIPOP tokens after game completion
  * Integrates with spinning wheel rewards and wallet connection
  */
 
@@ -81,8 +81,8 @@ export default function TokenClaimModal({
             </h2>
             <p className="text-gray-600">
               {claimed
-                ? 'Your LEXI tokens have been sent to your wallet'
-                : `You earned ${tokensEarned} LEXI tokens!`
+                ? 'Your LEXIPOP tokens have been sent to your wallet'
+                : `You earned ${tokensEarned} LEXIPOP tokens!`
               }
             </p>
           </div>
@@ -106,7 +106,7 @@ export default function TokenClaimModal({
               </div>
               <div>
                 <div className="text-2xl font-bold text-yellow-600">{tokensEarned}</div>
-                <div className="text-xs text-gray-600">LEXI Tokens</div>
+                <div className="text-xs text-gray-600">LEXIPOP Tokens</div>
               </div>
             </div>
           </div>
@@ -126,7 +126,7 @@ export default function TokenClaimModal({
               {!isConnected && (
                 <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                   <p className="text-sm text-blue-800">
-                    💡 <strong>New to crypto?</strong> Don&apos;t worry! You can create a wallet in seconds and start earning LEXI tokens right away.
+                    💡 <strong>New to crypto?</strong> Don&apos;t worry! You can create a wallet in seconds and start earning LEXIPOP tokens right away.
                   </p>
                 </div>
               )}
@@ -135,7 +135,7 @@ export default function TokenClaimModal({
             <div className="text-center space-y-4">
               <div className="p-4 bg-green-50 border border-green-200 rounded-xl">
                 <p className="text-green-800 font-medium mb-2">
-                  🎉 Success! Your {tokensEarned} LEXI tokens are on their way!
+                  🎉 Success! Your {tokensEarned} LEXIPOP tokens are on their way!
                 </p>
                 <p className="text-sm text-green-700">
                   Tokens should appear in your wallet within a few minutes.
