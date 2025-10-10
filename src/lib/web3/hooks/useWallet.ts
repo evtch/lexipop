@@ -34,46 +34,64 @@ export interface WalletState {
  * Main wallet hook that provides all wallet functionality
  */
 export function useWallet(): WalletState {
-  const { address, isConnected, chainId } = useAccount();
-  const { disconnect } = useDisconnect();
-  const { openConnectModal } = useConnectModal();
-  const { isLoading: isConnecting } = useConnect();
-
   const [error, setError] = useState<string | undefined>();
 
-  // Get native token balance
-  const {
-    data: balanceData,
-    isLoading: isLoadingBalance,
-    error: balanceError
-  } = useBalance({
-    address,
-  });
+  try {
+    const { address, isConnected, chainId } = useAccount();
+    const { disconnect } = useDisconnect();
+    const { openConnectModal } = useConnectModal();
+    const { isLoading: isConnecting } = useConnect();
 
-  // Handle balance errors
-  useEffect(() => {
-    if (balanceError) {
-      setError('Failed to fetch wallet balance');
-    } else {
-      setError(undefined);
-    }
-  }, [balanceError]);
+    // Get native token balance
+    const {
+      data: balanceData,
+      isLoading: isLoadingBalance,
+      error: balanceError
+    } = useBalance({
+      address,
+    });
 
-  // Format balance for display
-  const formattedBalance = balanceData?.formatted;
+    // Handle balance errors
+    useEffect(() => {
+      if (balanceError) {
+        setError('Failed to fetch wallet balance');
+      } else {
+        setError(undefined);
+      }
+    }, [balanceError]);
 
-  return {
-    isConnected,
-    isConnecting,
-    address,
-    chainId,
-    balance: balanceData?.value,
-    formattedBalance,
-    isLoadingBalance,
-    openConnectModal,
-    disconnect,
-    error
-  };
+    // Format balance for display
+    const formattedBalance = balanceData?.formatted;
+
+    return {
+      isConnected,
+      isConnecting,
+      address,
+      chainId,
+      balance: balanceData?.value,
+      formattedBalance,
+      isLoadingBalance,
+      openConnectModal,
+      disconnect,
+      error
+    };
+  } catch (wagmiError) {
+    // If Wagmi context is not available, return default state
+    console.warn('Wagmi context not available:', wagmiError);
+
+    return {
+      isConnected: false,
+      isConnecting: false,
+      address: undefined,
+      chainId: undefined,
+      balance: undefined,
+      formattedBalance: undefined,
+      isLoadingBalance: false,
+      openConnectModal: undefined,
+      disconnect: () => {},
+      error: 'Wallet not available'
+    };
+  }
 }
 
 /**
@@ -85,6 +103,7 @@ export function useTokenContract(chainId?: number) {
 
   return {
     lexipopToken: contracts?.lexipopToken,
+    moneyTree: contracts?.moneyTree,
     isSupported: !!contracts
   };
 }
@@ -93,27 +112,45 @@ export function useTokenContract(chainId?: number) {
  * Hook for checking if wallet is on supported chain
  */
 export function useChainValidation() {
-  const { chainId } = useAccount();
-  const supportedChainIds = Object.keys(tokenContracts).map(Number);
-  const isSupported = chainId ? supportedChainIds.includes(chainId) : false;
+  try {
+    const { chainId } = useAccount();
+    const supportedChainIds = Object.keys(tokenContracts).map(Number);
+    const isSupported = chainId ? supportedChainIds.includes(chainId) : false;
 
-  return {
-    chainId,
-    isSupported,
-    supportedChainIds
-  };
+    return {
+      chainId,
+      isSupported,
+      supportedChainIds
+    };
+  } catch (error) {
+    console.warn('Chain validation error:', error);
+    return {
+      chainId: undefined,
+      isSupported: false,
+      supportedChainIds: Object.keys(tokenContracts).map(Number)
+    };
+  }
 }
 
 /**
  * Simple connection status hook
  */
 export function useWalletConnection() {
-  const { isConnected, address } = useAccount();
-  const { openConnectModal } = useConnectModal();
+  try {
+    const { isConnected, address } = useAccount();
+    const { openConnectModal } = useConnectModal();
 
-  return {
-    isConnected,
-    address,
-    connect: openConnectModal
-  };
+    return {
+      isConnected,
+      address,
+      connect: openConnectModal
+    };
+  } catch (error) {
+    console.warn('Wallet connection hook error:', error);
+    return {
+      isConnected: false,
+      address: undefined,
+      connect: undefined
+    };
+  }
 }

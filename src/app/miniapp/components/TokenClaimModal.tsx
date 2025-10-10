@@ -166,7 +166,7 @@ export default function TokenClaimModal({
         {!claimed && (
           <div className="px-6 pb-6 text-center">
             <p className="text-xs text-gray-500">
-              Powered by Base • Gas fees covered by Lexipop
+              LEXIPOP Token • Distributed via MoneyTree • Powered by Base
             </p>
           </div>
         )}

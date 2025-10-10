@@ -9,7 +9,7 @@ import { getDefaultConfig } from '@rainbow-me/rainbowkit';
 import { mainnet, base, baseSepolia, sepolia } from 'wagmi/chains';
 
 // Get environment variables with fallbacks
-const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'demo-project-id';
+const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || '7e3c82dfe33435c5ae224a90a29e25db';
 const appName = 'Lexipop';
 const appDescription = 'Learn vocabulary the fun way!';
 
@@ -36,19 +36,23 @@ export const supportedChains = {
 // Default chain based on environment
 export const defaultChain = process.env.NODE_ENV === 'production' ? base : baseSepolia;
 
-// Token contract addresses (placeholder - replace with actual deployed addresses)
+// Real contract addresses
 export const tokenContracts = {
   [mainnet.id]: {
-    lexipopToken: '0x0000000000000000000000000000000000000000', // Replace with actual address
+    lexipopToken: '0xf732f31f73e7DC21299f3ab42BD22E8a7C6b4B07', // LEXIPOP token on mainnet
+    moneyTree: '0xE636BaaF2c390A591EdbffaF748898EB3f6FF9A1', // MoneyTree distributor
   },
   [base.id]: {
-    lexipopToken: '0x0000000000000000000000000000000000000000', // Replace with actual address
+    lexipopToken: '0xf732f31f73e7DC21299f3ab42BD22E8a7C6b4B07', // LEXIPOP token on Base
+    moneyTree: '0xE636BaaF2c390A591EdbffaF748898EB3f6FF9A1', // MoneyTree distributor
   },
   [baseSepolia.id]: {
-    lexipopToken: '0x0000000000000000000000000000000000000000', // Replace with actual address
+    lexipopToken: '0xf732f31f73e7DC21299f3ab42BD22E8a7C6b4B07', // LEXIPOP token on Base Sepolia
+    moneyTree: '0xE636BaaF2c390A591EdbffaF748898EB3f6FF9A1', // MoneyTree distributor
   },
   [sepolia.id]: {
-    lexipopToken: '0x0000000000000000000000000000000000000000', // Replace with actual address
+    lexipopToken: '0xf732f31f73e7DC21299f3ab42BD22E8a7C6b4B07', // LEXIPOP token on Sepolia
+    moneyTree: '0xE636BaaF2c390A591EdbffaF748898EB3f6FF9A1', // MoneyTree distributor
   }
 } as const;
 

@@ -7,6 +7,17 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
+import { createPublicClient, createWalletClient, http, parseEther } from 'viem';
+import { privateKeyToAccount } from 'viem/accounts';
+import { base, baseSepolia } from 'viem/chains';
+import { tokenContracts, defaultChain } from '@/lib/web3/config';
+import {
+  moneyTreeABI,
+  lexipopTokenABI,
+  parseTokenAmount,
+  isValidAddress,
+  validateTokenAmount
+} from '@/lib/web3/contracts/moneyTree';
 
 interface ClaimRequest {
   gameId: string;
@@ -48,9 +59,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate Ethereum address format
-    if (!/^0x[a-fA-F0-9]{40}$/.test(userAddress)) {
+    if (!isValidAddress(userAddress)) {
       return NextResponse.json(
         { success: false, error: 'Invalid wallet address' },
+        { status: 400 }
+      );
+    }
+
+    // Validate token amount
+    if (!validateTokenAmount(tokensToClaimgame)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid token amount - must be between 1 and 10,000 tokens' },
         { status: 400 }
       );
     }
@@ -71,14 +90,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // TODO: Validate the game session and score
-    // This should check against the database to ensure:
+    // TODO: Validate the game session and score against database
+    // This should check:
     // 1. The game was actually played
     // 2. The score matches the claimed tokens
     // 3. The game hasn't been claimed before
-
-    // TODO: Implement smart contract interaction
-    // For now, we'll simulate the transaction
 
     console.log(`🎯 Processing token claim:`, {
       gameId,
@@ -86,49 +102,125 @@ export async function POST(request: NextRequest) {
       tokensToClaimgame
     });
 
-    // Simulate blockchain transaction delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    // Get contract addresses for current chain
+    const chainId = defaultChain.id;
+    const contracts = tokenContracts[chainId as keyof typeof tokenContracts];
 
-    // Mock transaction hash
-    const mockTxHash = `0x${Math.random().toString(16).substr(2, 64)}`;
+    if (!contracts) {
+      return NextResponse.json(
+        { success: false, error: 'Chain not supported' },
+        { status: 400 }
+      );
+    }
 
-    // Update rate limiting
-    recentClaims.set(rateLimitKey, Date.now());
+    // Check for required environment variables
+    const privateKey = process.env.PRIVATE_KEY;
+    const rpcUrl = process.env.RPC_URL || (defaultChain.id === base.id ?
+      'https://mainnet.base.org' : 'https://sepolia.base.org');
 
-    // TODO: Actual smart contract call would go here
-    // Example using viem/wagmi:
-    /*
-    const client = createPublicClient({
-      chain: base,
-      transport: http(process.env.RPC_URL)
-    });
+    if (!privateKey) {
+      console.error('❌ PRIVATE_KEY environment variable not set');
+      return NextResponse.json(
+        { success: false, error: 'Server configuration error' },
+        { status: 500 }
+      );
+    }
 
-    const walletClient = createWalletClient({
-      chain: base,
-      transport: http(process.env.RPC_URL),
-      account: privateKeyToAccount(process.env.PRIVATE_KEY as `0x${string}`)
-    });
+    try {
+      // Create clients
+      const publicClient = createPublicClient({
+        chain: defaultChain,
+        transport: http(rpcUrl)
+      });
 
-    const { request } = await client.simulateContract({
-      address: TOKEN_CONTRACT_ADDRESS,
-      abi: tokenABI,
-      functionName: 'claimTokens',
-      args: [userAddress, tokensToClaimgame],
-      account: walletClient.account
-    });
+      const account = privateKeyToAccount(privateKey as `0x${string}`);
+      const walletClient = createWalletClient({
+        account,
+        chain: defaultChain,
+        transport: http(rpcUrl)
+      });
 
-    const txHash = await walletClient.writeContract(request);
-    */
+      // Convert token amount to wei (18 decimals)
+      const tokenAmountWei = parseTokenAmount(tokensToClaimgame);
 
-    const response: ClaimResponse = {
-      success: true,
-      transactionHash: mockTxHash,
-      estimatedGas: '0.001' // ETH
-    };
+      console.log(`💰 Distributing ${tokensToClaimgame} LEXIPOP tokens (${tokenAmountWei} wei) to ${userAddress}`);
 
-    console.log(`✅ Token claim successful:`, response);
+      // Check MoneyTree contract balance first
+      const availableBalance = await publicClient.readContract({
+        address: contracts.moneyTree,
+        abi: moneyTreeABI,
+        functionName: 'getAvailableBalance',
+        args: [contracts.lexipopToken]
+      });
 
-    return NextResponse.json(response, { status: 200 });
+      if (availableBalance < tokenAmountWei) {
+        console.warn(`⚠️ Insufficient balance in MoneyTree. Available: ${availableBalance}, Requested: ${tokenAmountWei}`);
+        return NextResponse.json(
+          { success: false, error: 'Insufficient tokens available for distribution' },
+          { status: 503 }
+        );
+      }
+
+      // Simulate the contract call first
+      const { request } = await publicClient.simulateContract({
+        account,
+        address: contracts.moneyTree,
+        abi: moneyTreeABI,
+        functionName: 'distributeTokens',
+        args: [contracts.lexipopToken, userAddress, tokenAmountWei]
+      });
+
+      // Execute the transaction
+      const txHash = await walletClient.writeContract(request);
+
+      console.log(`✅ Transaction submitted: ${txHash}`);
+
+      // Wait for transaction confirmation
+      const receipt = await publicClient.waitForTransactionReceipt({
+        hash: txHash,
+        timeout: 60000 // 60 seconds
+      });
+
+      if (receipt.status === 'success') {
+        // Update rate limiting
+        recentClaims.set(rateLimitKey, Date.now());
+
+        const response: ClaimResponse = {
+          success: true,
+          transactionHash: txHash,
+          estimatedGas: receipt.gasUsed.toString()
+        };
+
+        console.log(`🎉 Token distribution successful:`, response);
+        return NextResponse.json(response, { status: 200 });
+
+      } else {
+        throw new Error('Transaction failed');
+      }
+
+    } catch (contractError: any) {
+      console.error('❌ Contract interaction failed:', contractError);
+
+      // Handle specific error cases
+      if (contractError.message?.includes('insufficient funds')) {
+        return NextResponse.json(
+          { success: false, error: 'Insufficient gas funds for transaction' },
+          { status: 503 }
+        );
+      }
+
+      if (contractError.message?.includes('execution reverted')) {
+        return NextResponse.json(
+          { success: false, error: 'Contract execution failed - please try again later' },
+          { status: 503 }
+        );
+      }
+
+      return NextResponse.json(
+        { success: false, error: 'Token distribution failed - please try again' },
+        { status: 503 }
+      );
+    }
 
   } catch (error) {
     console.error('❌ Token claim error:', error);
@@ -144,14 +236,27 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET() {
+  const chainId = defaultChain.id;
+  const contracts = tokenContracts[chainId as keyof typeof tokenContracts];
+
   return NextResponse.json(
     {
-      message: 'Token claim endpoint',
+      message: 'LEXIPOP Token Claim Endpoint',
       methods: ['POST'],
+      chain: defaultChain.name,
+      contracts: {
+        lexipopToken: contracts?.lexipopToken,
+        moneyTree: contracts?.moneyTree
+      },
       example: {
         gameId: 'game_123456789',
         userAddress: '0x1234567890123456789012345678901234567890',
         tokensToClaimgame: 100
+      },
+      limits: {
+        minTokens: 1,
+        maxTokens: 10000,
+        rateLimitMinutes: 5
       }
     },
     { status: 200 }
