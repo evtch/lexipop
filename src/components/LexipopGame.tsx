@@ -9,9 +9,11 @@ import AnswerOption from './AnswerOption';
 import { useNeynar } from '@/app/miniapp/components/NeynarProvider';
 import ScoreShare from '@/app/miniapp/components/ScoreShare';
 import SpinningWheel from './SpinningWheel';
+import TokenClaimModal, { useTokenClaimModal } from '@/app/miniapp/components/TokenClaimModal';
 
 export default function LexipopGame() {
   const { user, isLoading, error, signIn, signOut, isAuthenticated } = useNeynar();
+  const tokenClaimModal = useTokenClaimModal();
 
   const [gameState, setGameState] = useState<GameState>({
     currentWord: null,
@@ -63,6 +65,15 @@ export default function LexipopGame() {
   const handleRewardClaimed = (tokens: number) => {
     setTotalTokensEarned(prev => prev + tokens);
     console.log(`✅ Claimed ${tokens} $LEXIPOP tokens! Total: ${totalTokensEarned + tokens}`);
+
+    // Open token claim modal with game data
+    const accuracy = Math.round((gameState.score / gameState.totalQuestions) * 100);
+    tokenClaimModal.openModal({
+      tokensEarned: tokens,
+      gameScore: gameState.score,
+      accuracy,
+      gameId
+    });
   };
 
   const shouldShowSpinningWheel = () => {
@@ -374,6 +385,18 @@ export default function LexipopGame() {
         gameStreak={gameState.streak}
         totalQuestions={gameState.totalQuestions}
       />
+
+      {/* Token Claim Modal */}
+      {tokenClaimModal.gameData && (
+        <TokenClaimModal
+          isOpen={tokenClaimModal.isOpen}
+          onClose={tokenClaimModal.closeModal}
+          tokensEarned={tokenClaimModal.gameData.tokensEarned}
+          gameScore={tokenClaimModal.gameData.gameScore}
+          accuracy={tokenClaimModal.gameData.accuracy}
+          gameId={tokenClaimModal.gameData.gameId}
+        />
+      )}
     </div>
   );
 }
