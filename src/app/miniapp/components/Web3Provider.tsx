@@ -12,6 +12,7 @@ import { WagmiProvider } from 'wagmi';
 import { RainbowKitProvider, darkTheme } from '@rainbow-me/rainbowkit';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import wagmiConfig from '@/lib/web3/config';
+import miniappWagmiConfig from '@/lib/web3/miniapp-config';
 
 // Import RainbowKit CSS
 import '@rainbow-me/rainbowkit/styles.css';
@@ -29,6 +30,7 @@ const queryClient = new QueryClient({
 
 interface Web3ProviderProps {
   children: ReactNode;
+  useMiniappConfig?: boolean; // Flag to use Farcaster miniapp config
 }
 
 // Custom RainbowKit theme to match Lexipop brand
@@ -39,9 +41,12 @@ const lexipopTheme = darkTheme({
   fontStack: 'system',
 });
 
-export default function Web3Provider({ children }: Web3ProviderProps) {
+export default function Web3Provider({ children, useMiniappConfig = false }: Web3ProviderProps) {
+  // Use miniapp config when in Farcaster context, otherwise use standard config
+  const selectedConfig = useMiniappConfig ? miniappWagmiConfig : wagmiConfig;
+
   return (
-    <WagmiProvider config={wagmiConfig}>
+    <WagmiProvider config={selectedConfig}>
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider
           theme={lexipopTheme}

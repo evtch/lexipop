@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { useFarcasterAccount, type FarcasterAccountInfo } from '@/lib/web3/hooks/useFarcasterAccount';
 
 // 🔒 SECURITY NOTE: This component only handles CLIENT-SIDE Neynar interactions
 // Server-side API calls should use the serverEnv configuration
@@ -35,9 +36,20 @@ export default function NeynarProvider({ children }: NeynarProviderProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Use the Farcaster account hook to auto-detect FID
+  const farcasterAccount = useFarcasterAccount();
+
   useEffect(() => {
     checkAuthStatus();
   }, []);
+
+  // Auto-authenticate when Farcaster account is detected
+  useEffect(() => {
+    if (farcasterAccount.fid && !user) {
+      console.log('🎯 Auto-authenticating with detected FID:', farcasterAccount.fid);
+      loadUserFromFarcasterAccount(farcasterAccount);
+    }
+  }, [farcasterAccount.fid, user]);
 
   const checkAuthStatus = async () => {
     try {
@@ -73,6 +85,36 @@ export default function NeynarProvider({ children }: NeynarProviderProps) {
       console.error('❌ Failed to load user:', error);
       setError('Failed to load user profile');
       throw error;
+    }
+  };
+
+  const loadUserFromFarcasterAccount = async (farcasterAccount: any) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      // If we have FID from the Farcaster account, use it directly
+      if (farcasterAccount.fid) {
+        // Create user object from Farcaster account data
+        const user: FarcasterUser = {
+          fid: farcasterAccount.fid,
+          username: farcasterAccount.username || '',
+          displayName: farcasterAccount.displayName || '',
+          pfpUrl: farcasterAccount.pfpUrl,
+          followerCount: 0, // Will be fetched later if needed
+          followingCount: 0, // Will be fetched later if needed
+        };
+
+        setUser(user);
+        localStorage.setItem('lexipop_fid', farcasterAccount.fid.toString());
+        console.log('✅ Auto-authenticated with Farcaster account:', user.username);
+      }
+
+      setIsLoading(false);
+    } catch (error) {
+      console.error('❌ Failed to load Farcaster account:', error);
+      setError('Failed to authenticate with Farcaster account');
+      setIsLoading(false);
     }
   };
 
