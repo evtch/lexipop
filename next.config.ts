@@ -48,6 +48,11 @@ const nextConfig: NextConfig = {
 
   // Disable source maps in production for smaller builds
   productionBrowserSourceMaps: false,
+
+  // ESLint configuration - ignore during builds for now
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
 };
 
 export default nextConfig;

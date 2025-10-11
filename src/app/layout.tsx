@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Web3Provider from "./miniapp/components/Web3Provider";
+import SIWFProvider from "./miniapp/components/SIWFProvider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -47,9 +48,11 @@ export default function RootLayout({
       <body
         className={`${inter.variable} font-sans antialiased`}
       >
-        <Web3Provider>
-          {children}
-        </Web3Provider>
+        <SIWFProvider>
+          <Web3Provider>
+            {children}
+          </Web3Provider>
+        </SIWFProvider>
       </body>
     </html>
   );

@@ -7,7 +7,7 @@
 
 import { useEffect, useState } from 'react';
 import { useAccount, useConfig } from 'wagmi';
-// import { sdk } from '@farcaster/miniapp-sdk';
+import { sdk } from '@farcaster/miniapp-sdk';
 
 export interface FarcasterAccountInfo {
   fid?: number;
@@ -40,36 +40,29 @@ export function useFarcasterAccount(): FarcasterAccountInfo {
         }
 
         // Try to get Farcaster context from the miniapp SDK
-        // const context = await sdk.context;
+        const context = await sdk.context;
 
-        // if (context?.user) {
-        //   const { fid, username, displayName, pfpUrl } = context.user;
+        if (context?.user) {
+          const { fid, username, displayName, pfpUrl } = context.user;
 
-        //   setFarcasterInfo({
-        //     fid,
-        //     username,
-        //     displayName,
-        //     pfpUrl,
-        //     isConnected: true,
-        //     isLoading: false,
-        //   });
+          setFarcasterInfo({
+            fid,
+            username,
+            displayName,
+            pfpUrl,
+            isConnected: true,
+            isLoading: false,
+          });
 
-        //   console.log('🎯 Farcaster account detected:', { fid, username, displayName });
-        // } else {
-        //   // Fallback: Still connected to wallet but no Farcaster context (SDK commented out)
-        //   setFarcasterInfo({
-        //     isConnected: true,
-        //     isLoading: false,
-        //     error: 'Wallet connected but no Farcaster context available',
-        //   });
-        // }
-
-        // Temporary fallback since SDK is commented out
-        setFarcasterInfo({
-          isConnected: true,
-          isLoading: false,
-          error: 'Farcaster miniapp SDK not available',
-        });
+          console.log('🎯 Farcaster account detected:', { fid, username, displayName });
+        } else {
+          // Fallback: Still connected to wallet but no Farcaster context
+          setFarcasterInfo({
+            isConnected: true,
+            isLoading: false,
+            error: 'Wallet connected but no Farcaster context available',
+          });
+        }
       } catch (error) {
         console.error('❌ Failed to detect Farcaster account:', error);
         setFarcasterInfo({

@@ -6,7 +6,7 @@ import { GameState, VocabularyWord } from '@/types/game';
 import { getUniqueWords, shuffleArray } from '@/data/vocabulary';
 import { useNeynar } from './NeynarProvider';
 import { useProfile } from '@farcaster/auth-kit';
-// import { sdk } from '@farcaster/miniapp-sdk';
+import { sdk } from '@farcaster/miniapp-sdk';
 import SIWFAuth from './SIWFAuth';
 
 // Frame-optimized components
@@ -40,8 +40,8 @@ export default function LexipopMiniApp() {
   useEffect(() => {
     const initializeMiniApp = async () => {
       try {
-        // await sdk.actions.ready();
-        console.log('🎯 Farcaster miniapp ready (SDK commented out)');
+        await sdk.actions.ready();
+        console.log('🎯 Farcaster miniapp ready');
       } catch (error) {
         console.error('❌ Failed to initialize Farcaster miniapp:', error);
       }
@@ -201,11 +201,16 @@ export default function LexipopMiniApp() {
             ) : (
               <div className="bg-white/60 rounded-lg p-4 mb-4 border border-blue-200">
                 <p className="text-sm mb-3 text-gray-700">Sign in to track your scores!</p>
+                <SIWFAuth
+                  onAuthSuccess={(profile) => {
+                    console.log('🔐 SIWF auth success:', profile);
+                  }}
+                />
                 <button
                   onClick={() => signIn()}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm transition-colors"
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm transition-colors mt-2"
                 >
-                  Connect Farcaster
+                  Connect via Neynar (Fallback)
                 </button>
               </div>
             )}

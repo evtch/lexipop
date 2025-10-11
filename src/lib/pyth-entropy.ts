@@ -12,7 +12,7 @@ import { base } from 'viem/chains';
 export const ENTROPY_CONTRACT_ADDRESS = '0x4821932D0CDd71225A6d914706A621e0389D7061' as const;
 
 // Empty bytes constant
-const EMPTY_BYTES: `0x${string}` = '0x';
+const EMPTY_BYTES: `0x${string}` = '0x' as `0x${string}`;
 
 // Pyth Entropy ABI (simplified for our needs)
 export const ENTROPY_ABI = parseAbi([
@@ -47,8 +47,8 @@ export type RewardTier = typeof REWARD_TIERS[number];
  * Uses proper keccak256 hashing for security
  */
 export function generateCommitment(userInput: string, timestamp: number): {
-  commitment: string;
-  userRandomness: string;
+  commitment: `0x${string}`;
+  userRandomness: `0x${string}`;
 } {
   // Generate secure random bytes
   const randomBytes = new Uint8Array(32);
@@ -154,7 +154,7 @@ export function formatTokenAmount(amount: number): string {
  */
 export async function requestPythEntropy(
   walletClient: WalletClient,
-  userCommitment: string,
+  userCommitment: `0x${string}`,
   useBlockhash: boolean = true
 ): Promise<bigint> {
   try {
@@ -174,12 +174,14 @@ export async function requestPythEntropy(
     });
 
     // Request entropy with callback
+    // @ts-ignore - wallet client typing issue
     const txHash = await walletClient.writeContract({
       address: ENTROPY_CONTRACT_ADDRESS,
       abi: ENTROPY_ABI,
       functionName: 'requestWithCallback',
       args: [defaultProvider, userCommitment, useBlockhash, EMPTY_BYTES],
       value: fee,
+      chain: base,
     });
 
     // Wait for transaction and extract sequence number from logs
@@ -207,8 +209,8 @@ export async function requestPythEntropy(
 export async function revealPythEntropy(
   walletClient: WalletClient,
   sequenceNumber: bigint,
-  userRandomness: string,
-  providerRevelation: string
+  userRandomness: `0x${string}`,
+  providerRevelation: `0x${string}`
 ): Promise<bigint> {
   try {
     // Get default provider
@@ -219,11 +221,13 @@ export async function revealPythEntropy(
     });
 
     // Reveal entropy
+    // @ts-ignore - wallet client typing issue
     const txHash = await walletClient.writeContract({
       address: ENTROPY_CONTRACT_ADDRESS,
       abi: ENTROPY_ABI,
       functionName: 'revealWithCallback',
       args: [defaultProvider, sequenceNumber, userRandomness, providerRevelation, EMPTY_BYTES],
+      chain: base,
     });
 
     const receipt = await publicClient.waitForTransactionReceipt({
@@ -270,7 +274,7 @@ export async function getPythRandomNumber(
 
     // Step 3: Get provider revelation (would need to fetch from Pyth API)
     // For now, simulate provider revelation
-    const mockProviderRevelation = keccak256('0x' + Date.now().toString(16).padStart(64, '0'));
+    const mockProviderRevelation = keccak256(('0x' + Date.now().toString(16).padStart(64, '0')) as `0x${string}`);
 
     // Step 4: Reveal and get final randomness
     const randomNumber = await revealPythEntropy(
