@@ -5,11 +5,14 @@
  * Using Pyth Network's entropy service on Base
  */
 
-import { createPublicClient, createWalletClient, http, parseAbi } from 'viem';
+import { createPublicClient, createWalletClient, http, parseAbi, keccak256, encodePacked, WalletClient } from 'viem';
 import { base } from 'viem/chains';
 
 // Pyth Entropy contract address on Base
 export const ENTROPY_CONTRACT_ADDRESS = '0x4821932D0CDd71225A6d914706A621e0389D7061' as const;
+
+// Empty bytes constant
+const EMPTY_BYTES = '0x' as `0x${string}`;
 
 // Pyth Entropy ABI (simplified for our needs)
 export const ENTROPY_ABI = parseAbi([
@@ -27,48 +30,44 @@ export const publicClient = createPublicClient({
   transport: http(BASE_RPC_URL),
 });
 
-// Token reward tiers for spinning wheel
+// Token reward tiers for spinning wheel (100-10,000 $LEXIPOP)
 export const REWARD_TIERS = [
-  { min: 0, max: 10, tokens: 1, label: '1 $LEXIPOP', color: '#3B82F6', probability: 0.4 },
-  { min: 11, max: 25, tokens: 5, label: '5 $LEXIPOP', color: '#10B981', probability: 0.3 },
-  { min: 26, max: 40, tokens: 10, label: '10 $LEXIPOP', color: '#F59E0B', probability: 0.2 },
-  { min: 41, max: 55, tokens: 25, label: '25 $LEXIPOP', color: '#EF4444', probability: 0.08 },
-  { min: 56, max: 70, tokens: 50, label: '50 $LEXIPOP', color: '#8B5CF6', probability: 0.015 },
-  { min: 71, max: 99, tokens: 100, label: '100 $LEXIPOP', color: '#F97316', probability: 0.005 },
+  { min: 0, max: 40, tokens: 100, label: '100 $LEXIPOP', color: '#3B82F6', probability: 0.41 },
+  { min: 41, max: 70, tokens: 250, label: '250 $LEXIPOP', color: '#10B981', probability: 0.3 },
+  { min: 71, max: 85, tokens: 500, label: '500 $LEXIPOP', color: '#F59E0B', probability: 0.15 },
+  { min: 86, max: 94, tokens: 1000, label: '1,000 $LEXIPOP', color: '#EF4444', probability: 0.09 },
+  { min: 95, max: 98, tokens: 2500, label: '2,500 $LEXIPOP', color: '#8B5CF6', probability: 0.04 },
+  { min: 99, max: 99, tokens: 10000, label: '10,000 $LEXIPOP', color: '#F97316', probability: 0.01 },
 ] as const;
 
 export type RewardTier = typeof REWARD_TIERS[number];
 
 /**
- * Generate a commitment for Pyth Entropy
- * Best practice: combine user input with timestamp and random data
+ * Generate a cryptographically secure commitment for Pyth Entropy
+ * Uses proper keccak256 hashing for security
  */
 export function generateCommitment(userInput: string, timestamp: number): {
   commitment: string;
   userRandomness: string;
 } {
-  // Create user randomness from input + timestamp + crypto random
+  // Generate secure random bytes
   const randomBytes = new Uint8Array(32);
   crypto.getRandomValues(randomBytes);
 
-  const combined = `${userInput}-${timestamp}-${Array.from(randomBytes).join('')}`;
-  const encoder = new TextEncoder();
-  const data = encoder.encode(combined);
+  // Create user randomness by combining inputs and hashing
+  const combinedData = encodePacked(
+    ['string', 'uint256', 'bytes32'],
+    [userInput, BigInt(timestamp), `0x${Array.from(randomBytes).map(b => b.toString(16).padStart(2, '0')).join('')}`]
+  );
 
-  // Simple hash for user randomness (in production, use proper hashing)
-  const userRandomness = Array.from(data.slice(0, 32))
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
+  const userRandomness = keccak256(combinedData);
 
   // Generate commitment (hash of user randomness)
-  const commitmentData = encoder.encode(userRandomness);
-  const commitment = Array.from(commitmentData.slice(0, 32))
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
+  const commitment = keccak256(userRandomness);
 
   return {
-    commitment: `0x${commitment}`,
-    userRandomness: `0x${userRandomness}`,
+    commitment,
+    userRandomness,
   };
 }
 
@@ -147,6 +146,149 @@ export async function estimateEntropyFee(): Promise<bigint> {
  */
 export function formatTokenAmount(amount: number): string {
   return `${amount.toLocaleString()} $LEXIPOP`;
+}
+
+/**
+ * Request entropy from Pyth Network
+ * Returns the sequence number for the request
+ */
+export async function requestPythEntropy(
+  walletClient: WalletClient,
+  userCommitment: string,
+  useBlockhash: boolean = true
+): Promise<bigint> {
+  try {
+    // Get default provider
+    const defaultProvider = await publicClient.readContract({
+      address: ENTROPY_CONTRACT_ADDRESS,
+      abi: ENTROPY_ABI,
+      functionName: 'getDefaultProvider',
+    });
+
+    // Get required fee
+    const fee = await publicClient.readContract({
+      address: ENTROPY_CONTRACT_ADDRESS,
+      abi: ENTROPY_ABI,
+      functionName: 'getFee',
+      args: [defaultProvider],
+    });
+
+    // Request entropy with callback
+    const txHash = await walletClient.writeContract({
+      address: ENTROPY_CONTRACT_ADDRESS,
+      abi: ENTROPY_ABI,
+      functionName: 'requestWithCallback',
+      args: [defaultProvider, userCommitment, useBlockhash, EMPTY_BYTES],
+      value: fee,
+    });
+
+    // Wait for transaction and extract sequence number from logs
+    const receipt = await publicClient.waitForTransactionReceipt({
+      hash: txHash,
+      timeout: 60000
+    });
+
+    // Parse sequence number from transaction logs
+    // This would need proper event decoding in production
+    const sequenceNumber = BigInt(Date.now()); // Placeholder - extract from actual logs
+
+    console.log(`🎲 Entropy requested. Sequence: ${sequenceNumber}, TxHash: ${txHash}`);
+    return sequenceNumber;
+
+  } catch (error) {
+    console.error('❌ Failed to request Pyth entropy:', error);
+    throw error;
+  }
+}
+
+/**
+ * Reveal entropy and get random number
+ */
+export async function revealPythEntropy(
+  walletClient: WalletClient,
+  sequenceNumber: bigint,
+  userRandomness: string,
+  providerRevelation: string
+): Promise<bigint> {
+  try {
+    // Get default provider
+    const defaultProvider = await publicClient.readContract({
+      address: ENTROPY_CONTRACT_ADDRESS,
+      abi: ENTROPY_ABI,
+      functionName: 'getDefaultProvider',
+    });
+
+    // Reveal entropy
+    const txHash = await walletClient.writeContract({
+      address: ENTROPY_CONTRACT_ADDRESS,
+      abi: ENTROPY_ABI,
+      functionName: 'revealWithCallback',
+      args: [defaultProvider, sequenceNumber, userRandomness, providerRevelation, EMPTY_BYTES],
+    });
+
+    const receipt = await publicClient.waitForTransactionReceipt({
+      hash: txHash,
+      timeout: 60000
+    });
+
+    // In production, extract random number from callback or logs
+    // For now, combine userRandomness and providerRevelation
+    const combinedRandomness = keccak256(
+      encodePacked(['bytes32', 'bytes32'], [userRandomness, providerRevelation])
+    );
+
+    const randomNumber = BigInt(combinedRandomness);
+    console.log(`🎲 Entropy revealed. Random: ${randomNumber}, TxHash: ${txHash}`);
+
+    return randomNumber;
+
+  } catch (error) {
+    console.error('❌ Failed to reveal Pyth entropy:', error);
+    throw error;
+  }
+}
+
+/**
+ * Complete entropy flow: request → wait → reveal → get random number
+ */
+export async function getPythRandomNumber(
+  walletClient: WalletClient,
+  userInput: string
+): Promise<{ randomNumber: bigint; rewardTier: RewardTier }> {
+  try {
+    const timestamp = Date.now();
+    const { commitment, userRandomness } = generateCommitment(userInput, timestamp);
+
+    console.log('🎲 Starting Pyth entropy flow...');
+
+    // Step 1: Request entropy
+    const sequenceNumber = await requestPythEntropy(walletClient, commitment);
+
+    // Step 2: Wait for provider to commit (usually 1-2 blocks)
+    console.log('⏳ Waiting for provider commitment...');
+    await new Promise(resolve => setTimeout(resolve, 10000)); // Wait 10 seconds
+
+    // Step 3: Get provider revelation (would need to fetch from Pyth API)
+    // For now, simulate provider revelation
+    const mockProviderRevelation = keccak256('0x' + Date.now().toString(16).padStart(64, '0'));
+
+    // Step 4: Reveal and get final randomness
+    const randomNumber = await revealPythEntropy(
+      walletClient,
+      sequenceNumber,
+      userRandomness,
+      mockProviderRevelation
+    );
+
+    // Step 5: Convert to reward tier
+    const rewardTier = getRewardFromRandomness(randomNumber);
+
+    return { randomNumber, rewardTier };
+
+  } catch (error) {
+    console.error('❌ Pyth entropy flow failed:', error);
+    throw error;
+  }
 }
 
 /**

@@ -13,11 +13,12 @@
     "db:seed": "tsx src/scripts/seed-database.ts"
   },
   "dependencies": {
-    "@coinbase/onchainkit": "^1.1.1",
+    "@coinbase/onchainkit": "^0.23.0",
+    "@farcaster/auth-kit": "^0.8.1",
     "@libsql/client": "^0.15.15",
     "@neynar/nodejs-sdk": "^3.34.0",
     "@pythnetwork/entropy-sdk-solidity": "^2.0.0",
-    "@rainbow-me/rainbowkit": "^2.2.8",
+    "@rainbow-me/rainbowkit": "^2.0.8",
     "@tanstack/react-query": "^5.90.2",
     "clsx": "^2.1.1",
     "drizzle-kit": "^0.31.5",

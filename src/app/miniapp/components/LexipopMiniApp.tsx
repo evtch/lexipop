@@ -5,15 +5,19 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { GameState, VocabularyWord } from '@/types/game';
 import { getUniqueWords, shuffleArray } from '@/data/vocabulary';
 import { useNeynar } from './NeynarProvider';
-import { sdk } from '@farcaster/miniapp-sdk';
+import { useProfile } from '@farcaster/auth-kit';
+// import { sdk } from '@farcaster/miniapp-sdk';
+import SIWFAuth from './SIWFAuth';
 
 // Frame-optimized components
 import FrameWordBubble from './FrameWordBubble';
 import FrameAnswerOption from './FrameAnswerOption';
 import ScoreShare from './ScoreShare';
+import MiniAppButton from './MiniAppButton';
 
 export default function LexipopMiniApp() {
   const { user, isLoading, error, signIn, signOut, isAuthenticated } = useNeynar();
+  const { isAuthenticated: isSIWFAuth, profile: siwfProfile } = useProfile();
 
   const [gameState, setGameState] = useState<GameState>({
     currentWord: null,
@@ -36,8 +40,8 @@ export default function LexipopMiniApp() {
   useEffect(() => {
     const initializeMiniApp = async () => {
       try {
-        await sdk.actions.ready();
-        console.log('🎯 Farcaster miniapp ready');
+        // await sdk.actions.ready();
+        console.log('🎯 Farcaster miniapp ready (SDK commented out)');
       } catch (error) {
         console.error('❌ Failed to initialize Farcaster miniapp:', error);
       }
@@ -208,23 +212,23 @@ export default function LexipopMiniApp() {
           </div>
 
           <div className="space-y-4">
-            <motion.button
+            <MiniAppButton
               onClick={startNewGame}
-              className="game-button bg-white text-blue-600 font-semibold py-3 px-8 rounded-full text-lg shadow-lg hover:shadow-xl transition-all"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              variant="primary"
+              size="lg"
+              icon="🎮"
             >
               Start Playing
-            </motion.button>
+            </MiniAppButton>
 
-            <motion.a
+            <MiniAppButton
               href="/miniapp/leaderboard"
-              className="block text-center text-blue-600 hover:text-blue-700 transition-colors font-medium"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              variant="secondary"
+              size="lg"
+              icon="🏆"
             >
-              🏆 View Leaderboard
-            </motion.a>
+              View Leaderboard
+            </MiniAppButton>
           </div>
         </motion.div>
       </div>
@@ -250,32 +254,14 @@ export default function LexipopMiniApp() {
             </div>
           )}
         </div>
-        <div className="flex items-center gap-3">
-          <div className="flex gap-2">
-            <a
-              href="/miniapp/leaderboard"
-              className="text-blue-600 hover:text-blue-700 transition-colors text-sm font-medium"
-            >
-              🏆
-            </a>
-            {gameState.totalQuestions > 0 && (
-              <button
-                onClick={() => setShowShareModal(true)}
-                className="text-blue-600 hover:text-blue-700 transition-colors text-sm font-medium"
-              >
-                📤
-              </button>
-            )}
+        <div className="flex gap-4 text-sm">
+          <div className="text-center">
+            <div className="font-medium">Score</div>
+            <div className="text-lg font-bold">{gameState.score}</div>
           </div>
-          <div className="flex gap-4 text-sm">
-            <div className="text-center">
-              <div className="font-medium">Score</div>
-              <div className="text-lg font-bold">{gameState.score}</div>
-            </div>
-            <div className="text-center">
-              <div className="font-medium">Streak</div>
-              <div className="text-lg font-bold">{gameState.streak}</div>
-            </div>
+          <div className="text-center">
+            <div className="font-medium">Streak</div>
+            <div className="text-lg font-bold">{gameState.streak}</div>
           </div>
         </div>
       </div>
@@ -323,6 +309,51 @@ export default function LexipopMiniApp() {
             </motion.div>
           );
         })}
+      </div>
+
+      {/* Bottom Navigation */}
+      <div className="flex-shrink-0 mt-4 space-y-3">
+        <MiniAppButton
+          href="/miniapp/leaderboard"
+          variant="secondary"
+          size="md"
+          icon="🏆"
+        >
+          View Leaderboard
+        </MiniAppButton>
+
+        {gameState.totalQuestions > 0 && (
+          <MiniAppButton
+            onClick={() => setShowShareModal(true)}
+            variant="primary"
+            size="md"
+            icon="📤"
+          >
+            Share Score
+          </MiniAppButton>
+        )}
+
+        <MiniAppButton
+          onClick={() => {
+            setGameState({
+              currentWord: null,
+              gameQuestions: [],
+              currentQuestionIndex: 0,
+              score: 0,
+              streak: 0,
+              totalQuestions: 0,
+              isGameActive: false,
+              selectedAnswer: null,
+              showResult: false,
+              isCorrect: null
+            });
+          }}
+          variant="warning"
+          size="md"
+          icon="🏠"
+        >
+          Back to Home
+        </MiniAppButton>
       </div>
 
       {/* Score Share Modal */}

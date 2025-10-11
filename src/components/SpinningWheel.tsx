@@ -2,7 +2,8 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { REWARD_TIERS, RewardTier, generateMockRandomness, calculateBonusMultiplier } from '@/lib/pyth-entropy';
+import { REWARD_TIERS, RewardTier, generateMockRandomness, calculateBonusMultiplier, getPythRandomNumber } from '@/lib/pyth-entropy';
+import { useWalletClient } from 'wagmi';
 
 interface SpinningWheelProps {
   isVisible: boolean;
@@ -26,7 +27,9 @@ export default function SpinningWheel({
   const [finalReward, setFinalReward] = useState<RewardTier | null>(null);
   const [finalTokens, setFinalTokens] = useState(0);
   const [bonusMultiplier, setBonusMultiplier] = useState(1);
+  const [usePythEntropy, setUsePythEntropy] = useState(false);
   const wheelRef = useRef<HTMLDivElement>(null);
+  const { data: walletClient } = useWalletClient();
 
   // Calculate segment angle (360 degrees / 6 segments)
   const segmentAngle = 360 / REWARD_TIERS.length;
@@ -48,13 +51,31 @@ export default function SpinningWheel({
     setIsSpinning(true);
 
     try {
-      // For now, use mock randomness (replace with Pyth Entropy in production)
-      const randomValue = generateMockRandomness();
+      let reward: RewardTier;
 
-      // Determine reward based on random value
-      const reward = REWARD_TIERS.find(tier =>
-        randomValue >= tier.min && randomValue <= tier.max
-      ) || REWARD_TIERS[0];
+      // Try to use Pyth Entropy if wallet is connected and user opts in
+      if (usePythEntropy && walletClient) {
+        try {
+          console.log('🎲 Using Pyth Entropy for provably fair randomness...');
+          const userInput = `game-${gameScore}-${gameStreak}-${Date.now()}`;
+          const { rewardTier } = await getPythRandomNumber(walletClient, userInput);
+          reward = rewardTier;
+          console.log('✅ Pyth Entropy successful:', reward);
+        } catch (entropyError) {
+          console.warn('⚠️ Pyth Entropy failed, falling back to mock randomness:', entropyError);
+          // Fallback to mock randomness
+          const randomValue = generateMockRandomness();
+          reward = REWARD_TIERS.find(tier =>
+            randomValue >= tier.min && randomValue <= tier.max
+          ) || REWARD_TIERS[0];
+        }
+      } else {
+        // Use mock randomness for development/testing
+        const randomValue = generateMockRandomness();
+        reward = REWARD_TIERS.find(tier =>
+          randomValue >= tier.min && randomValue <= tier.max
+        ) || REWARD_TIERS[0];
+      }
 
       // Calculate final angle to land on the reward segment
       const rewardIndex = REWARD_TIERS.indexOf(reward);
@@ -122,7 +143,7 @@ export default function SpinningWheel({
 
             {/* Performance Bonus Info */}
             {bonusMultiplier > 1 && (
-              <div className="bg-blue-50 rounded-lg p-3 mb-6">
+              <div className="bg-blue-50 rounded-lg p-3 mb-4">
                 <p className="text-sm text-blue-800 font-medium">
                   🎉 Performance Bonus: {bonusMultiplier}x multiplier!
                 </p>
@@ -130,6 +151,41 @@ export default function SpinningWheel({
                   {gameScore === totalQuestions && 'Perfect score! '}
                   {gameStreak >= 5 && `${gameStreak} streak bonus! `}
                 </p>
+              </div>
+            )}
+
+            {/* Pyth Entropy Option */}
+            {walletClient && (
+              <div className="bg-gray-50 rounded-lg p-3 mb-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-800">
+                      🎲 Provably Fair Randomness
+                    </p>
+                    <p className="text-xs text-gray-600">
+                      Use Pyth Entropy for blockchain-verified fairness
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setUsePythEntropy(!usePythEntropy)}
+                    className={`
+                      relative inline-flex h-6 w-11 items-center rounded-full transition-colors
+                      ${usePythEntropy ? 'bg-blue-600' : 'bg-gray-300'}
+                    `}
+                  >
+                    <span
+                      className={`
+                        inline-block h-4 w-4 transform rounded-full bg-white transition-transform
+                        ${usePythEntropy ? 'translate-x-6' : 'translate-x-1'}
+                      `}
+                    />
+                  </button>
+                </div>
+                {usePythEntropy && (
+                  <p className="text-xs text-blue-600 mt-2">
+                    ⚠️ Requires gas fee (~$0.01) for entropy request
+                  </p>
+                )}
               </div>
             )}
 
@@ -225,6 +281,11 @@ export default function SpinningWheel({
               {bonusMultiplier > 1 && (
                 <div className="text-sm text-green-600">
                   Base: {finalReward?.tokens} × {bonusMultiplier}x bonus
+                </div>
+              )}
+              {usePythEntropy && (
+                <div className="text-xs text-blue-600 mt-2">
+                  🎲 Verified with Pyth Entropy
                 </div>
               )}
             </div>

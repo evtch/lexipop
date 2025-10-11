@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useFarcasterAccount, type FarcasterAccountInfo } from '@/lib/web3/hooks/useFarcasterAccount';
+import { useProfile } from '@farcaster/auth-kit';
 
 // 🔒 SECURITY NOTE: This component only handles CLIENT-SIDE Neynar interactions
 // Server-side API calls should use the serverEnv configuration
@@ -36,20 +37,24 @@ export default function NeynarProvider({ children }: NeynarProviderProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Use the Farcaster account hook to auto-detect FID
+  // Use SIWF profile from auth-kit (primary) and fallback to wagmi detection
+  const { isAuthenticated: isSIWFAuth, profile: siwfProfile } = useProfile();
   const farcasterAccount = useFarcasterAccount();
 
   useEffect(() => {
     checkAuthStatus();
   }, []);
 
-  // Auto-authenticate when Farcaster account is detected
+  // Auto-authenticate with SIWF profile (priority) or Farcaster account
   useEffect(() => {
-    if (farcasterAccount.fid && !user) {
-      console.log('🎯 Auto-authenticating with detected FID:', farcasterAccount.fid);
+    if (isSIWFAuth && siwfProfile && !user) {
+      console.log('🔐 Auto-authenticating with SIWF profile:', siwfProfile);
+      loadUserFromSIWFProfile(siwfProfile);
+    } else if (farcasterAccount.fid && !user && !isSIWFAuth) {
+      console.log('🎯 Fallback: Auto-authenticating with detected FID:', farcasterAccount.fid);
       loadUserFromFarcasterAccount(farcasterAccount);
     }
-  }, [farcasterAccount.fid, user]);
+  }, [isSIWFAuth, siwfProfile, farcasterAccount.fid, user]);
 
   const checkAuthStatus = async () => {
     try {
@@ -85,6 +90,33 @@ export default function NeynarProvider({ children }: NeynarProviderProps) {
       console.error('❌ Failed to load user:', error);
       setError('Failed to load user profile');
       throw error;
+    }
+  };
+
+  const loadUserFromSIWFProfile = async (siwfProfile: any) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      // Create user object from SIWF profile data
+      const user: FarcasterUser = {
+        fid: siwfProfile.fid,
+        username: siwfProfile.username || '',
+        displayName: siwfProfile.displayName || siwfProfile.username || '',
+        pfpUrl: siwfProfile.pfpUrl,
+        followerCount: 0, // Will be fetched later if needed
+        followingCount: 0, // Will be fetched later if needed
+      };
+
+      setUser(user);
+      localStorage.setItem('lexipop_fid', siwfProfile.fid.toString());
+      console.log('✅ SIWF authentication successful:', user.username);
+
+      setIsLoading(false);
+    } catch (error) {
+      console.error('❌ Failed to load SIWF profile:', error);
+      setError('Failed to authenticate with SIWF');
+      setIsLoading(false);
     }
   };
 

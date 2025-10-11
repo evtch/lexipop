@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNeynar } from './NeynarProvider';
+import MiniAppButton from './MiniAppButton';
 
 interface ScoreShareProps {
   score: number;
@@ -133,41 +134,38 @@ export default function ScoreShare({
 
             <div className="space-y-3">
               {isAuthenticated ? (
-                <button
+                <MiniAppButton
                   onClick={handleShare}
                   disabled={isSharing}
-                  className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+                  variant="success"
+                  size="md"
+                  icon={isSharing ? "⏳" : "🐸"}
                 >
-                  {isSharing ? (
-                    <>
-                      <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
-                      Sharing...
-                    </>
-                  ) : (
-                    <>
-                      🐸 Share on Farcaster
-                    </>
-                  )}
-                </button>
+                  {isSharing ? "Sharing..." : "Share on Farcaster"}
+                </MiniAppButton>
               ) : (
                 <div className="text-center text-sm text-gray-600 mb-3">
                   Sign in to share directly to Farcaster
                 </div>
               )}
 
-              <button
+              <MiniAppButton
                 onClick={handleCopyLink}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
+                variant="primary"
+                size="md"
+                icon="📋"
               >
-                📋 Copy Share Text
-              </button>
+                Copy Share Text
+              </MiniAppButton>
 
-              <button
+              <MiniAppButton
                 onClick={onClose}
-                className="w-full bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-3 px-4 rounded-lg transition-colors"
+                variant="secondary"
+                size="md"
+                icon="✕"
               >
                 Close
-              </button>
+              </MiniAppButton>
             </div>
           </>
         )}

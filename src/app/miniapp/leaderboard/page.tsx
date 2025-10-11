@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNeynar } from '../components/NeynarProvider';
 import Link from 'next/link';
+import MiniAppButton from '../components/MiniAppButton';
 
 interface LeaderboardEntry {
   fid: number;
@@ -97,15 +98,8 @@ export default function LeaderboardPage() {
   return (
     <div className="min-h-screen p-4 text-gray-800">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <Link
-          href="/miniapp"
-          className="text-blue-600 hover:text-blue-700 transition-colors"
-        >
-          ← Back to Game
-        </Link>
-        <h1 className="text-2xl font-bold text-center">Leaderboard</h1>
-        <div className="w-20"></div>
+      <div className="text-center mb-6">
+        <h1 className="text-2xl font-bold">🏆 Leaderboard</h1>
       </div>
 
       {/* User Stats Card */}
@@ -155,22 +149,26 @@ export default function LeaderboardPage() {
         {error ? (
           <div className="text-center py-8">
             <p className="text-red-600 mb-4">{error}</p>
-            <button
+            <MiniAppButton
               onClick={fetchLeaderboard}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition-colors"
+              variant="primary"
+              size="md"
+              icon="🔄"
             >
               Try Again
-            </button>
+            </MiniAppButton>
           </div>
         ) : leaderboard.length === 0 ? (
           <div className="text-center py-8">
             <p className="text-gray-600 mb-4">No scores yet!</p>
-            <Link
+            <MiniAppButton
               href="/miniapp"
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition-colors inline-block"
+              variant="primary"
+              size="md"
+              icon="🎮"
             >
               Play First Game
-            </Link>
+            </MiniAppButton>
           </div>
         ) : (
           leaderboard.map((entry, index) => {
@@ -234,14 +232,28 @@ export default function LeaderboardPage() {
           <p className="text-gray-700 mb-4">
             Sign in with Farcaster to track your scores and compete!
           </p>
-          <Link
+          <MiniAppButton
             href="/miniapp"
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded transition-colors inline-block"
+            variant="primary"
+            size="lg"
+            icon="🎮"
           >
             Start Playing
-          </Link>
+          </MiniAppButton>
         </motion.div>
       )}
+
+      {/* Bottom Navigation */}
+      <div className="mt-8 space-y-3">
+        <MiniAppButton
+          href="/miniapp"
+          variant="primary"
+          size="lg"
+          icon="🏠"
+        >
+          Back to Game
+        </MiniAppButton>
+      </div>
     </div>
   );
 }
