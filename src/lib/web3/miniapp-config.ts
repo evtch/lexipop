@@ -18,10 +18,7 @@ export const miniappWagmiConfig = createConfig({
     ...(process.env.NODE_ENV === 'development' ? [baseSepolia] : [])
   ],
   connectors: [
-    farcasterFrame({
-      // Auto-connect when the miniapp loads
-      // This will automatically detect the connected Farcaster account
-    }),
+    farcasterFrame(),
   ],
   transports: {
     [base.id]: http(),

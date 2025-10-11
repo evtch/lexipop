@@ -88,7 +88,7 @@ export default function NeynarProvider({ children }: NeynarProviderProps) {
     }
   };
 
-  const loadUserFromFarcasterAccount = async (farcasterAccount: any) => {
+  const loadUserFromFarcasterAccount = async (farcasterAccount: FarcasterAccountInfo) => {
     try {
       setIsLoading(true);
       setError(null);
