@@ -56,13 +56,20 @@ export function useFarcasterAccount(): FarcasterAccountInfo {
 
         //   console.log('🎯 Farcaster account detected:', { fid, username, displayName });
         // } else {
-          // Fallback: Still connected to wallet but no Farcaster context (SDK commented out)
-          setFarcasterInfo({
-            isConnected: true,
-            isLoading: false,
-            error: 'Wallet connected but no Farcaster context available',
-          });
-        }
+        //   // Fallback: Still connected to wallet but no Farcaster context (SDK commented out)
+        //   setFarcasterInfo({
+        //     isConnected: true,
+        //     isLoading: false,
+        //     error: 'Wallet connected but no Farcaster context available',
+        //   });
+        // }
+
+        // Temporary fallback since SDK is commented out
+        setFarcasterInfo({
+          isConnected: true,
+          isLoading: false,
+          error: 'Farcaster miniapp SDK not available',
+        });
       } catch (error) {
         console.error('❌ Failed to detect Farcaster account:', error);
         setFarcasterInfo({

@@ -93,23 +93,25 @@ export default function NeynarProvider({ children }: NeynarProviderProps) {
     }
   };
 
-  const loadUserFromSIWFProfile = async (siwfProfile: any) => {
+  const loadUserFromSIWFProfile = async (siwfProfile: unknown) => {
     try {
       setIsLoading(true);
       setError(null);
 
       // Create user object from SIWF profile data
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const profile = siwfProfile as any; // Type assertion for profile object
       const user: FarcasterUser = {
-        fid: siwfProfile.fid,
-        username: siwfProfile.username || '',
-        displayName: siwfProfile.displayName || siwfProfile.username || '',
-        pfpUrl: siwfProfile.pfpUrl,
+        fid: profile.fid,
+        username: profile.username || '',
+        displayName: profile.displayName || profile.username || '',
+        pfpUrl: profile.pfpUrl,
         followerCount: 0, // Will be fetched later if needed
         followingCount: 0, // Will be fetched later if needed
       };
 
       setUser(user);
-      localStorage.setItem('lexipop_fid', siwfProfile.fid.toString());
+      localStorage.setItem('lexipop_fid', profile.fid.toString());
       console.log('✅ SIWF authentication successful:', user.username);
 
       setIsLoading(false);

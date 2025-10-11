@@ -12,7 +12,7 @@ import { base } from 'viem/chains';
 export const ENTROPY_CONTRACT_ADDRESS = '0x4821932D0CDd71225A6d914706A621e0389D7061' as const;
 
 // Empty bytes constant
-const EMPTY_BYTES = '0x' as `0x${string}`;
+const EMPTY_BYTES: `0x${string}` = '0x';
 
 // Pyth Entropy ABI (simplified for our needs)
 export const ENTROPY_ABI = parseAbi([

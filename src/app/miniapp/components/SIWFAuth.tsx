@@ -11,7 +11,7 @@ import React from 'react';
 import { useProfile, SignInButton } from '@farcaster/auth-kit';
 
 interface SIWFAuthProps {
-  onAuthSuccess?: (profile: any) => void;
+  onAuthSuccess?: (profile: unknown) => void;
   onSignOut?: () => void;
 }
 
