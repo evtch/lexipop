@@ -6,13 +6,15 @@ import { GameState, VocabularyWord } from '@/types/game';
 import { getUniqueWords, shuffleArray } from '@/data/vocabulary';
 import { sdk } from '@farcaster/miniapp-sdk';
 import { useFarcasterUser } from '@/lib/hooks/useFarcasterUser';
+import { generateCommitment } from '@/lib/pyth-entropy';
+import { useAccount, useConnect, useDisconnect } from 'wagmi';
+import { useFarcasterAccount } from '@/lib/web3/hooks/useFarcasterAccount';
 
 // Frame-optimized components
 import FrameWordBubble from './FrameWordBubble';
 import FrameAnswerOption from './FrameAnswerOption';
 import ScoreShare from './ScoreShare';
 import MiniAppButton from './MiniAppButton';
-import TokenWheel from './TokenWheel';
 
 export default function LexipopMiniApp() {
   // Use automatic Farcaster user detection from miniapp context
@@ -39,8 +41,20 @@ export default function LexipopMiniApp() {
   const [shuffledDefinitions, setShuffledDefinitions] = useState<string[]>([]);
   const [gameId, setGameId] = useState<string>('');
   const [showShareModal, setShowShareModal] = useState(false);
-  const [showTokenWheel, setShowTokenWheel] = useState(false);
   const [completedWords, setCompletedWords] = useState<typeof gameState.gameQuestions>([]);
+
+  // Token generation state
+  const [generatedTokens, setGeneratedTokens] = useState<number | null>(null);
+  const [isGeneratingTokens, setIsGeneratingTokens] = useState(false);
+  const [isClaimingTokens, setIsClaimingTokens] = useState(false);
+  const [claimError, setClaimError] = useState<string | null>(null);
+  const [currentNumber, setCurrentNumber] = useState(0);
+
+  // Wallet connection hooks
+  const { address, isConnected } = useAccount();
+  const { connect, connectors } = useConnect();
+  const { disconnect } = useDisconnect();
+  const farcasterAccount = useFarcasterAccount();
 
   // Initialize Farcaster miniapp SDK
   useEffect(() => {
@@ -108,17 +122,184 @@ export default function LexipopMiniApp() {
     });
   };
 
-  const showTokenWheelScreen = () => {
-    console.log('🎰 Showing token wheel screen');
-    setShowTokenWheel(true);
+
+  // Airport-style number generator effect
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+
+    if (isGeneratingTokens) {
+      interval = setInterval(() => {
+        setCurrentNumber(Math.floor(Math.random() * 100) + 1);
+      }, 100); // Change number every 100ms
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isGeneratingTokens]);
+
+  const generateTokens = () => {
+    if (isGeneratingTokens) return;
+
+    setIsGeneratingTokens(true);
+    setGeneratedTokens(null);
+    setClaimError(null);
+    setCurrentNumber(0);
+
+    // Generate final token amount using Pyth entropy
+    const generateFinalAmount = () => {
+      try {
+        // Create deterministic input from game data for verifiable randomness
+        const userInput = `${gameId}-${gameState.score}-${gameState.streak}-${currentUser?.fid || 'anon'}`;
+        const timestamp = Date.now();
+        const { commitment, userRandomness } = generateCommitment(userInput, timestamp);
+
+        // Convert the commitment hash to a number
+        const hashBytes = commitment.slice(2); // Remove '0x'
+        const randomValue = parseInt(hashBytes.slice(0, 8), 16); // Use first 32 bits
+
+        // Generate token amount between 1-100 using Pyth entropy
+        const tokenAmount = 1 + (randomValue % 100);
+
+        console.log('🎲 Pyth Entropy Token Generation:', {
+          userInput,
+          commitment,
+          randomValue,
+          tokenAmount,
+          source: 'Pyth Network Entropy'
+        });
+
+        return tokenAmount;
+      } catch (error) {
+        console.error('❌ Pyth entropy failed, fallback to Math.random:', error);
+        // Fallback to regular random if Pyth fails
+        return 1 + Math.floor(Math.random() * 100);
+      }
+    };
+
+    const finalAmount = generateFinalAmount();
+
+    // Run the number generator for 3 seconds, then show final result
+    setTimeout(() => {
+      setIsGeneratingTokens(false);
+      setGeneratedTokens(finalAmount);
+      setCurrentNumber(finalAmount);
+    }, 3000);
   };
+
+  const handleFarcasterWalletConnect = () => {
+    // Find the Farcaster Frame connector
+    const farcasterConnector = connectors.find(connector =>
+      connector.name.toLowerCase().includes('farcaster') ||
+      connector.id.includes('farcaster')
+    );
+
+    if (farcasterConnector) {
+      connect({ connector: farcasterConnector });
+    } else {
+      setClaimError('Farcaster wallet connector not found');
+    }
+  };
+
+  const handleTokenClaim = async () => {
+    if (!generatedTokens || !address) {
+      const missingItems = [];
+      if (!generatedTokens) missingItems.push('prize amount');
+      if (!address) missingItems.push('wallet address');
+
+      setClaimError(`Missing: ${missingItems.join(', ')}`);
+      console.log('❌ Cannot claim $LEXIPOP - missing:', missingItems.join(', '));
+      return;
+    }
+
+    setIsClaimingTokens(true);
+    setClaimError(null);
+
+    try {
+      // Step 1: Get withdrawal signature from server
+      console.log('🎫 Getting withdrawal signature from server...');
+      const response = await fetch('/api/tokens/claim', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          gameId: gameId,
+          userAddress: address,
+          tokensToClaimgame: generatedTokens,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to get withdrawal signature');
+      }
+
+      const { signature, nonce, tokenAddress, amount } = data;
+      console.log('✅ Withdrawal signature received, calling MoneyTree contract...');
+
+      // Step 2: Use wagmi to call the withdraw function on MoneyTree contract
+      const { createWalletClient, http } = await import('viem');
+      const { base } = await import('viem/chains');
+
+      const walletClient = createWalletClient({
+        account: address as `0x${string}`,
+        chain: base,
+        transport: http()
+      });
+
+      const contractAddress = process.env.NEXT_PUBLIC_MONEYTREE_CONTRACT_ADDRESS || '0xE636BaaF2c390A591EdbffaF748898EB3f6FF9A1';
+
+      const txHash = await walletClient.writeContract({
+        address: contractAddress as `0x${string}`,
+        abi: [
+          {
+            type: "function",
+            name: "withdraw",
+            inputs: [
+              { name: "token", type: "address" },
+              { name: "amount", type: "uint256" },
+              { name: "recipient", type: "address" },
+              { name: "nonce", type: "uint256" },
+              { name: "signature", type: "bytes" },
+            ],
+            outputs: [],
+            stateMutability: "nonpayable",
+          }
+        ],
+        functionName: 'withdraw',
+        args: [
+          tokenAddress as `0x${string}`,
+          BigInt(amount),
+          address as `0x${string}`,
+          BigInt(nonce),
+          signature as `0x${string}`
+        ]
+      });
+
+      console.log('🎉 $LEXIPOP withdrawal transaction submitted:', txHash);
+      // Reset the token generation state after successful claim
+      setGeneratedTokens(null);
+      setCurrentNumber(0);
+
+    } catch (error) {
+      console.error('❌ Token claim failed:', error);
+      setClaimError(error instanceof Error ? error.message : 'Failed to claim $LEXIPOP');
+    } finally {
+      setIsClaimingTokens(false);
+    }
+  };
+
+  // Check if user has Farcaster wallet connected and verified
+  const hasFarcasterWallet = isConnected && farcasterAccount.isConnected && farcasterAccount.fid;
+  const canClaimTokens = hasFarcasterWallet && generatedTokens && !isClaimingTokens;
 
   const nextQuestion = () => {
     const nextIndex = gameState.currentQuestionIndex + 1;
     if (nextIndex >= gameState.gameQuestions.length) {
-      // Game complete - go directly to token wheel
+      // Game complete - stay on score page with token generation
       setCompletedWords(gameState.gameQuestions);
-      setShowTokenWheel(true);
       setGameState(prev => ({
         ...prev,
         isGameActive: false,
@@ -169,24 +350,7 @@ export default function LexipopMiniApp() {
   };
 
 
-  const handleTokenClaim = (amount: number) => {
-    console.log(`💰 Claimed ${amount} $LEXIPOP!`);
-    // TODO: Implement actual token claiming logic
-    setShowTokenWheel(false);
-  };
 
-  const resetGameFlow = () => {
-    console.log('🔄 Resetting game flow');
-    setShowTokenWheel(false);
-    setCompletedWords([]);
-    // Keep the completed game state so "Spin to Win!" and "Play Again" buttons show
-    // Don't reset the game state here - let user choose what to do next
-  };
-
-  const handleViewLeaderboard = () => {
-    // Navigate to leaderboard (this will be handled by the browser)
-    window.location.href = '/miniapp/leaderboard';
-  };
 
   if (isLoading) {
     return (
@@ -264,18 +428,113 @@ export default function LexipopMiniApp() {
                 </div>
               )}
 
+              {/* Token Generation Section */}
+              <div className="mb-6">
+                {!generatedTokens ? (
+                  // Token Generation Display
+                  <div className="text-center">
+                    <div className="text-sm text-gray-600 mb-4">
+                      Generate $LEXIPOP using Pyth Entropy...
+                    </div>
+
+                    {/* Airport-style Number Generator */}
+                    <motion.div
+                      className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl p-6 mb-4 shadow-xl"
+                      animate={isGeneratingTokens ? {
+                        scale: [1, 1.05, 1]
+                      } : {}}
+                      transition={{
+                        duration: 0.5,
+                        repeat: isGeneratingTokens ? Infinity : 0,
+                        ease: "easeInOut"
+                      }}
+                    >
+                      <div className="text-4xl font-bold text-white mb-2">
+                        {currentNumber}
+                      </div>
+                      <div className="text-white text-lg">
+                        $LEXIPOP
+                      </div>
+                    </motion.div>
+
+                    {/* Generate Button */}
+                    <MiniAppButton
+                      onClick={generateTokens}
+                      variant="primary"
+                      size="lg"
+                      icon="🎰"
+                      disabled={isGeneratingTokens}
+                      className="w-full mb-3"
+                    >
+                      {isGeneratingTokens ? 'Generating...' : 'Generate $LEXIPOP!'}
+                    </MiniAppButton>
+                  </div>
+                ) : (
+                  // Token Claim Section
+                  <div className="text-center">
+                    {/* Result Display */}
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="bg-green-100 rounded-xl p-4 border border-green-200 mb-4"
+                    >
+                      <div className="text-xl font-bold text-green-800">
+                        🎉 You won {generatedTokens} $LEXIPOP!
+                      </div>
+                    </motion.div>
+
+                    {/* Wallet Status & Claim Button */}
+                    {!hasFarcasterWallet ? (
+                      <div>
+                        <p className="text-orange-600 mb-2 text-sm">
+                          Connect Farcaster wallet to claim $LEXIPOP
+                        </p>
+                        <MiniAppButton
+                          onClick={handleFarcasterWalletConnect}
+                          variant="primary"
+                          size="lg"
+                          icon="🎯"
+                          className="w-full mb-3"
+                        >
+                          Connect Wallet
+                        </MiniAppButton>
+                      </div>
+                    ) : (
+                      <div>
+                        <p className="text-green-600 mb-2 text-sm">
+                          ✅ @{farcasterAccount.username}
+                        </p>
+                        <MiniAppButton
+                          onClick={handleTokenClaim}
+                          variant="primary"
+                          size="lg"
+                          icon="💰"
+                          disabled={isClaimingTokens}
+                          className="w-full mb-3"
+                        >
+                          {isClaimingTokens ? 'Claiming...' : `Claim ${generatedTokens} $LEXIPOP`}
+                        </MiniAppButton>
+                      </div>
+                    )}
+
+                    {/* Error Display */}
+                    {claimError && (
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="bg-red-100 rounded-xl p-3 border border-red-200 mb-3"
+                      >
+                        <div className="text-sm font-medium text-red-800">
+                          ❌ {claimError}
+                        </div>
+                      </motion.div>
+                    )}
+                  </div>
+                )}
+              </div>
+
               {/* Action Buttons */}
               <div className="space-y-3 mt-auto">
-                <MiniAppButton
-                  onClick={showTokenWheelScreen}
-                  variant="primary"
-                  size="lg"
-                  icon="🎰"
-                  className="w-full"
-                >
-                  Spin to Win!
-                </MiniAppButton>
-
                 <MiniAppButton
                   onClick={startNewGame}
                   variant="secondary"
@@ -476,20 +735,6 @@ export default function LexipopMiniApp() {
       />
 
 
-      {/* Token Claiming Wheel */}
-      <TokenWheel
-        isVisible={showTokenWheel}
-        onClaim={handleTokenClaim}
-        onClose={resetGameFlow}
-        onViewLeaderboard={handleViewLeaderboard}
-        gameData={{
-          score: gameState.score,
-          streak: gameState.streak,
-          totalQuestions: gameState.totalQuestions,
-          gameId: gameId,
-          userFid: currentUser?.fid,
-        }}
-      />
 
     </div>
   );
