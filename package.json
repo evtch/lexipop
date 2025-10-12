@@ -22,6 +22,7 @@
     "@pythnetwork/entropy-sdk-solidity": "^2.0.0",
     "@rainbow-me/rainbowkit": "^2.0.8",
     "@tanstack/react-query": "^5.90.2",
+    "@vercel/analytics": "^1.5.0",
     "@wagmi/core": "^2.22.0",
     "clsx": "^2.1.1",
     "drizzle-kit": "^0.18.1",

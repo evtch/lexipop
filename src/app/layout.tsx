@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import Web3Provider from "./miniapp/components/Web3Provider";
 import SIWFProvider from "./miniapp/components/SIWFProvider";
+import { Analytics } from "@vercel/analytics/next";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -53,6 +54,7 @@ export default function RootLayout({
             {children}
           </Web3Provider>
         </SIWFProvider>
+        <Analytics />
       </body>
     </html>
   );
