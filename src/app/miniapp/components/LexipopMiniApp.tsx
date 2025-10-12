@@ -438,24 +438,6 @@ export default function LexipopMiniApp() {
                 </div>
               </motion.div>
 
-              {/* User Info Card */}
-              {isUserAuthenticated && currentUser && (
-                <div className="bg-white/60 rounded-lg p-3 mb-4 border border-blue-200">
-                  <div className="flex items-center gap-3">
-                    {currentUser.pfpUrl && (
-                      <img
-                        src={currentUser.pfpUrl}
-                        alt={currentUser.username}
-                        className="w-10 h-10 rounded-full border-2 border-blue-200"
-                      />
-                    )}
-                    <div className="flex-1">
-                      <div className="text-base font-bold text-gray-800">{currentUser.displayName}</div>
-                      <div className="text-sm text-gray-600">@{currentUser.username}</div>
-                    </div>
-                  </div>
-                </div>
-              )}
 
               {/* Token Generation Section */}
               <div className="mb-6">
@@ -463,7 +445,7 @@ export default function LexipopMiniApp() {
                   // Token Generation Display
                   <div className="text-center">
                     <div className="text-sm text-gray-600 mb-4">
-                      Generate reward using Pyth Entropy...
+                      Generating using secure onchain Pyth Entropy...
                     </div>
 
                     {/* Airport-style Number Generator */}
@@ -479,7 +461,7 @@ export default function LexipopMiniApp() {
                       }}
                     >
                       <div className="text-4xl font-bold text-white mb-2">
-                        {currentNumber}
+                        {currentNumber === 0 ? '🎁' : currentNumber}
                       </div>
                       <div className="text-white text-lg">
                         $LEXIPOP
