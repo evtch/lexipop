@@ -208,21 +208,9 @@ export default function LexipopMiniApp() {
   if (!gameState.isGameActive) {
     return (
       <div className="flex flex-col p-4 text-gray-800" style={{ height: '90vh', maxHeight: '90vh' }}>
-        {/* Compact Header */}
-        <div className="flex justify-between items-center mb-6">
+        {/* Simple Header */}
+        <div className="text-center mb-6">
           <h1 className="text-xl font-bold">Lexipop</h1>
-          {isUserAuthenticated && currentUser && (
-            <div className="flex items-center gap-2">
-              {currentUser.pfpUrl && (
-                <img
-                  src={currentUser.pfpUrl}
-                  alt={currentUser.username}
-                  className="w-8 h-8 rounded-full"
-                />
-              )}
-              <span className="text-sm text-gray-600">@{currentUser.username}</span>
-            </div>
-          )}
         </div>
 
         <motion.div
@@ -318,52 +306,66 @@ export default function LexipopMiniApp() {
           ) : (
             // First Time Layout
             <>
-              <div className="text-center mb-8">
-                <p className="text-lg opacity-90">
-                  Learn vocabulary the fun way!
-                </p>
+              {/* Main Title with Animation */}
+              <div className="flex-1 flex items-center justify-center mb-8">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-center"
+                >
+                  <motion.h2
+                    animate={{ y: [0, -8, 0] }}
+                    transition={{
+                      duration: 3,
+                      repeat: Infinity,
+                      ease: "easeInOut"
+                    }}
+                    className="text-3xl md:text-4xl font-bold text-gray-800 leading-tight"
+                  >
+                    Learn vocabulary the fun way!
+                  </motion.h2>
+                </motion.div>
               </div>
 
-              {/* User Status */}
-              <div className="mb-6">
-                {isUserAuthenticated && currentUser ? (
-                  <div className="bg-white/60 rounded-lg p-4 border border-blue-200">
-                    <div className="flex items-center gap-4">
+              {/* Error message for unauthenticated users */}
+              {currentUser.error && (
+                <div className="mb-6 bg-red-50 rounded-lg p-4 border border-red-200">
+                  <p className="text-base text-red-700 font-semibold">
+                    ⚠️ This app works best when opened in Farcaster
+                  </p>
+                  <p className="text-sm text-red-600 mt-2">
+                    {currentUser.error}
+                  </p>
+                </div>
+              )}
+
+              <div className="space-y-4 mt-auto">
+                {/* Start Playing Button with User Info */}
+                <div className="space-y-3">
+                  <MiniAppButton
+                    onClick={startNewGame}
+                    variant="primary"
+                    size="lg"
+                    icon="🎮"
+                    className="w-full"
+                  >
+                    Start Playing
+                  </MiniAppButton>
+
+                  {/* User Info Below Button */}
+                  {isUserAuthenticated && currentUser && (
+                    <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
                       {currentUser.pfpUrl && (
                         <img
                           src={currentUser.pfpUrl}
                           alt={currentUser.username}
-                          className="w-12 h-12 rounded-full border-2 border-blue-200"
+                          className="w-6 h-6 rounded-full"
                         />
                       )}
-                      <div className="flex-1">
-                        <div className="text-lg font-bold text-gray-800">{currentUser.displayName}</div>
-                        <div className="text-sm text-gray-600">@{currentUser.username}</div>
-                      </div>
+                      <span>Playing as @{currentUser.username}</span>
                     </div>
-                  </div>
-                ) : currentUser.error ? (
-                  <div className="bg-red-50 rounded-lg p-4 border border-red-200">
-                    <p className="text-base text-red-700 font-semibold">
-                      ⚠️ This app works best when opened in Farcaster
-                    </p>
-                    <p className="text-sm text-red-600 mt-2">
-                      {currentUser.error}
-                    </p>
-                  </div>
-                ) : null}
-              </div>
-
-              <div className="space-y-4 mt-auto">
-                <MiniAppButton
-                  onClick={startNewGame}
-                  variant="primary"
-                  size="lg"
-                  icon="🎮"
-                  className="w-full"
-                >
-                  Start Playing
-                </MiniAppButton>
+                  )}
+                </div>
 
                 <MiniAppButton
                   href="/miniapp/leaderboard"

@@ -50,9 +50,10 @@ export default function TokenWheel({ isVisible, onClaim, onClose, onViewLeaderbo
 
     setIsSpinning(true);
     setResult(null);
+    setClaimError(null);
 
-    // Generate verifiable random number using Pyth entropy
-    const generatePythRandom = () => {
+    // Generate token amount directly using Pyth entropy - no visual spinning
+    const generateRandomTokenAmount = () => {
       try {
         // Create deterministic input from game data for verifiable randomness
         const userInput = gameData
@@ -62,48 +63,36 @@ export default function TokenWheel({ isVisible, onClaim, onClose, onViewLeaderbo
         const timestamp = Date.now();
         const { commitment, userRandomness } = generateCommitment(userInput, timestamp);
 
-        // Convert the commitment hash to a number for wheel position
+        // Convert the commitment hash to a number
         const hashBytes = commitment.slice(2); // Remove '0x'
         const randomValue = parseInt(hashBytes.slice(0, 8), 16); // Use first 32 bits
 
-        console.log('🎲 Pyth entropy generated:', { userInput, commitment, randomValue });
+        // Generate token amount between 1-100 using Pyth entropy
+        const tokenAmount = 1 + (randomValue % 100);
 
-        return randomValue;
+        console.log('🎲 Pyth Entropy Token Generation:', {
+          userInput,
+          commitment,
+          randomValue,
+          tokenAmount,
+          source: 'Pyth Network Entropy'
+        });
+
+        return tokenAmount;
       } catch (error) {
         console.error('❌ Pyth entropy failed, fallback to Math.random:', error);
-        return Math.floor(Math.random() * 0xFFFFFFFF); // Fallback
+        // Fallback to regular random if Pyth fails
+        return 1 + Math.floor(Math.random() * 100);
       }
     };
 
-    const randomValue = generatePythRandom();
+    const wonAmount = generateRandomTokenAmount();
 
-    // Calculate spin based on Pyth random number
-    const normalizedRandom = randomValue / 0xFFFFFFFF; // Normalize to 0-1
-    const spins = 5 + normalizedRandom * 5; // 5-10 full rotations
-    const finalPosition = (randomValue % 360); // Use modulo for final position
-    const totalRotation = rotation + (spins * 360) + finalPosition;
-
-    setRotation(totalRotation);
-
-    // Calculate which segment we landed on
-    const segmentAngle = 360 / WHEEL_SEGMENTS.length;
-    const normalizedPosition = (360 - (finalPosition % 360)) % 360;
-    const segmentIndex = Math.floor(normalizedPosition / segmentAngle);
-    const wonAmount = WHEEL_SEGMENTS[segmentIndex].amount;
-
-    console.log('🎯 Wheel result:', {
-      randomValue,
-      finalPosition,
-      segmentIndex,
-      wonAmount,
-      commitment: gameData ? 'from game data' : 'timestamp based'
-    });
-
-    // Show result after animation completes
+    // Show result after short delay (no spinning animation needed)
     setTimeout(() => {
       setResult(wonAmount);
       setIsSpinning(false);
-    }, 3000);
+    }, 1500); // Shorter delay since no spinning
   };
 
   const handleFarcasterWalletConnect = () => {
@@ -221,92 +210,30 @@ export default function TokenWheel({ isVisible, onClaim, onClose, onViewLeaderbo
               )}
             </div>
 
-            {/* Wheel Container */}
-            <div className="relative w-48 h-48 mx-auto mb-4">
-              {/* SVG Wheel */}
-              <motion.svg
-                width="192"
-                height="192"
-                viewBox="0 0 256 256"
-                className="absolute inset-0"
-                animate={{ rotate: rotation }}
+            {/* Random Number Generator Display */}
+            <div className="relative w-48 h-48 mx-auto mb-4 flex items-center justify-center">
+              <motion.div
+                className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-full w-40 h-40 flex items-center justify-center shadow-lg"
+                animate={isSpinning ? {
+                  scale: [1, 1.1, 1],
+                  rotate: [0, 360]
+                } : {}}
                 transition={{
-                  duration: isSpinning ? 3 : 0,
-                  ease: [0.4, 0, 0.2, 1],
+                  duration: 1.5,
+                  repeat: isSpinning ? Infinity : 0,
+                  ease: "easeInOut"
                 }}
               >
-                {WHEEL_SEGMENTS.map((segment, index) => {
-                  const segmentAngle = 360 / WHEEL_SEGMENTS.length;
-                  const startAngle = index * segmentAngle - 90; // Start from top
-                  const endAngle = startAngle + segmentAngle;
-
-                  const radius = 120;
-                  const centerX = 128;
-                  const centerY = 128;
-
-                  // Calculate path coordinates
-                  const startX = centerX + radius * Math.cos((startAngle * Math.PI) / 180);
-                  const startY = centerY + radius * Math.sin((startAngle * Math.PI) / 180);
-                  const endX = centerX + radius * Math.cos((endAngle * Math.PI) / 180);
-                  const endY = centerY + radius * Math.sin((endAngle * Math.PI) / 180);
-
-                  const largeArcFlag = segmentAngle > 180 ? 1 : 0;
-
-                  const pathData = [
-                    `M ${centerX} ${centerY}`,
-                    `L ${startX} ${startY}`,
-                    `A ${radius} ${radius} 0 ${largeArcFlag} 1 ${endX} ${endY}`,
-                    'Z'
-                  ].join(' ');
-
-                  // Text position (middle of segment)
-                  const textAngle = startAngle + segmentAngle / 2;
-                  const textRadius = radius * 0.7;
-                  const textX = centerX + textRadius * Math.cos((textAngle * Math.PI) / 180);
-                  const textY = centerY + textRadius * Math.sin((textAngle * Math.PI) / 180);
-
-                  const colors = {
-                    'bg-red-400': '#f87171',
-                    'bg-orange-400': '#fb923c',
-                    'bg-yellow-400': '#facc15',
-                    'bg-green-400': '#4ade80',
-                    'bg-blue-400': '#60a5fa',
-                    'bg-purple-400': '#c084fc',
-                    'bg-pink-400': '#f472b6',
-                    'bg-gray-400': '#9ca3af',
-                  };
-
-                  return (
-                    <g key={index}>
-                      <path
-                        d={pathData}
-                        fill={colors[segment.color as keyof typeof colors] || '#9ca3af'}
-                        stroke="#ffffff"
-                        strokeWidth="2"
-                      />
-                      <text
-                        x={textX}
-                        y={textY}
-                        fill="white"
-                        fontSize="16"
-                        fontWeight="bold"
-                        textAnchor="middle"
-                        dominantBaseline="middle"
-                      >
-                        {segment.amount}
-                      </text>
-                    </g>
-                  );
-                })}
-              </motion.svg>
-
-              {/* Pointer */}
-              <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1 z-10">
-                <div className="w-0 h-0 border-l-[6px] border-r-[6px] border-b-[12px] border-l-transparent border-r-transparent border-b-white drop-shadow-md"></div>
-              </div>
-
-              {/* Center Circle */}
-              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-white rounded-full z-10 shadow-lg border-2 border-gray-300"></div>
+                <div className="text-center text-white">
+                  <div className="text-3xl font-bold mb-2">🎲</div>
+                  <div className="text-lg font-semibold">
+                    {isSpinning ? 'Generating...' : 'Ready!'}
+                  </div>
+                  <div className="text-xs mt-1 opacity-75">
+                    Pyth Entropy
+                  </div>
+                </div>
+              </motion.div>
             </div>
 
             {/* Result Display */}
@@ -346,7 +273,7 @@ export default function TokenWheel({ isVisible, onClaim, onClose, onViewLeaderbo
                   disabled={isSpinning}
                   className="w-full"
                 >
-                  {isSpinning ? 'Spinning...' : 'Spin!'}
+                  {isSpinning ? 'Generating...' : 'Generate Tokens!'}
                 </MiniAppButton>
               ) : !hasFarcasterWallet ? (
                 <MiniAppButton

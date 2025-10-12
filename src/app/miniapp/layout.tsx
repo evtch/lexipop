@@ -35,7 +35,7 @@ export const metadata: Metadata = {
   },
   other: {
     // Mini App embed metadata for Farcaster Frames v2
-    'fc:miniapp': '{"version":"1","name":"Lexipop","imageUrl":"https://lexipop.vercel.app/farcaster-embed.png","aspectRatio":"3:2","button":{"title":"Play","action":{"type":"launch_frame","name":"Play","url":"https://lexipop.vercel.app/miniapp","splashImageUrl":"https://lexipop.vercel.app/lexipop-splash.png","splashBackgroundColor":"#2563eb"}}}'
+    'fc:miniapp': '{"version":"1","name":"Lexipop","imageUrl":"https://lexipop.vercel.app/farcaster-embed.png","aspectRatio":"3:2","button":{"title":"Learn and earn!","action":{"type":"launch_frame","name":"Learn and earn!","url":"https://lexipop.vercel.app/miniapp","splashImageUrl":"https://lexipop.vercel.app/lexipop-splash.png","splashBackgroundColor":"#222632"}}}'
   }
 };
 
