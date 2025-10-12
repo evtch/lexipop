@@ -383,21 +383,21 @@ export default function LexipopMiniApp() {
               <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="bg-gradient-to-r from-green-400 to-blue-500 rounded-xl p-6 text-white shadow-lg mb-6"
+                className="bg-gradient-to-r from-green-400 to-blue-500 rounded-xl p-4 text-white shadow-lg mb-4"
               >
                 <div className="text-center">
-                  <div className="text-3xl mb-2">🎉</div>
-                  <div className="text-2xl font-bold mb-4">Game Complete!</div>
+                  <div className="text-2xl mb-2">🎈</div>
+                  <div className="text-xl font-bold mb-3">Game Complete!</div>
 
                   {/* Large Score Display */}
-                  <div className="bg-white/20 rounded-lg p-4 mb-4">
-                    <div className="text-4xl font-bold">
+                  <div className="bg-white/20 rounded-lg p-3 mb-3">
+                    <div className="text-3xl font-bold">
                       {gameState.score}/{gameState.totalQuestions}
                     </div>
                   </div>
 
                   {/* Performance Message */}
-                  <div className="mt-4 text-lg font-semibold">
+                  <div className="text-base font-semibold">
                     {gameState.score === gameState.totalQuestions
                       ? "Perfect! 🌟"
                       : gameState.score >= gameState.totalQuestions * 0.8
@@ -411,17 +411,17 @@ export default function LexipopMiniApp() {
 
               {/* User Info Card */}
               {isUserAuthenticated && currentUser && (
-                <div className="bg-white/60 rounded-lg p-4 mb-6 border border-blue-200">
-                  <div className="flex items-center gap-4">
+                <div className="bg-white/60 rounded-lg p-3 mb-4 border border-blue-200">
+                  <div className="flex items-center gap-3">
                     {currentUser.pfpUrl && (
                       <img
                         src={currentUser.pfpUrl}
                         alt={currentUser.username}
-                        className="w-12 h-12 rounded-full border-2 border-blue-200"
+                        className="w-10 h-10 rounded-full border-2 border-blue-200"
                       />
                     )}
                     <div className="flex-1">
-                      <div className="text-lg font-bold text-gray-800">{currentUser.displayName}</div>
+                      <div className="text-base font-bold text-gray-800">{currentUser.displayName}</div>
                       <div className="text-sm text-gray-600">@{currentUser.username}</div>
                     </div>
                   </div>
@@ -434,7 +434,7 @@ export default function LexipopMiniApp() {
                   // Token Generation Display
                   <div className="text-center">
                     <div className="text-sm text-gray-600 mb-4">
-                      Generate $LEXIPOP using Pyth Entropy...
+                      Generate reward using Pyth Entropy...
                     </div>
 
                     {/* Airport-style Number Generator */}
@@ -466,7 +466,7 @@ export default function LexipopMiniApp() {
                       disabled={isGeneratingTokens}
                       className="w-full mb-3"
                     >
-                      {isGeneratingTokens ? 'Generating...' : 'Generate $LEXIPOP!'}
+                      {isGeneratingTokens ? 'Generating...' : 'Generate my reward'}
                     </MiniAppButton>
                   </div>
                 ) : (
