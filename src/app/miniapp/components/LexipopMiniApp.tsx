@@ -84,13 +84,7 @@ export default function LexipopMiniApp() {
   };
 
   const startNewGame = () => {
-    console.log('🎮 Starting new game - current showTokenWheel:', showTokenWheel);
-
-    // If we have completed a game, show token wheel first
-    if (gameState.totalQuestions > 0) {
-      setShowTokenWheel(true);
-      return;
-    }
+    console.log('🎮 Starting new game');
 
     const gameQuestions = getUniqueWords(1); // 1 question per game for testing
     const firstWord = gameQuestions[0];
@@ -112,8 +106,11 @@ export default function LexipopMiniApp() {
       showResult: false,
       isCorrect: null
     });
+  };
 
-    console.log('🎮 New game started - showTokenWheel should still be:', showTokenWheel);
+  const showTokenWheelScreen = () => {
+    console.log('🎰 Showing token wheel screen');
+    setShowTokenWheel(true);
   };
 
   const nextQuestion = () => {
@@ -179,20 +176,11 @@ export default function LexipopMiniApp() {
   };
 
   const resetGameFlow = () => {
+    console.log('🔄 Resetting game flow');
     setShowTokenWheel(false);
     setCompletedWords([]);
-    setGameState({
-      currentWord: null,
-      gameQuestions: [],
-      currentQuestionIndex: 0,
-      score: 0,
-      streak: 0,
-      totalQuestions: 0,
-      isGameActive: false,
-      selectedAnswer: null,
-      showResult: false,
-      isCorrect: null
-    });
+    // Keep the completed game state so "Spin to Win!" and "Play Again" buttons show
+    // Don't reset the game state here - let user choose what to do next
   };
 
   const handleViewLeaderboard = () => {
@@ -279,13 +267,23 @@ export default function LexipopMiniApp() {
               {/* Action Buttons */}
               <div className="space-y-3 mt-auto">
                 <MiniAppButton
-                  onClick={startNewGame}
+                  onClick={showTokenWheelScreen}
                   variant="primary"
                   size="lg"
                   icon="🎰"
                   className="w-full"
                 >
                   Spin to Win!
+                </MiniAppButton>
+
+                <MiniAppButton
+                  onClick={startNewGame}
+                  variant="secondary"
+                  size="lg"
+                  icon="🔄"
+                  className="w-full"
+                >
+                  Play Again
                 </MiniAppButton>
 
                 <MiniAppButton
