@@ -138,9 +138,10 @@ export default function TokenWheel({ isVisible, onClaim, onClose, onViewLeaderbo
               {/* Wheel */}
               <motion.div
                 className="w-full h-full rounded-full border-4 border-gray-800 relative overflow-hidden"
-                style={{
-                  rotate: rotation,
-                  transition: isSpinning ? 'rotate 3s cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+                animate={{ rotate: rotation }}
+                transition={{
+                  duration: isSpinning ? 3 : 0,
+                  ease: [0.4, 0, 0.2, 1],
                 }}
               >
                 {WHEEL_SEGMENTS.map((segment, index) => {

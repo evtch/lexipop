@@ -12,7 +12,6 @@ import FrameWordBubble from './FrameWordBubble';
 import FrameAnswerOption from './FrameAnswerOption';
 import ScoreShare from './ScoreShare';
 import MiniAppButton from './MiniAppButton';
-import NFTMintModal from './NFTMintModal';
 import TokenWheel from './TokenWheel';
 
 export default function LexipopMiniApp() {
@@ -40,7 +39,6 @@ export default function LexipopMiniApp() {
   const [shuffledDefinitions, setShuffledDefinitions] = useState<string[]>([]);
   const [gameId, setGameId] = useState<string>('');
   const [showShareModal, setShowShareModal] = useState(false);
-  const [showNFTMinting, setShowNFTMinting] = useState(false);
   const [showTokenWheel, setShowTokenWheel] = useState(false);
   const [completedWords, setCompletedWords] = useState<typeof gameState.gameQuestions>([]);
 
@@ -111,9 +109,9 @@ export default function LexipopMiniApp() {
   const nextQuestion = () => {
     const nextIndex = gameState.currentQuestionIndex + 1;
     if (nextIndex >= gameState.gameQuestions.length) {
-      // Game complete - show NFT minting flow
+      // Game complete - go directly to token wheel
       setCompletedWords(gameState.gameQuestions);
-      setShowNFTMinting(true);
+      setShowTokenWheel(true);
       setGameState(prev => ({
         ...prev,
         isGameActive: false,
@@ -163,17 +161,6 @@ export default function LexipopMiniApp() {
     }, 2000);
   };
 
-  const handleNFTMint = () => {
-    console.log('🎨 NFT minted successfully!');
-    setShowNFTMinting(false);
-    setShowTokenWheel(true);
-  };
-
-  const handleNFTSkip = () => {
-    console.log('⏭️ NFT minting skipped');
-    setShowNFTMinting(false);
-    setShowTokenWheel(true);
-  };
 
   const handleTokenClaim = (amount: number) => {
     console.log(`💰 Claimed ${amount} LEXIPOP tokens!`);
@@ -182,7 +169,6 @@ export default function LexipopMiniApp() {
   };
 
   const resetGameFlow = () => {
-    setShowNFTMinting(false);
     setShowTokenWheel(false);
     setCompletedWords([]);
     setGameState({
@@ -230,7 +216,7 @@ export default function LexipopMiniApp() {
                   className="w-8 h-8 rounded-full"
                 />
               )}
-              <span className="text-sm text-gray-600">FID: {currentUser.fid}</span>
+              <span className="text-sm text-gray-600">@{currentUser.username}</span>
             </div>
           )}
         </div>
@@ -495,16 +481,6 @@ export default function LexipopMiniApp() {
         user={currentUser}
       />
 
-      {/* NFT Minting Modal */}
-      <NFTMintModal
-        isVisible={showNFTMinting}
-        words={completedWords}
-        score={gameState.score}
-        streak={gameState.streak}
-        onMint={handleNFTMint}
-        onSkip={handleNFTSkip}
-        onClose={resetGameFlow}
-      />
 
       {/* Token Claiming Wheel */}
       <TokenWheel
