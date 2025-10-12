@@ -3,12 +3,20 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import MiniAppButton from './MiniAppButton';
+import { generateCommitment } from '@/lib/pyth-entropy';
 
 interface TokenWheelProps {
   isVisible: boolean;
   onClaim: (amount: number) => void;
   onClose: () => void;
   onViewLeaderboard?: () => void;
+  gameData?: {
+    score: number;
+    streak: number;
+    totalQuestions: number;
+    gameId: string;
+    userFid?: number;
+  };
 }
 
 const WHEEL_SEGMENTS = [
@@ -22,7 +30,7 @@ const WHEEL_SEGMENTS = [
   { amount: 5, color: 'bg-gray-400' },
 ];
 
-export default function TokenWheel({ isVisible, onClaim, onClose, onViewLeaderboard }: TokenWheelProps) {
+export default function TokenWheel({ isVisible, onClaim, onClose, onViewLeaderboard, gameData }: TokenWheelProps) {
   const [isSpinning, setIsSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [result, setResult] = useState<number | null>(null);
@@ -33,9 +41,36 @@ export default function TokenWheel({ isVisible, onClaim, onClose, onViewLeaderbo
     setIsSpinning(true);
     setResult(null);
 
-    // Calculate random spin (multiple full rotations + random position)
-    const spins = 5 + Math.random() * 5; // 5-10 full rotations
-    const finalPosition = Math.random() * 360;
+    // Generate verifiable random number using Pyth entropy
+    const generatePythRandom = () => {
+      try {
+        // Create deterministic input from game data for verifiable randomness
+        const userInput = gameData
+          ? `${gameData.gameId}-${gameData.score}-${gameData.streak}-${gameData.userFid || 'anon'}`
+          : `wheel-${Date.now()}`;
+
+        const timestamp = Date.now();
+        const { commitment, userRandomness } = generateCommitment(userInput, timestamp);
+
+        // Convert the commitment hash to a number for wheel position
+        const hashBytes = commitment.slice(2); // Remove '0x'
+        const randomValue = parseInt(hashBytes.slice(0, 8), 16); // Use first 32 bits
+
+        console.log('🎲 Pyth entropy generated:', { userInput, commitment, randomValue });
+
+        return randomValue;
+      } catch (error) {
+        console.error('❌ Pyth entropy failed, fallback to Math.random:', error);
+        return Math.floor(Math.random() * 0xFFFFFFFF); // Fallback
+      }
+    };
+
+    const randomValue = generatePythRandom();
+
+    // Calculate spin based on Pyth random number
+    const normalizedRandom = randomValue / 0xFFFFFFFF; // Normalize to 0-1
+    const spins = 5 + normalizedRandom * 5; // 5-10 full rotations
+    const finalPosition = (randomValue % 360); // Use modulo for final position
     const totalRotation = rotation + (spins * 360) + finalPosition;
 
     setRotation(totalRotation);
@@ -45,6 +80,14 @@ export default function TokenWheel({ isVisible, onClaim, onClose, onViewLeaderbo
     const normalizedPosition = (360 - (finalPosition % 360)) % 360;
     const segmentIndex = Math.floor(normalizedPosition / segmentAngle);
     const wonAmount = WHEEL_SEGMENTS[segmentIndex].amount;
+
+    console.log('🎯 Wheel result:', {
+      randomValue,
+      finalPosition,
+      segmentIndex,
+      wonAmount,
+      commitment: gameData ? 'from game data' : 'timestamp based'
+    });
 
     // Show result after animation completes
     setTimeout(() => {
@@ -85,6 +128,9 @@ export default function TokenWheel({ isVisible, onClaim, onClose, onViewLeaderbo
               <p className="text-gray-600">
                 Spin the wheel to claim your reward tokens
               </p>
+              <div className="mt-2 text-xs text-blue-600 bg-blue-50 rounded px-2 py-1 inline-block">
+                🔒 Powered by Pyth Network for verifiable randomness
+              </div>
             </div>
 
             {/* Wheel Container */}

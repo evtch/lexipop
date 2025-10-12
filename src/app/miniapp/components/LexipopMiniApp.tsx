@@ -374,19 +374,7 @@ export default function LexipopMiniApp() {
         })}
       </div>
 
-      {/* Bottom Navigation - Only show Share Score during active game */}
-      <div className="flex-shrink-0 mt-4 space-y-3">
-        {gameState.totalQuestions > 0 && (
-          <MiniAppButton
-            onClick={() => setShowShareModal(true)}
-            variant="primary"
-            size="md"
-            icon="📤"
-          >
-            Share Score
-          </MiniAppButton>
-        )}
-      </div>
+      {/* Clean interface during quiz - no navigation buttons */}
 
       {/* Score Share Modal */}
       <ScoreShare
@@ -415,6 +403,13 @@ export default function LexipopMiniApp() {
         onClaim={handleTokenClaim}
         onClose={resetGameFlow}
         onViewLeaderboard={handleViewLeaderboard}
+        gameData={{
+          score: gameState.score,
+          streak: gameState.streak,
+          totalQuestions: gameState.totalQuestions,
+          gameId: gameId,
+          userFid: currentUser?.fid,
+        }}
       />
 
     </div>
