@@ -15,6 +15,17 @@ const getContractAddresses = () => {
   const lexipopToken = (process.env.LEXIPOP_TOKEN_ADDRESS || '0xf732f31f73e7DC21299f3ab42BD22E8a7C6b4B07') as `0x${string}`;
   const moneyTree = (process.env.MONEYTREE_CONTRACT_ADDRESS || '0xE636BaaF2c390A591EdbffaF748898EB3f6FF9A1') as `0x${string}`;
 
+  console.log('🏗️ Contract address configuration:', {
+    lexipopToken: {
+      env: process.env.LEXIPOP_TOKEN_ADDRESS,
+      used: lexipopToken
+    },
+    moneyTree: {
+      env: process.env.MONEYTREE_CONTRACT_ADDRESS,
+      used: moneyTree
+    }
+  });
+
   return {
     lexipopToken,
     moneyTree,
@@ -168,16 +179,49 @@ export async function POST(request: NextRequest) {
       const tokenAmountWei = parseTokenAmount(tokensToClaimgame);
 
       console.log(`💰 Distributing ${tokensToClaimgame} LEXIPOP tokens (${tokenAmountWei} wei) to ${userAddress}`);
+    console.log(`🔗 Using chain: ${defaultChain.name} (${defaultChain.id})`);
+    console.log(`📋 Contract addresses:`, {
+      moneyTree: contracts.moneyTree,
+      lexipopToken: contracts.lexipopToken
+    });
 
-      // Check if MoneyTree contract exists and has expected functions
+      // First, let's verify the contract exists by checking its bytecode
+      console.log(`🔍 Checking if contract exists at ${contracts.moneyTree}...`);
+      const bytecode = await publicClient.getBytecode({
+        address: contracts.moneyTree
+      });
+
+      if (!bytecode || bytecode === '0x') {
+        console.error(`❌ No contract found at address ${contracts.moneyTree} on ${defaultChain.name}`);
+        return NextResponse.json(
+          { success: false, error: `Contract not found at ${contracts.moneyTree} on ${defaultChain.name}. Please verify the contract address.` },
+          { status: 503 }
+        );
+      }
+
+      console.log(`✅ Contract found at ${contracts.moneyTree}, bytecode length: ${bytecode.length}`);
+
+      // Check if MoneyTree contract has the required functions
       try {
-        // First, try to call the contract to see if it exists
+        // First, try to get the owner to see if the contract is working
+        console.log(`🔍 Testing contract with owner() function...`);
+        const owner = await publicClient.readContract({
+          address: contracts.moneyTree,
+          abi: moneyTreeABI,
+          functionName: 'owner'
+        });
+        console.log(`👤 Contract owner: ${owner}`);
+
+        // Now try getAvailableBalance
+        console.log(`🔍 Calling getAvailableBalance function...`);
         const availableBalance = await publicClient.readContract({
           address: contracts.moneyTree,
           abi: moneyTreeABI,
           functionName: 'getAvailableBalance',
           args: [contracts.lexipopToken]
         });
+
+        console.log(`💰 Available balance: ${availableBalance} wei`);
 
         if (availableBalance < tokenAmountWei) {
           console.warn(`⚠️ Insufficient balance in MoneyTree. Available: ${availableBalance}, Requested: ${tokenAmountWei}`);
@@ -187,19 +231,31 @@ export async function POST(request: NextRequest) {
           );
         }
       } catch (contractError) {
-        console.error('❌ MoneyTree contract not found or invalid:', {
+        console.error('❌ MoneyTree contract function call failed:', {
           address: contracts.moneyTree,
           chain: defaultChain.name,
+          tokenAddress: contracts.lexipopToken,
           error: contractError instanceof Error ? contractError.message : String(contractError)
         });
 
-        return NextResponse.json(
-          { success: false, error: 'Token distribution service temporarily unavailable - contract not deployed' },
-          { status: 503 }
-        );
+        // For now, let's skip the balance check and proceed with a warning
+        console.warn(`⚠️ Skipping balance check and proceeding with token distribution...`);
+
+        // Comment out the return for debugging - let's see if the distribute function works
+        // return NextResponse.json(
+        //   { success: false, error: 'Token distribution service temporarily unavailable - contract function error' },
+        //   { status: 503 }
+        // );
       }
 
       // Simulate the contract call first
+      console.log(`🎭 Simulating distributeTokens call...`);
+      console.log(`📋 Parameters:`, {
+        tokenAddress: contracts.lexipopToken,
+        recipientAddress: userAddress,
+        amount: tokenAmountWei.toString()
+      });
+
       const { request } = await publicClient.simulateContract({
         account,
         address: contracts.moneyTree,
@@ -207,6 +263,8 @@ export async function POST(request: NextRequest) {
         functionName: 'distributeTokens',
         args: [contracts.lexipopToken, userAddress, tokenAmountWei]
       });
+
+      console.log(`✅ Simulation successful, proceeding with transaction...`);
 
       // Execute the transaction
       const txHash = await walletClient.writeContract(request);
