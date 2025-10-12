@@ -307,6 +307,20 @@ export default function LexipopMiniApp() {
                   animate={{ opacity: 1, y: 0 }}
                   className="text-center"
                 >
+                  {/* Floating Balloon Emoji */}
+                  <motion.div
+                    animate={{ y: [0, -12, 0] }}
+                    transition={{
+                      duration: 4,
+                      repeat: Infinity,
+                      ease: "easeInOut"
+                    }}
+                    className="text-6xl mb-4"
+                  >
+                    🎈
+                  </motion.div>
+
+                  {/* Main Title Text */}
                   <motion.h2
                     animate={{ y: [0, -8, 0] }}
                     transition={{
@@ -314,9 +328,10 @@ export default function LexipopMiniApp() {
                       repeat: Infinity,
                       ease: "easeInOut"
                     }}
-                    className="text-3xl md:text-4xl font-bold text-gray-800 leading-tight"
+                    className="text-4xl md:text-5xl font-bold text-gray-800 leading-tight"
                   >
-                    Learn vocabulary the fun way!
+                    Learn vocabulary<br />
+                    the fun way!
                   </motion.h2>
                 </motion.div>
               </div>
@@ -336,17 +351,7 @@ export default function LexipopMiniApp() {
               <div className="space-y-4 mt-auto">
                 {/* Start Playing Button with User Info */}
                 <div className="space-y-3">
-                  <MiniAppButton
-                    onClick={startNewGame}
-                    variant="primary"
-                    size="lg"
-                    icon="🎮"
-                    className="w-full"
-                  >
-                    Start Playing
-                  </MiniAppButton>
-
-                  {/* User Info Below Button */}
+                  {/* User Info Above Button */}
                   {isUserAuthenticated && currentUser && (
                     <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
                       {currentUser.pfpUrl && (
@@ -359,6 +364,16 @@ export default function LexipopMiniApp() {
                       <span>Playing as @{currentUser.username}</span>
                     </div>
                   )}
+
+                  <MiniAppButton
+                    onClick={startNewGame}
+                    variant="primary"
+                    size="lg"
+                    icon="🎮"
+                    className="w-full"
+                  >
+                    Start Playing
+                  </MiniAppButton>
                 </div>
 
                 <MiniAppButton
