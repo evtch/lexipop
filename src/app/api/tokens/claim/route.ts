@@ -155,10 +155,19 @@ export async function POST(request: NextRequest) {
     const rpcUrl = process.env.RPC_URL || (defaultChain.id === base.id ?
       'https://mainnet.base.org' : 'https://sepolia.base.org');
 
-    if (!signerPrivateKey) {
-      console.error('❌ PRIVATE_KEY environment variable not set');
+    if (!signerPrivateKey || signerPrivateKey === 'your_private_key_here') {
+      console.error('❌ PRIVATE_KEY environment variable not set or using placeholder value');
       return NextResponse.json(
-        { success: false, error: 'Server configuration error' },
+        { success: false, error: 'Server configuration error - private key not configured' },
+        { status: 500 }
+      );
+    }
+
+    // Validate private key format
+    if (!signerPrivateKey.startsWith('0x') || signerPrivateKey.length !== 66) {
+      console.error('❌ PRIVATE_KEY must be a hex string starting with 0x and 66 characters long');
+      return NextResponse.json(
+        { success: false, error: 'Server configuration error - invalid private key format' },
         { status: 500 }
       );
     }
@@ -208,11 +217,13 @@ export async function POST(request: NextRequest) {
       dailyStart.setHours(0, 0, 0, 0);
       const dailyEpoch = Math.floor(dailyStart.getTime() / (1000 * 60 * 60 * 24)); // Days since epoch
 
-      // Create nonce: gameId + timestamp + daily epoch
-      const gameIdHash = gameId.slice(-8); // Last 8 chars of gameId
+      // Create nonce: hash gameId to numeric + timestamp + daily epoch
+      const gameIdNumeric = Math.abs(gameId.split('').reduce((hash, char) => {
+        return ((hash << 5) - hash + char.charCodeAt(0)) & 0x7FFFFFFF; // Keep it positive 32-bit
+      }, 0)).toString().padStart(8, "0").slice(-8); // Ensure 8 digits
       const timestampHash = Date.now().toString().slice(-8); // Last 8 chars of timestamp
       const epochStr = dailyEpoch.toString().padStart(5, "0");
-      const nonce = BigInt(`${gameIdHash}${timestampHash}${epochStr}`);
+      const nonce = BigInt(`${gameIdNumeric}${timestampHash}${epochStr}`);
 
       const chainId = defaultChain.id;
       const contractAddress = contracts.moneyTree;
