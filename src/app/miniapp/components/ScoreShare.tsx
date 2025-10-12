@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { useNeynar } from './NeynarProvider';
 import MiniAppButton from './MiniAppButton';
+import { FarcasterUser } from '@/lib/hooks/useFarcasterUser';
 
 interface ScoreShareProps {
   score: number;
@@ -11,6 +11,7 @@ interface ScoreShareProps {
   totalQuestions: number;
   isVisible: boolean;
   onClose: () => void;
+  user?: FarcasterUser;
 }
 
 export default function ScoreShare({
@@ -18,9 +19,10 @@ export default function ScoreShare({
   streak,
   totalQuestions,
   isVisible,
-  onClose
+  onClose,
+  user
 }: ScoreShareProps) {
-  const { user, isAuthenticated } = useNeynar();
+  const isAuthenticated = !!user?.fid;
   const [isSharing, setIsSharing] = useState(false);
   const [shareSuccess, setShareSuccess] = useState(false);
 

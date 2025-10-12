@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { useNeynar } from '../components/NeynarProvider';
+import { useFarcasterUser } from '@/lib/hooks/useFarcasterUser';
 import Link from 'next/link';
 import MiniAppButton from '../components/MiniAppButton';
 
@@ -23,7 +23,9 @@ interface UserStats {
 }
 
 export default function LeaderboardPage() {
-  const { user, isAuthenticated } = useNeynar();
+  const farcasterUser = useFarcasterUser();
+  const user = farcasterUser;
+  const isAuthenticated = !!farcasterUser.fid;
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);

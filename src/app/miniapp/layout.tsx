@@ -1,9 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import '../globals.css';
-import NeynarProvider from './components/NeynarProvider';
 import Web3Provider from './components/Web3Provider';
-import SIWFProvider from './components/SIWFProvider';
 
 const inter = Inter({
   subsets: ["latin"],
@@ -118,13 +116,9 @@ export default function MiniAppLayout({
           }
         `
       }} />
-      <SIWFProvider>
-        <Web3Provider useMiniappConfig={true}>
-          <NeynarProvider>
-            {children}
-          </NeynarProvider>
-        </Web3Provider>
-      </SIWFProvider>
+      <Web3Provider useMiniappConfig={true}>
+        {children}
+      </Web3Provider>
     </div>
   );
 }

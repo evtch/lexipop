@@ -4,20 +4,25 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GameState, VocabularyWord } from '@/types/game';
 import { getUniqueWords, shuffleArray } from '@/data/vocabulary';
-import { useNeynar } from './NeynarProvider';
-import { useProfile } from '@farcaster/auth-kit';
 import { sdk } from '@farcaster/miniapp-sdk';
-import SIWFAuth from './SIWFAuth';
+import { useFarcasterUser } from '@/lib/hooks/useFarcasterUser';
 
 // Frame-optimized components
 import FrameWordBubble from './FrameWordBubble';
 import FrameAnswerOption from './FrameAnswerOption';
 import ScoreShare from './ScoreShare';
 import MiniAppButton from './MiniAppButton';
+import NFTMintModal from './NFTMintModal';
+import TokenWheel from './TokenWheel';
 
 export default function LexipopMiniApp() {
-  const { user, isLoading, error, signIn, signOut, isAuthenticated } = useNeynar();
-  const { isAuthenticated: isSIWFAuth, profile: siwfProfile } = useProfile();
+  // Use automatic Farcaster user detection from miniapp context
+  const farcasterUser = useFarcasterUser();
+
+  // User is automatically authenticated if FID is available
+  const isUserAuthenticated = !!farcasterUser.fid;
+  const currentUser = farcasterUser;
+  const isLoading = farcasterUser.isLoading;
 
   const [gameState, setGameState] = useState<GameState>({
     currentWord: null,
@@ -35,6 +40,9 @@ export default function LexipopMiniApp() {
   const [shuffledDefinitions, setShuffledDefinitions] = useState<string[]>([]);
   const [gameId, setGameId] = useState<string>('');
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showNFTMinting, setShowNFTMinting] = useState(false);
+  const [showTokenWheel, setShowTokenWheel] = useState(false);
+  const [completedWords, setCompletedWords] = useState<typeof gameState.gameQuestions>([]);
 
   // Initialize Farcaster miniapp SDK
   useEffect(() => {
@@ -51,7 +59,7 @@ export default function LexipopMiniApp() {
   }, []);
 
   const submitScore = async (score: number, streak: number, totalQuestions: number) => {
-    if (!user) return;
+    if (!currentUser) return;
 
     try {
       const response = await fetch('/api/game/score', {
@@ -60,7 +68,7 @@ export default function LexipopMiniApp() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          fid: user.fid,
+          fid: currentUser.fid,
           score,
           streak,
           totalQuestions,
@@ -82,7 +90,7 @@ export default function LexipopMiniApp() {
     const firstWord = gameQuestions[0];
     const allDefinitions = [firstWord.correctDefinition, ...firstWord.incorrectDefinitions];
     const shuffled = shuffleArray(allDefinitions);
-    const newGameId = `game_${Date.now()}_${user?.fid || 'anon'}`;
+    const newGameId = `game_${Date.now()}_${currentUser?.fid || 'anon'}`;
 
     setShuffledDefinitions(shuffled);
     setGameId(newGameId);
@@ -103,7 +111,14 @@ export default function LexipopMiniApp() {
   const nextQuestion = () => {
     const nextIndex = gameState.currentQuestionIndex + 1;
     if (nextIndex >= gameState.gameQuestions.length) {
-      // Game should be complete, but just in case
+      // Game complete - show NFT minting flow
+      setCompletedWords(gameState.gameQuestions);
+      setShowNFTMinting(true);
+      setGameState(prev => ({
+        ...prev,
+        isGameActive: false,
+        currentWord: null
+      }));
       return;
     }
 
@@ -138,7 +153,7 @@ export default function LexipopMiniApp() {
     }));
 
     // Submit score if user is authenticated
-    if (isAuthenticated && user) {
+    if (isUserAuthenticated && currentUser) {
       submitScore(gameState.score + (isCorrect ? 1 : 0), isCorrect ? gameState.streak + 1 : 0, gameState.totalQuestions + 1);
     }
 
@@ -146,6 +161,47 @@ export default function LexipopMiniApp() {
     setTimeout(() => {
       nextQuestion();
     }, 2000);
+  };
+
+  const handleNFTMint = () => {
+    console.log('🎨 NFT minted successfully!');
+    setShowNFTMinting(false);
+    setShowTokenWheel(true);
+  };
+
+  const handleNFTSkip = () => {
+    console.log('⏭️ NFT minting skipped');
+    setShowNFTMinting(false);
+    setShowTokenWheel(true);
+  };
+
+  const handleTokenClaim = (amount: number) => {
+    console.log(`💰 Claimed ${amount} LEXIPOP tokens!`);
+    // TODO: Implement actual token claiming logic
+    setShowTokenWheel(false);
+  };
+
+  const resetGameFlow = () => {
+    setShowNFTMinting(false);
+    setShowTokenWheel(false);
+    setCompletedWords([]);
+    setGameState({
+      currentWord: null,
+      gameQuestions: [],
+      currentQuestionIndex: 0,
+      score: 0,
+      streak: 0,
+      totalQuestions: 0,
+      isGameActive: false,
+      selectedAnswer: null,
+      showResult: false,
+      isCorrect: null
+    });
+  };
+
+  const handleViewLeaderboard = () => {
+    // Navigate to leaderboard (this will be handled by the browser)
+    window.location.href = '/miniapp/leaderboard';
   };
 
   if (isLoading) {
@@ -172,48 +228,48 @@ export default function LexipopMiniApp() {
             <p className="text-lg opacity-90">
               Learn vocabulary the fun way!
             </p>
+            {gameState.totalQuestions > 0 && (
+              <div className="mt-4 bg-green-100 rounded-lg p-4 border border-green-200">
+                <div className="text-center">
+                  <div className="text-lg font-semibold text-green-800">Game Complete!</div>
+                  <div className="text-sm text-green-700 mt-1">
+                    Final Score: {gameState.score}/{gameState.totalQuestions}
+                    {gameState.streak > 0 && ` • Best Streak: ${gameState.streak}`}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Authentication Status */}
+          {/* User Status */}
           <div className="mb-6">
-            {isAuthenticated && user ? (
+            {isUserAuthenticated && currentUser ? (
               <div className="bg-white/60 rounded-lg p-4 mb-4 border border-blue-200">
                 <div className="flex items-center gap-3 justify-center">
-                  {user.pfpUrl && (
+                  {currentUser.pfpUrl && (
                     <img
-                      src={user.pfpUrl}
-                      alt={user.username}
+                      src={currentUser.pfpUrl}
+                      alt={currentUser.username}
                       className="w-10 h-10 rounded-full"
                     />
                   )}
                   <div>
-                    <div className="font-semibold text-gray-800">{user.displayName}</div>
-                    <div className="text-sm text-gray-600">@{user.username}</div>
+                    <div className="font-semibold text-gray-800">{currentUser.displayName}</div>
+                    <div className="text-sm text-gray-600">@{currentUser.username}</div>
+                    <div className="text-xs text-gray-500">FID: {currentUser.fid}</div>
                   </div>
                 </div>
-                <button
-                  onClick={signOut}
-                  className="mt-3 text-sm text-gray-600 hover:text-gray-800 transition-colors"
-                >
-                  Sign Out
-                </button>
               </div>
-            ) : (
-              <div className="bg-white/60 rounded-lg p-4 mb-4 border border-blue-200">
-                <p className="text-sm mb-3 text-gray-700">Sign in to track your scores!</p>
-                <SIWFAuth
-                  onAuthSuccess={(profile) => {
-                    console.log('🔐 SIWF auth success:', profile);
-                  }}
-                />
-                <button
-                  onClick={() => signIn()}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm transition-colors mt-2"
-                >
-                  Connect via Neynar (Fallback)
-                </button>
+            ) : currentUser.error ? (
+              <div className="bg-red-50 rounded-lg p-4 mb-4 border border-red-200">
+                <p className="text-sm text-red-700">
+                  ⚠️ This app works best when opened in Farcaster
+                </p>
+                <p className="text-xs text-red-600 mt-1">
+                  {currentUser.error}
+                </p>
               </div>
-            )}
+            ) : null}
           </div>
 
           <div className="space-y-4">
@@ -222,6 +278,7 @@ export default function LexipopMiniApp() {
               variant="primary"
               size="lg"
               icon="🎮"
+              className="w-full"
             >
               Start Playing
             </MiniAppButton>
@@ -231,6 +288,7 @@ export default function LexipopMiniApp() {
               variant="secondary"
               size="lg"
               icon="🏆"
+              className="w-full"
             >
               View Leaderboard
             </MiniAppButton>
@@ -246,16 +304,16 @@ export default function LexipopMiniApp() {
       <div className="flex justify-between items-center mb-4">
         <div className="flex items-center gap-2">
           <h1 className="text-xl font-bold">Lexipop</h1>
-          {user && (
+          {currentUser && (
             <div className="flex items-center gap-1">
-              {user.pfpUrl && (
+              {currentUser.pfpUrl && (
                 <img
-                  src={user.pfpUrl}
-                  alt={user.username}
+                  src={currentUser.pfpUrl}
+                  alt={currentUser.username}
                   className="w-6 h-6 rounded-full"
                 />
               )}
-              <span className="text-sm text-gray-600">@{user.username}</span>
+              <span className="text-sm text-gray-600">@{currentUser.username}</span>
             </div>
           )}
         </div>
@@ -316,17 +374,8 @@ export default function LexipopMiniApp() {
         })}
       </div>
 
-      {/* Bottom Navigation */}
+      {/* Bottom Navigation - Only show Share Score during active game */}
       <div className="flex-shrink-0 mt-4 space-y-3">
-        <MiniAppButton
-          href="/miniapp/leaderboard"
-          variant="secondary"
-          size="md"
-          icon="🏆"
-        >
-          View Leaderboard
-        </MiniAppButton>
-
         {gameState.totalQuestions > 0 && (
           <MiniAppButton
             onClick={() => setShowShareModal(true)}
@@ -337,28 +386,6 @@ export default function LexipopMiniApp() {
             Share Score
           </MiniAppButton>
         )}
-
-        <MiniAppButton
-          onClick={() => {
-            setGameState({
-              currentWord: null,
-              gameQuestions: [],
-              currentQuestionIndex: 0,
-              score: 0,
-              streak: 0,
-              totalQuestions: 0,
-              isGameActive: false,
-              selectedAnswer: null,
-              showResult: false,
-              isCorrect: null
-            });
-          }}
-          variant="warning"
-          size="md"
-          icon="🏠"
-        >
-          Back to Home
-        </MiniAppButton>
       </div>
 
       {/* Score Share Modal */}
@@ -368,6 +395,26 @@ export default function LexipopMiniApp() {
         totalQuestions={gameState.totalQuestions}
         isVisible={showShareModal}
         onClose={() => setShowShareModal(false)}
+        user={currentUser}
+      />
+
+      {/* NFT Minting Modal */}
+      <NFTMintModal
+        isVisible={showNFTMinting}
+        words={completedWords}
+        score={gameState.score}
+        streak={gameState.streak}
+        onMint={handleNFTMint}
+        onSkip={handleNFTSkip}
+        onClose={resetGameFlow}
+      />
+
+      {/* Token Claiming Wheel */}
+      <TokenWheel
+        isVisible={showTokenWheel}
+        onClaim={handleTokenClaim}
+        onClose={resetGameFlow}
+        onViewLeaderboard={handleViewLeaderboard}
       />
 
     </div>
