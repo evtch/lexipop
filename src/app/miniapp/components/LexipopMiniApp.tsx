@@ -136,7 +136,7 @@ export default function LexipopMiniApp() {
 
     if (isGeneratingTokens) {
       interval = setInterval(() => {
-        setCurrentNumber(Math.floor(Math.random() * 100) + 1);
+        setCurrentNumber(Math.floor(Math.random() * 10000) + 1);
       }, 100); // Change number every 100ms
     }
 
@@ -185,8 +185,8 @@ export default function LexipopMiniApp() {
         const hashBytes = commitment.slice(2); // Remove '0x'
         const randomValue = parseInt(hashBytes.slice(0, 8), 16); // Use first 32 bits
 
-        // Generate token amount between 1-100 using Pyth entropy
-        const tokenAmount = 1 + (randomValue % 100);
+        // Generate token amount between 1-10,000 using Pyth entropy
+        const tokenAmount = 1 + (randomValue % 10000);
 
         console.log('🎲 Pyth Entropy Token Generation:', {
           userInput,
@@ -200,7 +200,7 @@ export default function LexipopMiniApp() {
       } catch (error) {
         console.error('❌ Pyth entropy failed, fallback to Math.random:', error);
         // Fallback to regular random if Pyth fails
-        return 1 + Math.floor(Math.random() * 100);
+        return 1 + Math.floor(Math.random() * 10000);
       }
     };
 
@@ -530,9 +530,6 @@ export default function LexipopMiniApp() {
                       </div>
                     ) : (
                       <div>
-                        <p className="text-green-600 mb-2 text-sm">
-                          ✅ @{farcasterAccount.username}
-                        </p>
                         <MiniAppButton
                           onClick={handleTokenClaim}
                           variant="primary"
