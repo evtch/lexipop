@@ -217,26 +217,41 @@ export default function LexipopMiniApp() {
 
   if (!gameState.isGameActive) {
     return (
-      <div className="h-screen flex flex-col items-center justify-center p-4 text-gray-800">
+      <div className="h-screen flex flex-col p-4 text-gray-800">
+        {/* Compact Header */}
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-xl font-bold">Lexipop</h1>
+          {isUserAuthenticated && currentUser && (
+            <div className="flex items-center gap-2">
+              {currentUser.pfpUrl && (
+                <img
+                  src={currentUser.pfpUrl}
+                  alt={currentUser.username}
+                  className="w-8 h-8 rounded-full"
+                />
+              )}
+              <span className="text-sm text-gray-600">FID: {currentUser.fid}</span>
+            </div>
+          )}
+        </div>
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center"
+          className="flex-1 flex flex-col"
         >
-          <div className="mb-6">
-            <h1 className="text-4xl font-bold mb-2">Lexipop</h1>
-            <p className="text-lg opacity-90">
-              Learn vocabulary the fun way!
-            </p>
-            {gameState.totalQuestions > 0 && (
+          {gameState.totalQuestions > 0 ? (
+            // Game Complete Layout
+            <>
+              {/* Score Card */}
               <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="mt-6 bg-gradient-to-r from-green-400 to-blue-500 rounded-xl p-6 text-white shadow-lg"
+                className="bg-gradient-to-r from-green-400 to-blue-500 rounded-xl p-6 text-white shadow-lg mb-6"
               >
                 <div className="text-center">
                   <div className="text-3xl mb-2">🎉</div>
-                  <div className="text-2xl font-bold mb-2">Game Complete!</div>
+                  <div className="text-2xl font-bold mb-4">Game Complete!</div>
 
                   {/* Large Score Display */}
                   <div className="bg-white/20 rounded-lg p-4 mb-4">
@@ -272,49 +287,41 @@ export default function LexipopMiniApp() {
                   </div>
                 </div>
               </motion.div>
-            )}
-          </div>
 
-          {/* User Status */}
-          <div className="mb-6">
-            {isUserAuthenticated && currentUser ? (
-              <div className="bg-white/60 rounded-lg p-6 mb-6 border border-blue-200 w-full">
-                <div className="flex items-center gap-4">
-                  {currentUser.pfpUrl && (
-                    <img
-                      src={currentUser.pfpUrl}
-                      alt={currentUser.username}
-                      className="w-16 h-16 rounded-full border-2 border-blue-200"
-                    />
-                  )}
-                  <div className="flex-1">
-                    <div className="text-xl font-bold text-gray-800">{currentUser.displayName}</div>
-                    <div className="text-base text-gray-600">@{currentUser.username}</div>
-                    <div className="text-sm text-gray-500 bg-gray-100 rounded px-2 py-1 inline-block mt-1">
-                      FID: {currentUser.fid}
+              {/* User Info Card */}
+              {isUserAuthenticated && currentUser && (
+                <div className="bg-white/60 rounded-lg p-4 mb-6 border border-blue-200">
+                  <div className="flex items-center gap-4">
+                    {currentUser.pfpUrl && (
+                      <img
+                        src={currentUser.pfpUrl}
+                        alt={currentUser.username}
+                        className="w-12 h-12 rounded-full border-2 border-blue-200"
+                      />
+                    )}
+                    <div className="flex-1">
+                      <div className="text-lg font-bold text-gray-800">{currentUser.displayName}</div>
+                      <div className="text-sm text-gray-600">@{currentUser.username}</div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ) : currentUser.error ? (
-              <div className="bg-red-50 rounded-lg p-6 mb-6 border border-red-200 w-full">
-                <p className="text-base text-red-700 font-semibold">
-                  ⚠️ This app works best when opened in Farcaster
-                </p>
-                <p className="text-sm text-red-600 mt-2">
-                  {currentUser.error}
-                </p>
-              </div>
-            ) : null}
-          </div>
+              )}
 
-          <div className="space-y-4">
-            {gameState.totalQuestions > 0 ? (
-              // Show "Play Again" when game is completed
-              <>
+              {/* Action Buttons */}
+              <div className="space-y-3 mt-auto">
+                <MiniAppButton
+                  onClick={() => setShowTokenWheel(true)}
+                  variant="primary"
+                  size="lg"
+                  icon="🎰"
+                  className="w-full"
+                >
+                  Spin to Win!
+                </MiniAppButton>
+
                 <MiniAppButton
                   onClick={startNewGame}
-                  variant="primary"
+                  variant="secondary"
                   size="lg"
                   icon="🔄"
                   className="w-full"
@@ -331,10 +338,48 @@ export default function LexipopMiniApp() {
                 >
                   View Leaderboard
                 </MiniAppButton>
-              </>
-            ) : (
-              // Show "Start Playing" for first time
-              <>
+              </div>
+            </>
+          ) : (
+            // First Time Layout
+            <>
+              <div className="text-center mb-8">
+                <p className="text-lg opacity-90">
+                  Learn vocabulary the fun way!
+                </p>
+              </div>
+
+              {/* User Status */}
+              <div className="mb-6">
+                {isUserAuthenticated && currentUser ? (
+                  <div className="bg-white/60 rounded-lg p-4 border border-blue-200">
+                    <div className="flex items-center gap-4">
+                      {currentUser.pfpUrl && (
+                        <img
+                          src={currentUser.pfpUrl}
+                          alt={currentUser.username}
+                          className="w-12 h-12 rounded-full border-2 border-blue-200"
+                        />
+                      )}
+                      <div className="flex-1">
+                        <div className="text-lg font-bold text-gray-800">{currentUser.displayName}</div>
+                        <div className="text-sm text-gray-600">@{currentUser.username}</div>
+                      </div>
+                    </div>
+                  </div>
+                ) : currentUser.error ? (
+                  <div className="bg-red-50 rounded-lg p-4 border border-red-200">
+                    <p className="text-base text-red-700 font-semibold">
+                      ⚠️ This app works best when opened in Farcaster
+                    </p>
+                    <p className="text-sm text-red-600 mt-2">
+                      {currentUser.error}
+                    </p>
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="space-y-4 mt-auto">
                 <MiniAppButton
                   onClick={startNewGame}
                   variant="primary"
@@ -354,9 +399,9 @@ export default function LexipopMiniApp() {
                 >
                   View Leaderboard
                 </MiniAppButton>
-              </>
-            )}
-          </div>
+              </div>
+            </>
+          )}
         </motion.div>
       </div>
     );
