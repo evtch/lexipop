@@ -229,43 +229,79 @@ export default function LexipopMiniApp() {
               Learn vocabulary the fun way!
             </p>
             {gameState.totalQuestions > 0 && (
-              <div className="mt-4 bg-green-100 rounded-lg p-4 border border-green-200">
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="mt-6 bg-gradient-to-r from-green-400 to-blue-500 rounded-xl p-6 text-white shadow-lg"
+              >
                 <div className="text-center">
-                  <div className="text-lg font-semibold text-green-800">Game Complete!</div>
-                  <div className="text-sm text-green-700 mt-1">
-                    Final Score: {gameState.score}/{gameState.totalQuestions}
-                    {gameState.streak > 0 && ` • Best Streak: ${gameState.streak}`}
+                  <div className="text-3xl mb-2">🎉</div>
+                  <div className="text-2xl font-bold mb-2">Game Complete!</div>
+
+                  {/* Large Score Display */}
+                  <div className="bg-white/20 rounded-lg p-4 mb-4">
+                    <div className="text-4xl font-bold">
+                      {gameState.score}/{gameState.totalQuestions}
+                    </div>
+                    <div className="text-lg opacity-90">
+                      {Math.round((gameState.score / gameState.totalQuestions) * 100)}% Correct
+                    </div>
+                  </div>
+
+                  {/* Stats Grid */}
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="bg-white/20 rounded-lg p-3">
+                      <div className="font-semibold">Best Streak</div>
+                      <div className="text-xl font-bold">{gameState.streak}</div>
+                    </div>
+                    <div className="bg-white/20 rounded-lg p-3">
+                      <div className="font-semibold">Questions</div>
+                      <div className="text-xl font-bold">{gameState.totalQuestions}</div>
+                    </div>
+                  </div>
+
+                  {/* Performance Message */}
+                  <div className="mt-4 text-lg font-semibold">
+                    {gameState.score === gameState.totalQuestions
+                      ? "Perfect! 🌟"
+                      : gameState.score >= gameState.totalQuestions * 0.8
+                      ? "Great job! 👏"
+                      : gameState.score >= gameState.totalQuestions * 0.6
+                      ? "Well done! 👍"
+                      : "Keep practicing! 📚"}
                   </div>
                 </div>
-              </div>
+              </motion.div>
             )}
           </div>
 
           {/* User Status */}
           <div className="mb-6">
             {isUserAuthenticated && currentUser ? (
-              <div className="bg-white/60 rounded-lg p-4 mb-4 border border-blue-200">
-                <div className="flex items-center gap-3 justify-center">
+              <div className="bg-white/60 rounded-lg p-6 mb-6 border border-blue-200 w-full">
+                <div className="flex items-center gap-4">
                   {currentUser.pfpUrl && (
                     <img
                       src={currentUser.pfpUrl}
                       alt={currentUser.username}
-                      className="w-10 h-10 rounded-full"
+                      className="w-16 h-16 rounded-full border-2 border-blue-200"
                     />
                   )}
-                  <div>
-                    <div className="font-semibold text-gray-800">{currentUser.displayName}</div>
-                    <div className="text-sm text-gray-600">@{currentUser.username}</div>
-                    <div className="text-xs text-gray-500">FID: {currentUser.fid}</div>
+                  <div className="flex-1">
+                    <div className="text-xl font-bold text-gray-800">{currentUser.displayName}</div>
+                    <div className="text-base text-gray-600">@{currentUser.username}</div>
+                    <div className="text-sm text-gray-500 bg-gray-100 rounded px-2 py-1 inline-block mt-1">
+                      FID: {currentUser.fid}
+                    </div>
                   </div>
                 </div>
               </div>
             ) : currentUser.error ? (
-              <div className="bg-red-50 rounded-lg p-4 mb-4 border border-red-200">
-                <p className="text-sm text-red-700">
+              <div className="bg-red-50 rounded-lg p-6 mb-6 border border-red-200 w-full">
+                <p className="text-base text-red-700 font-semibold">
                   ⚠️ This app works best when opened in Farcaster
                 </p>
-                <p className="text-xs text-red-600 mt-1">
+                <p className="text-sm text-red-600 mt-2">
                   {currentUser.error}
                 </p>
               </div>
@@ -273,25 +309,53 @@ export default function LexipopMiniApp() {
           </div>
 
           <div className="space-y-4">
-            <MiniAppButton
-              onClick={startNewGame}
-              variant="primary"
-              size="lg"
-              icon="🎮"
-              className="w-full"
-            >
-              Start Playing
-            </MiniAppButton>
+            {gameState.totalQuestions > 0 ? (
+              // Show "Play Again" when game is completed
+              <>
+                <MiniAppButton
+                  onClick={startNewGame}
+                  variant="primary"
+                  size="lg"
+                  icon="🔄"
+                  className="w-full"
+                >
+                  Play Again
+                </MiniAppButton>
 
-            <MiniAppButton
-              href="/miniapp/leaderboard"
-              variant="secondary"
-              size="lg"
-              icon="🏆"
-              className="w-full"
-            >
-              View Leaderboard
-            </MiniAppButton>
+                <MiniAppButton
+                  href="/miniapp/leaderboard"
+                  variant="secondary"
+                  size="lg"
+                  icon="🏆"
+                  className="w-full"
+                >
+                  View Leaderboard
+                </MiniAppButton>
+              </>
+            ) : (
+              // Show "Start Playing" for first time
+              <>
+                <MiniAppButton
+                  onClick={startNewGame}
+                  variant="primary"
+                  size="lg"
+                  icon="🎮"
+                  className="w-full"
+                >
+                  Start Playing
+                </MiniAppButton>
+
+                <MiniAppButton
+                  href="/miniapp/leaderboard"
+                  variant="secondary"
+                  size="lg"
+                  icon="🏆"
+                  className="w-full"
+                >
+                  View Leaderboard
+                </MiniAppButton>
+              </>
+            )}
           </div>
         </motion.div>
       </div>

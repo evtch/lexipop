@@ -9,17 +9,16 @@ import MiniAppButton from '../components/MiniAppButton';
 interface LeaderboardEntry {
   fid: number;
   username?: string;
-  highestScore: number;
-  bestStreak: number;
-  totalGames: number;
+  latestScore: number;
+  totalQuestions: number;
+  gameId: string;
+  timestamp: string;
 }
 
 interface UserStats {
-  totalGames: number;
-  highestScore: number;
-  bestStreak: number;
-  averageScore: number;
-  totalQuestionsAnswered: number;
+  latestScore: number;
+  totalQuestions: number;
+  accuracy: number;
 }
 
 export default function LeaderboardPage() {
@@ -125,23 +124,14 @@ export default function LeaderboardPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div className="text-center">
-              <div className="font-bold text-lg text-blue-600">{userStats.highestScore}</div>
-              <div className="text-gray-600">Best Score</div>
+          <div className="text-center bg-blue-50 rounded-lg p-4">
+            <div className="text-3xl font-bold text-blue-600">
+              {userStats.latestScore}/{userStats.totalQuestions}
             </div>
-            <div className="text-center">
-              <div className="font-bold text-lg text-blue-600">{userStats.bestStreak}</div>
-              <div className="text-gray-600">Best Streak</div>
+            <div className="text-lg text-blue-700 font-semibold">
+              {Math.round(userStats.accuracy)}% Accuracy
             </div>
-            <div className="text-center">
-              <div className="font-bold text-lg text-blue-600">{userStats.totalGames}</div>
-              <div className="text-gray-600">Games Played</div>
-            </div>
-            <div className="text-center">
-              <div className="font-bold text-lg text-blue-600">{userStats.averageScore}</div>
-              <div className="text-gray-600">Avg Score</div>
-            </div>
+            <div className="text-sm text-gray-600 mt-1">Latest Game Score</div>
           </div>
         </motion.div>
       )}
@@ -204,17 +194,17 @@ export default function LeaderboardPage() {
                         )}
                       </div>
                       <div className="text-sm text-gray-600">
-                        {entry.totalGames} game{entry.totalGames !== 1 ? 's' : ''} played
+                        Latest game
                       </div>
                     </div>
                   </div>
 
                   <div className="text-right">
                     <div className="font-bold text-lg text-blue-600">
-                      {entry.highestScore}
+                      {entry.latestScore}/{entry.totalQuestions}
                     </div>
                     <div className="text-sm text-gray-600">
-                      Best: {entry.bestStreak} streak
+                      {Math.round((entry.latestScore / entry.totalQuestions) * 100)}% accuracy
                     </div>
                   </div>
                 </div>
