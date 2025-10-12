@@ -382,9 +382,21 @@ export default function LexipopMiniApp() {
   if (!gameState.isGameActive) {
     return (
       <div className="flex flex-col p-4 text-gray-800" style={{ height: '90vh', maxHeight: '90vh' }}>
-        {/* Simple Header */}
-        <div className="text-center mb-6">
+        {/* Header - Same as quiz page */}
+        <div className="flex justify-between items-center mb-6">
           <h1 className="text-xl font-bold">Lexipop</h1>
+          {isUserAuthenticated && currentUser && (
+            <div className="flex items-center gap-2">
+              {currentUser.pfpUrl && (
+                <img
+                  src={currentUser.pfpUrl}
+                  alt={currentUser.username}
+                  className="w-8 h-8 rounded-full"
+                />
+              )}
+              <span className="text-sm text-gray-600">@{currentUser.username}</span>
+            </div>
+          )}
         </div>
 
         <motion.div
