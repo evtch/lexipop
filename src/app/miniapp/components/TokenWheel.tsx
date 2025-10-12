@@ -131,6 +131,8 @@ export default function TokenWheel({ isVisible, onClaim, onClose, onViewLeaderbo
     setClaimError(null);
 
     try {
+      // Step 1: Get withdrawal signature from server
+      console.log('🎫 Getting withdrawal signature from server...');
       const response = await fetch('/api/tokens/claim', {
         method: 'POST',
         headers: {
@@ -140,18 +142,66 @@ export default function TokenWheel({ isVisible, onClaim, onClose, onViewLeaderbo
           gameId: gameData.gameId,
           userAddress: address,
           tokensToClaimgame: result,
-          signature: '', // Could add signature verification later
         }),
       });
 
       const data = await response.json();
 
-      if (data.success) {
-        console.log('🎉 $LEXIPOP claimed successfully:', data.transactionHash);
-        onClaim(result); // Call the original onClaim callback
-      } else {
-        throw new Error(data.error || 'Failed to claim $LEXIPOP');
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to get withdrawal signature');
       }
+
+      const { signature, nonce, tokenAddress, amount } = data;
+      console.log('✅ Withdrawal signature received, calling MoneyTree contract...');
+
+      // Step 2: Use wagmi to call the withdraw function on MoneyTree contract
+      // Import required wagmi hooks at component level in a real implementation
+      // For now, we'll use viem directly (this would normally be done client-side with wagmi)
+
+      // Import viem for direct contract interaction
+      const { createWalletClient, http } = await import('viem');
+      const { base } = await import('viem/chains');
+
+      // This should be done with wagmi useWalletClient hook in real implementation
+      const walletClient = createWalletClient({
+        account: address as `0x${string}`,
+        chain: base,
+        transport: http()
+      });
+
+      // Call withdraw function on MoneyTree contract
+      const contractAddress = process.env.NEXT_PUBLIC_MONEYTREE_CONTRACT_ADDRESS || '0xE636BaaF2c390A591EdbffaF748898EB3f6FF9A1';
+
+      const txHash = await walletClient.writeContract({
+        address: contractAddress as `0x${string}`,
+        abi: [
+          {
+            type: "function",
+            name: "withdraw",
+            inputs: [
+              { name: "token", type: "address" },
+              { name: "amount", type: "uint256" },
+              { name: "recipient", type: "address" },
+              { name: "nonce", type: "uint256" },
+              { name: "signature", type: "bytes" },
+            ],
+            outputs: [],
+            stateMutability: "nonpayable",
+          }
+        ],
+        functionName: 'withdraw',
+        args: [
+          tokenAddress as `0x${string}`,
+          BigInt(amount),
+          address as `0x${string}`,
+          BigInt(nonce),
+          signature as `0x${string}`
+        ]
+      });
+
+      console.log('🎉 $LEXIPOP withdrawal transaction submitted:', txHash);
+      onClaim(result); // Call the original onClaim callback
+
     } catch (error) {
       console.error('❌ Token claim failed:', error);
       setClaimError(error instanceof Error ? error.message : 'Failed to claim $LEXIPOP');

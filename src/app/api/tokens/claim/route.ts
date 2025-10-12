@@ -7,7 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
-import { createPublicClient, createWalletClient, http, parseEther } from 'viem';
+import { createPublicClient, http, encodePacked, keccak256, hashMessage, type Hex } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { base, baseSepolia } from 'viem/chains';
 // Server-side token contract addresses (configurable via environment variables)
@@ -62,9 +62,11 @@ interface ClaimRequest {
 
 interface ClaimResponse {
   success: boolean;
-  transactionHash?: string;
+  signature?: string;
+  nonce?: string;
+  tokenAddress?: string;
+  amount?: string;
   error?: string;
-  estimatedGas?: string;
 }
 
 // Rate limiting: Store recent claims to prevent spam
@@ -149,11 +151,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Check for required environment variables
-    const privateKey = process.env.PRIVATE_KEY;
+    const signerPrivateKey = process.env.PRIVATE_KEY;
     const rpcUrl = process.env.RPC_URL || (defaultChain.id === base.id ?
       'https://mainnet.base.org' : 'https://sepolia.base.org');
 
-    if (!privateKey) {
+    if (!signerPrivateKey) {
       console.error('❌ PRIVATE_KEY environment variable not set');
       return NextResponse.json(
         { success: false, error: 'Server configuration error' },
@@ -162,15 +164,8 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      // Create clients
+      // Create public client for checking contract state
       const publicClient = createPublicClient({
-        chain: defaultChain,
-        transport: http(rpcUrl)
-      });
-
-      const account = privateKeyToAccount(privateKey as `0x${string}`);
-      const walletClient = createWalletClient({
-        account,
         chain: defaultChain,
         transport: http(rpcUrl)
       });
@@ -178,143 +173,114 @@ export async function POST(request: NextRequest) {
       // Convert token amount to wei (18 decimals)
       const tokenAmountWei = parseTokenAmount(tokensToClaimgame);
 
-      console.log(`💰 Distributing ${tokensToClaimgame} LEXIPOP tokens (${tokenAmountWei} wei) to ${userAddress}`);
-    console.log(`🔗 Using chain: ${defaultChain.name} (${defaultChain.id})`);
-    console.log(`📋 Contract addresses:`, {
-      moneyTree: contracts.moneyTree,
-      lexipopToken: contracts.lexipopToken
-    });
-
-      // First, let's verify the contract exists by checking its bytecode
-      console.log(`🔍 Checking if contract exists at ${contracts.moneyTree}...`);
-      const bytecode = await publicClient.getBytecode({
-        address: contracts.moneyTree
+      console.log(`💰 Generating signature for ${tokensToClaimgame} LEXIPOP tokens (${tokenAmountWei} wei) to ${userAddress}`);
+      console.log(`🔗 Using chain: ${defaultChain.name} (${defaultChain.id})`);
+      console.log(`📋 Contract addresses:`, {
+        moneyTree: contracts.moneyTree,
+        lexipopToken: contracts.lexipopToken
       });
 
-      if (!bytecode || bytecode === '0x') {
-        console.error(`❌ No contract found at address ${contracts.moneyTree} on ${defaultChain.name}`);
+      // Check MoneyTree contract balance for the signer
+      const account = privateKeyToAccount(signerPrivateKey as `0x${string}`);
+      const signerAddress = account.address;
+
+      console.log(`🔍 Checking MoneyTree balance for signer: ${signerAddress}`);
+      const signerBalance = await publicClient.readContract({
+        address: contracts.moneyTree,
+        abi: moneyTreeABI,
+        functionName: 'balanceOf',
+        args: [signerAddress, contracts.lexipopToken]
+      });
+
+      console.log(`💰 Signer balance in MoneyTree: ${signerBalance} wei`);
+
+      if (signerBalance < tokenAmountWei) {
+        console.warn(`⚠️ Insufficient balance in MoneyTree. Available: ${signerBalance}, Requested: ${tokenAmountWei}`);
         return NextResponse.json(
-          { success: false, error: `Contract not found at ${contracts.moneyTree} on ${defaultChain.name}. Please verify the contract address.` },
+          { success: false, error: 'Insufficient tokens available for distribution' },
           { status: 503 }
         );
       }
 
-      console.log(`✅ Contract found at ${contracts.moneyTree}, bytecode length: ${bytecode.length}`);
+      // Generate unique nonce like thequiz2 does
+      const now = new Date();
+      const dailyStart = new Date(now);
+      dailyStart.setHours(0, 0, 0, 0);
+      const dailyEpoch = Math.floor(dailyStart.getTime() / (1000 * 60 * 60 * 24)); // Days since epoch
 
-      // Check if MoneyTree contract has the required functions
-      try {
-        // First, try to get the owner to see if the contract is working
-        console.log(`🔍 Testing contract with owner() function...`);
-        const owner = await publicClient.readContract({
-          address: contracts.moneyTree,
-          abi: moneyTreeABI,
-          functionName: 'owner'
-        });
-        console.log(`👤 Contract owner: ${owner}`);
+      // Create nonce: gameId + timestamp + daily epoch
+      const gameIdHash = gameId.slice(-8); // Last 8 chars of gameId
+      const timestampHash = Date.now().toString().slice(-8); // Last 8 chars of timestamp
+      const epochStr = dailyEpoch.toString().padStart(5, "0");
+      const nonce = BigInt(`${gameIdHash}${timestampHash}${epochStr}`);
 
-        // Now try getAvailableBalance
-        console.log(`🔍 Calling getAvailableBalance function...`);
-        const availableBalance = await publicClient.readContract({
-          address: contracts.moneyTree,
-          abi: moneyTreeABI,
-          functionName: 'getAvailableBalance',
-          args: [contracts.lexipopToken]
-        });
+      const chainId = defaultChain.id;
+      const contractAddress = contracts.moneyTree;
 
-        console.log(`💰 Available balance: ${availableBalance} wei`);
+      // Create message hash exactly as MoneyTree contract expects
+      // From contract: keccak256(abi.encodePacked(token, amount, recipient, nonce, block.chainid, address(this)))
+      const messagePreimage = keccak256(
+        encodePacked(
+          ["address", "uint256", "address", "uint256", "uint256", "address"],
+          [
+            contracts.lexipopToken,
+            tokenAmountWei,
+            userAddress as Hex,
+            nonce,
+            BigInt(chainId),
+            contractAddress,
+          ]
+        )
+      );
 
-        if (availableBalance < tokenAmountWei) {
-          console.warn(`⚠️ Insufficient balance in MoneyTree. Available: ${availableBalance}, Requested: ${tokenAmountWei}`);
-          return NextResponse.json(
-            { success: false, error: 'Insufficient tokens available for distribution' },
-            { status: 503 }
-          );
-        }
-      } catch (contractError) {
-        console.error('❌ MoneyTree contract function call failed:', {
-          address: contracts.moneyTree,
-          chain: defaultChain.name,
-          tokenAddress: contracts.lexipopToken,
-          error: contractError instanceof Error ? contractError.message : String(contractError)
-        });
+      // Apply Ethereum signed message hash format
+      const messageHash = hashMessage({ raw: messagePreimage });
 
-        // For now, let's skip the balance check and proceed with a warning
-        console.warn(`⚠️ Skipping balance check and proceeding with token distribution...`);
-
-        // Comment out the return for debugging - let's see if the distribute function works
-        // return NextResponse.json(
-        //   { success: false, error: 'Token distribution service temporarily unavailable - contract function error' },
-        //   { status: 503 }
-        // );
-      }
-
-      // Simulate the contract call first
-      console.log(`🎭 Simulating distributeTokens call...`);
-      console.log(`📋 Parameters:`, {
-        tokenAddress: contracts.lexipopToken,
-        recipientAddress: userAddress,
-        amount: tokenAmountWei.toString()
-      });
-
-      const { request } = await publicClient.simulateContract({
-        account,
-        address: contracts.moneyTree,
+      // Check if this hash has already been used
+      console.log(`🔍 Checking if message hash is already used...`);
+      const isUsed = await publicClient.readContract({
+        address: contractAddress,
         abi: moneyTreeABI,
-        functionName: 'distributeTokens',
-        args: [contracts.lexipopToken, userAddress, tokenAmountWei]
+        functionName: "usedHashes",
+        args: [messageHash],
       });
 
-      console.log(`✅ Simulation successful, proceeding with transaction...`);
-
-      // Execute the transaction
-      const txHash = await walletClient.writeContract(request);
-
-      console.log(`✅ Transaction submitted: ${txHash}`);
-
-      // Wait for transaction confirmation
-      const receipt = await publicClient.waitForTransactionReceipt({
-        hash: txHash,
-        timeout: 60000 // 60 seconds
-      });
-
-      if (receipt.status === 'success') {
-        // Update rate limiting
-        recentClaims.set(rateLimitKey, Date.now());
-
-        const response: ClaimResponse = {
-          success: true,
-          transactionHash: txHash,
-          estimatedGas: receipt.gasUsed.toString()
-        };
-
-        console.log(`🎉 Token distribution successful:`, response);
-        return NextResponse.json(response, { status: 200 });
-
-      } else {
-        throw new Error('Transaction failed');
+      if (isUsed) {
+        console.log('Hash already used in MoneyTree contract:', messageHash);
+        return NextResponse.json({
+          success: false,
+          error: 'This prize has already been claimed!'
+        }, { status: 400 });
       }
+
+      // Sign the message
+      console.log(`✍️ Signing withdrawal authorization...`);
+      const signature = await account.signMessage({
+        message: { raw: messagePreimage }
+      });
+
+      // Update rate limiting
+      recentClaims.set(rateLimitKey, Date.now());
+
+      const response: ClaimResponse = {
+        success: true,
+        signature,
+        nonce: nonce.toString(),
+        tokenAddress: contracts.lexipopToken,
+        amount: tokenAmountWei.toString()
+      };
+
+      console.log(`✅ Withdrawal signature generated successfully`);
+      return NextResponse.json(response, { status: 200 });
 
     } catch (contractError: unknown) {
-      console.error('❌ Contract interaction failed:', contractError);
+      console.error('❌ Signature generation failed:', contractError);
 
       // Handle specific error cases
       const errorMessage = contractError instanceof Error ? contractError.message : String(contractError);
-      if (errorMessage?.includes('insufficient funds')) {
-        return NextResponse.json(
-          { success: false, error: 'Insufficient gas funds for transaction' },
-          { status: 503 }
-        );
-      }
-
-      if (errorMessage?.includes('execution reverted')) {
-        return NextResponse.json(
-          { success: false, error: 'Contract execution failed - please try again later' },
-          { status: 503 }
-        );
-      }
 
       return NextResponse.json(
-        { success: false, error: 'Token distribution failed - please try again' },
+        { success: false, error: 'Failed to generate withdrawal signature - please try again' },
         { status: 503 }
       );
     }

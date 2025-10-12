@@ -7,44 +7,186 @@
 
 import { Address } from 'viem';
 
-// MoneyTree contract ABI - minimal interface for token distribution
+// MoneyTree contract ABI - REAL ABI from deployed contract
 export const moneyTreeABI = [
   {
-    "inputs": [
-      {"name": "token", "type": "address"},
-      {"name": "recipient", "type": "address"},
-      {"name": "amount", "type": "uint256"}
+    type: "function",
+    name: "balanceOf",
+    inputs: [
+      {
+        name: "signer",
+        type: "address",
+        internalType: "address",
+      },
+      {
+        name: "token",
+        type: "address",
+        internalType: "address",
+      },
     ],
-    "name": "distributeTokens",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
+    outputs: [
+      {
+        name: "",
+        type: "uint256",
+        internalType: "uint256",
+      },
+    ],
+    stateMutability: "view",
   },
   {
-    "inputs": [
-      {"name": "token", "type": "address"}
+    type: "function",
+    name: "deposit",
+    inputs: [
+      {
+        name: "token",
+        type: "address",
+        internalType: "address",
+      },
+      {
+        name: "amount",
+        type: "uint256",
+        internalType: "uint256",
+      },
+      {
+        name: "signer",
+        type: "address",
+        internalType: "address",
+      },
     ],
-    "name": "getAvailableBalance",
-    "outputs": [{"name": "", "type": "uint256"}],
-    "stateMutability": "view",
-    "type": "function"
+    outputs: [],
+    stateMutability: "nonpayable",
   },
   {
-    "inputs": [
-      {"name": "token", "type": "address"},
-      {"name": "recipient", "type": "address"}
+    type: "function",
+    name: "deposits",
+    inputs: [
+      {
+        name: "",
+        type: "address",
+        internalType: "address",
+      },
+      {
+        name: "",
+        type: "address",
+        internalType: "address",
+      },
     ],
-    "name": "getClaimableAmount",
-    "outputs": [{"name": "", "type": "uint256"}],
-    "stateMutability": "view",
-    "type": "function"
+    outputs: [
+      {
+        name: "",
+        type: "uint256",
+        internalType: "uint256",
+      },
+    ],
+    stateMutability: "view",
   },
   {
-    "inputs": [],
-    "name": "owner",
-    "outputs": [{"name": "", "type": "address"}],
-    "stateMutability": "view",
-    "type": "function"
+    type: "function",
+    name: "usedHashes",
+    inputs: [
+      {
+        name: "",
+        type: "bytes32",
+        internalType: "bytes32",
+      },
+    ],
+    outputs: [
+      {
+        name: "",
+        type: "bool",
+        internalType: "bool",
+      },
+    ],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "withdraw",
+    inputs: [
+      {
+        name: "token",
+        type: "address",
+        internalType: "address",
+      },
+      {
+        name: "amount",
+        type: "uint256",
+        internalType: "uint256",
+      },
+      {
+        name: "recipient",
+        type: "address",
+        internalType: "address",
+      },
+      {
+        name: "nonce",
+        type: "uint256",
+        internalType: "uint256",
+      },
+      {
+        name: "signature",
+        type: "bytes",
+        internalType: "bytes",
+      },
+    ],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "event",
+    name: "Deposit",
+    inputs: [
+      {
+        name: "signer",
+        type: "address",
+        indexed: true,
+        internalType: "address",
+      },
+      {
+        name: "token",
+        type: "address",
+        indexed: true,
+        internalType: "address",
+      },
+      {
+        name: "amount",
+        type: "uint256",
+        indexed: false,
+        internalType: "uint256",
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: "event",
+    name: "Withdraw",
+    inputs: [
+      {
+        name: "signer",
+        type: "address",
+        indexed: true,
+        internalType: "address",
+      },
+      {
+        name: "recipient",
+        type: "address",
+        indexed: true,
+        internalType: "address",
+      },
+      {
+        name: "token",
+        type: "address",
+        indexed: true,
+        internalType: "address",
+      },
+      {
+        name: "amount",
+        type: "uint256",
+        indexed: false,
+        internalType: "uint256",
+      },
+    ],
+    anonymous: false,
   }
 ] as const;
 
