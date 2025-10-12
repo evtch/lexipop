@@ -7,7 +7,7 @@ import { getUniqueWords, shuffleArray } from '@/data/vocabulary';
 import { sdk } from '@farcaster/miniapp-sdk';
 import { useFarcasterUser } from '@/lib/hooks/useFarcasterUser';
 import { generateCommitment } from '@/lib/pyth-entropy';
-import { useAccount, useConnect, useDisconnect } from 'wagmi';
+import { useAccount, useConnect, useDisconnect, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { useFarcasterAccount } from '@/lib/web3/hooks/useFarcasterAccount';
 
 // Frame-optimized components
@@ -55,6 +55,12 @@ export default function LexipopMiniApp() {
   const { connect, connectors } = useConnect();
   const { disconnect } = useDisconnect();
   const farcasterAccount = useFarcasterAccount();
+
+  // Contract writing hook
+  const { writeContract, data: hash, error: writeError, isPending: isWritePending } = useWriteContract();
+  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
+    hash,
+  });
 
   // Initialize Farcaster miniapp SDK
   useEffect(() => {
@@ -137,6 +143,26 @@ export default function LexipopMiniApp() {
       if (interval) clearInterval(interval);
     };
   }, [isGeneratingTokens]);
+
+  // Handle transaction state changes
+  useEffect(() => {
+    if (writeError) {
+      console.error('❌ Contract write error:', writeError);
+      setClaimError(writeError.message || 'Failed to initiate transaction');
+      setIsClaimingTokens(false);
+    }
+  }, [writeError]);
+
+  useEffect(() => {
+    if (isConfirmed && hash) {
+      console.log('🎉 $LEXIPOP withdrawal transaction confirmed:', hash);
+      // Reset the token generation state after successful claim
+      setGeneratedTokens(null);
+      setCurrentNumber(0);
+      setIsClaimingTokens(false);
+      setClaimError(null);
+    }
+  }, [isConfirmed, hash]);
 
   const generateTokens = () => {
     if (isGeneratingTokens) return;
@@ -240,18 +266,10 @@ export default function LexipopMiniApp() {
       console.log('✅ Withdrawal signature received, calling MoneyTree contract...');
 
       // Step 2: Use wagmi to call the withdraw function on MoneyTree contract
-      const { createWalletClient, http } = await import('viem');
-      const { base } = await import('viem/chains');
-
-      const walletClient = createWalletClient({
-        account: address as `0x${string}`,
-        chain: base,
-        transport: http()
-      });
-
       const contractAddress = process.env.NEXT_PUBLIC_MONEYTREE_CONTRACT_ADDRESS || '0xE636BaaF2c390A591EdbffaF748898EB3f6FF9A1';
 
-      const txHash = await walletClient.writeContract({
+      console.log('🎉 Calling writeContract with wagmi...');
+      writeContract({
         address: contractAddress as `0x${string}`,
         abi: [
           {
@@ -278,10 +296,8 @@ export default function LexipopMiniApp() {
         ]
       });
 
-      console.log('🎉 $LEXIPOP withdrawal transaction submitted:', txHash);
-      // Reset the token generation state after successful claim
-      setGeneratedTokens(null);
-      setCurrentNumber(0);
+      console.log('🎉 $LEXIPOP withdrawal transaction initiated');
+      // Transaction state will be handled by wagmi hooks
 
     } catch (error) {
       console.error('❌ Token claim failed:', error);
@@ -509,12 +525,31 @@ export default function LexipopMiniApp() {
                           variant="primary"
                           size="lg"
                           icon="💰"
-                          disabled={isClaimingTokens}
+                          disabled={isClaimingTokens || isWritePending || isConfirming}
                           className="w-full mb-3"
                         >
-                          {isClaimingTokens ? 'Claiming...' : `Claim ${generatedTokens} $LEXIPOP`}
+                          {isWritePending
+                            ? 'Confirming...'
+                            : isConfirming
+                            ? 'Processing...'
+                            : isClaimingTokens
+                            ? 'Claiming...'
+                            : `Claim ${generatedTokens} $LEXIPOP`}
                         </MiniAppButton>
                       </div>
+                    )}
+
+                    {/* Success Display */}
+                    {isConfirmed && hash && (
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="bg-green-100 rounded-xl p-3 border border-green-200 mb-3"
+                      >
+                        <div className="text-sm font-medium text-green-800">
+                          ✅ Tokens claimed successfully!
+                        </div>
+                      </motion.div>
                     )}
 
                     {/* Error Display */}
