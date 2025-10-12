@@ -10,6 +10,17 @@ import { getUserByFid, getUserByUsername } from '@/lib/neynar';
 
 export async function GET(request: NextRequest) {
   try {
+    // Check if Neynar API key is available
+    if (!process.env.NEYNAR_API_KEY) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Neynar API not configured'
+        },
+        { status: 503 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const fid = searchParams.get('fid');
     const username = searchParams.get('username');

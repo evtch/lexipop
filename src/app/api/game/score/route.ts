@@ -1,29 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { db, gameSessions, userStats } from '@/db';
+import { eq, desc, count, max, avg, and, sql } from 'drizzle-orm';
 
 /**
  * 🔒 SECURE GAME SCORE API
  *
  * POST /api/game/score - Submit a score
  * GET /api/game/score?fid=123 - Get user's scores
+ * GET /api/game/score?type=leaderboard - Get top 100 leaderboard
  */
-
-// In-memory storage for development (replace with database in production)
-const userScores: Map<number, Array<{
-  score: number;
-  streak: number;
-  totalQuestions: number;
-  timestamp: number;
-  gameId: string;
-}>> = new Map();
-
-const leaderboard: Array<{
-  fid: number;
-  username?: string;
-  highestScore: number;
-  bestStreak: number;
-  totalGames: number;
-  lastPlayed: number;
-}> = [];
 
 export async function POST(request: NextRequest) {
   try {
@@ -65,35 +50,33 @@ export async function POST(request: NextRequest) {
     //   return NextResponse.json({ error: 'Invalid frame interaction' }, { status: 401 });
     // }
 
-    // Store the score
-    const scoreEntry = {
+    const gameIdFinal = gameId || `game_${Date.now()}_${fid}`;
+    const accuracy = (score / totalQuestions) * 100;
+    const now = new Date();
+
+    // Insert game session into database
+    const [gameSession] = await db.insert(gameSessions).values({
+      gameId: gameIdFinal,
+      userFid: fid,
       score,
-      streak,
       totalQuestions,
-      timestamp: Date.now(),
-      gameId: gameId || `game_${Date.now()}`
-    };
+      streak,
+      accuracy,
+      gameStartTime: now,
+      gameEndTime: now,
+      totalDuration: 0, // Could be calculated if we track start/end times
+      tokensEarned: 0, // Will be updated when tokens are claimed
+      bonusMultiplier: 1,
+    }).returning();
 
-    if (!userScores.has(fid)) {
-      userScores.set(fid, []);
-    }
-
-    const userGameHistory = userScores.get(fid)!;
-    userGameHistory.push(scoreEntry);
-
-    // Keep only last 50 games per user
-    if (userGameHistory.length > 50) {
-      userGameHistory.splice(0, userGameHistory.length - 50);
-    }
-
-    // Update leaderboard
-    await updateLeaderboard(fid, score, streak, totalQuestions);
+    // Update user statistics
+    await updateUserStats(fid, score, streak, totalQuestions, accuracy);
 
     console.log(`✅ Score recorded: FID ${fid}, Score ${score}, Streak ${streak}`);
 
     return NextResponse.json({
       success: true,
-      scoreId: scoreEntry.gameId,
+      scoreId: gameIdFinal,
       message: 'Score recorded successfully'
     });
 
@@ -117,21 +100,72 @@ export async function GET(request: NextRequest) {
     const type = searchParams.get('type') || 'user'; // 'user' or 'leaderboard'
 
     if (type === 'leaderboard') {
-      // Return top 10 players
-      const topPlayers = leaderboard
-        .sort((a, b) => b.highestScore - a.highestScore)
-        .slice(0, 10)
-        .map(player => ({
-          fid: player.fid,
-          username: player.username,
-          highestScore: player.highestScore,
-          bestStreak: player.bestStreak,
-          totalGames: player.totalGames
-        }));
+      // Get top 100 players with their latest scores and fetch usernames
+      const topPlayers = await db
+        .select({
+          fid: userStats.userFid,
+          highestScore: userStats.highestScore,
+          longestStreak: userStats.longestStreak,
+          totalGamesPlayed: userStats.totalGamesPlayed,
+          totalTokensEarned: userStats.totalTokensEarned,
+          bestAccuracy: userStats.bestAccuracy,
+          lastPlayedDate: userStats.lastPlayedDate,
+        })
+        .from(userStats)
+        .orderBy(desc(userStats.highestScore), desc(userStats.bestAccuracy))
+        .limit(100);
+
+      // Fetch usernames for all players in parallel (only if Neynar API key is available)
+      const hasNeynarKey = !!process.env.NEYNAR_API_KEY;
+      const leaderboardWithUsernames = await Promise.all(
+        topPlayers.map(async (player) => {
+          let username = undefined;
+
+          if (hasNeynarKey) {
+            try {
+              const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3004'}/api/neynar/user?fid=${player.fid}`);
+              if (response.ok) {
+                const userData = await response.json();
+                username = userData.user?.username;
+              }
+            } catch (error) {
+              console.log(`Could not fetch username for FID ${player.fid} (Neynar API unavailable)`);
+            }
+          } else {
+            console.log(`Skipping username fetch for FID ${player.fid} - No Neynar API key configured`);
+          }
+
+          // Get the latest game score for this user
+          const latestGame = await db
+            .select({
+              latestScore: gameSessions.score,
+              totalQuestions: gameSessions.totalQuestions,
+              gameId: gameSessions.gameId,
+              timestamp: gameSessions.createdAt,
+            })
+            .from(gameSessions)
+            .where(eq(gameSessions.userFid, player.fid))
+            .orderBy(desc(gameSessions.createdAt))
+            .limit(1);
+
+          return {
+            fid: player.fid,
+            username: username || `User ${player.fid}`,
+            latestScore: latestGame[0]?.latestScore || 0,
+            totalQuestions: latestGame[0]?.totalQuestions || 0,
+            gameId: latestGame[0]?.gameId || '',
+            timestamp: latestGame[0]?.timestamp || '',
+            highestScore: player.highestScore,
+            longestStreak: player.longestStreak,
+            totalGames: player.totalGamesPlayed,
+            bestAccuracy: player.bestAccuracy,
+          };
+        })
+      );
 
       return NextResponse.json({
         success: true,
-        leaderboard: topPlayers
+        leaderboard: leaderboardWithUsernames
       });
     }
 
@@ -150,13 +184,74 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const userGameHistory = userScores.get(fidNumber) || [];
-    const stats = calculateUserStats(userGameHistory);
+    // Get user stats
+    const userStatsResult = await db
+      .select()
+      .from(userStats)
+      .where(eq(userStats.userFid, fidNumber))
+      .limit(1);
+
+    if (userStatsResult.length === 0) {
+      return NextResponse.json({
+        success: true,
+        stats: {
+          latestScore: 0,
+          totalQuestions: 0,
+          accuracy: 0
+        },
+        recentGames: []
+      });
+    }
+
+    const stats = userStatsResult[0];
+
+    // Get latest game for accurate latest score display
+    const latestGame = await db
+      .select({
+        score: gameSessions.score,
+        totalQuestions: gameSessions.totalQuestions,
+        accuracy: gameSessions.accuracy,
+      })
+      .from(gameSessions)
+      .where(eq(gameSessions.userFid, fidNumber))
+      .orderBy(desc(gameSessions.createdAt))
+      .limit(1);
+
+    // Get recent games
+    const recentGames = await db
+      .select({
+        score: gameSessions.score,
+        streak: gameSessions.streak,
+        totalQuestions: gameSessions.totalQuestions,
+        timestamp: gameSessions.createdAt,
+        gameId: gameSessions.gameId,
+      })
+      .from(gameSessions)
+      .where(eq(gameSessions.userFid, fidNumber))
+      .orderBy(desc(gameSessions.createdAt))
+      .limit(10);
 
     return NextResponse.json({
       success: true,
-      stats,
-      recentGames: userGameHistory.slice(-10) // Last 10 games
+      stats: {
+        latestScore: latestGame[0]?.score || 0,
+        totalQuestions: latestGame[0]?.totalQuestions || 0,
+        accuracy: latestGame[0]?.accuracy || 0,
+        totalGames: stats.totalGamesPlayed,
+        highestScore: stats.highestScore,
+        bestStreak: stats.longestStreak,
+        averageScore: recentGames.length > 0
+          ? recentGames.reduce((sum, game) => sum + game.score, 0) / recentGames.length
+          : 0,
+        totalQuestionsAnswered: stats.totalQuestionsAnswered
+      },
+      recentGames: recentGames.map(game => ({
+        score: game.score,
+        streak: game.streak,
+        totalQuestions: game.totalQuestions,
+        timestamp: Number(game.timestamp),
+        gameId: game.gameId
+      }))
     });
 
   } catch (error) {
@@ -172,61 +267,52 @@ export async function GET(request: NextRequest) {
   }
 }
 
-async function updateLeaderboard(fid: number, score: number, streak: number, totalQuestions: number) {
-  let playerEntry = leaderboard.find(p => p.fid === fid);
+async function updateUserStats(fid: number, score: number, streak: number, totalQuestions: number, accuracy: number) {
+  try {
+    // Check if user stats exist
+    const existingStats = await db
+      .select()
+      .from(userStats)
+      .where(eq(userStats.userFid, fid))
+      .limit(1);
 
-  if (!playerEntry) {
-    // Try to fetch username from Neynar API for new players
-    let username = undefined;
-    try {
-      const neynarResponse = await fetch(`/api/neynar/user?fid=${fid}`);
-      if (neynarResponse.ok) {
-        const userData = await neynarResponse.json();
-        username = userData.username;
-      }
-    } catch (error) {
-      console.log(`Could not fetch username for FID ${fid}`);
+    if (existingStats.length === 0) {
+      // Create new user stats
+      await db.insert(userStats).values({
+        userFid: fid,
+        totalGamesPlayed: 1,
+        totalQuestionsAnswered: totalQuestions,
+        totalCorrectAnswers: score,
+        highestScore: score,
+        longestStreak: streak,
+        bestAccuracy: accuracy,
+        currentDailyStreak: 1,
+        longestDailyStreak: 1,
+        lastPlayedDate: new Date(),
+        currentDifficultyLevel: 1,
+        wordsLearned: score, // Approximate based on correct answers
+        totalTokensEarned: 0,
+        totalSpins: 0,
+      });
+    } else {
+      // Update existing stats
+      const stats = existingStats[0];
+      await db
+        .update(userStats)
+        .set({
+          totalGamesPlayed: stats.totalGamesPlayed + 1,
+          totalQuestionsAnswered: stats.totalQuestionsAnswered + totalQuestions,
+          totalCorrectAnswers: stats.totalCorrectAnswers + score,
+          highestScore: Math.max(stats.highestScore, score),
+          longestStreak: Math.max(stats.longestStreak, streak),
+          bestAccuracy: Math.max(stats.bestAccuracy, accuracy),
+          lastPlayedDate: new Date(),
+          wordsLearned: stats.wordsLearned + score, // Approximate
+          updatedAt: new Date(),
+        })
+        .where(eq(userStats.userFid, fid));
     }
-
-    playerEntry = {
-      fid,
-      username,
-      highestScore: score,
-      bestStreak: streak,
-      totalGames: 1,
-      lastPlayed: Date.now()
-    };
-    leaderboard.push(playerEntry);
-  } else {
-    playerEntry.highestScore = Math.max(playerEntry.highestScore, score);
-    playerEntry.bestStreak = Math.max(playerEntry.bestStreak, streak);
-    playerEntry.totalGames += 1;
-    playerEntry.lastPlayed = Date.now();
+  } catch (error) {
+    console.error('❌ Failed to update user stats:', error);
   }
-}
-
-function calculateUserStats(games: Array<{score: number; streak: number; totalQuestions: number}>) {
-  if (games.length === 0) {
-    return {
-      totalGames: 0,
-      highestScore: 0,
-      bestStreak: 0,
-      averageScore: 0,
-      totalQuestionsAnswered: 0
-    };
-  }
-
-  const totalGames = games.length;
-  const highestScore = Math.max(...games.map(g => g.score));
-  const bestStreak = Math.max(...games.map(g => g.streak));
-  const averageScore = games.reduce((sum, g) => sum + g.score, 0) / totalGames;
-  const totalQuestionsAnswered = games.reduce((sum, g) => sum + g.totalQuestions, 0);
-
-  return {
-    totalGames,
-    highestScore,
-    bestStreak,
-    averageScore: Math.round(averageScore * 100) / 100,
-    totalQuestionsAnswered
-  };
 }

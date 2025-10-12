@@ -86,7 +86,13 @@ export default function LexipopMiniApp() {
   const startNewGame = () => {
     console.log('🎮 Starting new game - current showTokenWheel:', showTokenWheel);
 
-    const gameQuestions = getUniqueWords(5); // 5 questions per game
+    // If we have completed a game, show token wheel first
+    if (gameState.totalQuestions > 0) {
+      setShowTokenWheel(true);
+      return;
+    }
+
+    const gameQuestions = getUniqueWords(1); // 1 question per game for testing
     const firstWord = gameQuestions[0];
     const allDefinitions = [firstWord.correctDefinition, ...firstWord.incorrectDefinitions];
     const shuffled = shuffleArray(allDefinitions);
@@ -167,7 +173,7 @@ export default function LexipopMiniApp() {
 
 
   const handleTokenClaim = (amount: number) => {
-    console.log(`💰 Claimed ${amount} LEXIPOP tokens!`);
+    console.log(`💰 Claimed ${amount} $LEXIPOP!`);
     // TODO: Implement actual token claiming logic
     setShowTokenWheel(false);
   };
@@ -234,7 +240,7 @@ export default function LexipopMiniApp() {
                   {/* Large Score Display */}
                   <div className="bg-white/20 rounded-lg p-4 mb-4">
                     <div className="text-4xl font-bold">
-                      {gameState.score}/{gameState.totalQuestions}, {Math.round((gameState.score / gameState.totalQuestions) * 100)}% correct
+                      {gameState.score}/{gameState.totalQuestions}
                     </div>
                   </div>
 
@@ -273,23 +279,13 @@ export default function LexipopMiniApp() {
               {/* Action Buttons */}
               <div className="space-y-3 mt-auto">
                 <MiniAppButton
-                  onClick={() => setShowTokenWheel(true)}
+                  onClick={startNewGame}
                   variant="primary"
                   size="lg"
                   icon="🎰"
                   className="w-full"
                 >
                   Spin to Win!
-                </MiniAppButton>
-
-                <MiniAppButton
-                  onClick={startNewGame}
-                  variant="secondary"
-                  size="lg"
-                  icon="🔄"
-                  className="w-full"
-                >
-                  Play Again
                 </MiniAppButton>
 
                 <MiniAppButton

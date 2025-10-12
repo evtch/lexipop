@@ -13,6 +13,10 @@ interface LeaderboardEntry {
   totalQuestions: number;
   gameId: string;
   timestamp: string;
+  highestScore: number;
+  longestStreak: number;
+  totalGames: number;
+  bestAccuracy: number;
 }
 
 interface UserStats {
@@ -129,7 +133,7 @@ export default function LeaderboardPage() {
               {userStats.latestScore}/{userStats.totalQuestions}
             </div>
             <div className="text-lg text-blue-700 font-semibold">
-              {Math.round(userStats.accuracy)}% Accuracy
+              {userStats.latestScore === userStats.totalQuestions ? "Perfect!" : "Good try!"}
             </div>
             <div className="text-sm text-gray-600 mt-1">Latest Game Score</div>
           </div>
@@ -204,7 +208,7 @@ export default function LeaderboardPage() {
                       {entry.latestScore}/{entry.totalQuestions}
                     </div>
                     <div className="text-sm text-gray-600">
-                      {Math.round((entry.latestScore / entry.totalQuestions) * 100)}% accuracy
+                      {entry.latestScore === entry.totalQuestions ? "Perfect!" : "Good try!"}
                     </div>
                   </div>
                 </div>

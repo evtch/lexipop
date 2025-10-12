@@ -30,7 +30,9 @@ function isLikelySecret(value: string): boolean {
     /^[A-Za-z0-9+/]{40,}={0,2}$/, // Base64-like
     /^0x[a-fA-F0-9]{40,}$/, // Ethereum address/key-like
     /api_key|secret|token|password|mnemonic/i, // Contains secret keywords
-    /^[a-f0-9]{32,}$/i // Hex string (likely a key)
+    /^[a-f0-9]{32,}$/i, // Hex string (likely a key)
+    /^[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}$/i, // UUID format (Neynar keys)
+    /^[a-f0-9-]{36}$/i // Another UUID format
   ];
 
   return secretPatterns.some(pattern => pattern.test(value));
