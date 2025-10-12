@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import MiniAppButton from './MiniAppButton';
 import { generateCommitment } from '@/lib/pyth-entropy';
+import { useAccount, useConnect, useDisconnect } from 'wagmi';
+import { useFarcasterAccount } from '@/lib/web3/hooks/useFarcasterAccount';
 
 interface TokenWheelProps {
   isVisible: boolean;
@@ -34,6 +36,14 @@ export default function TokenWheel({ isVisible, onClaim, onClose, onViewLeaderbo
   const [isSpinning, setIsSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [result, setResult] = useState<number | null>(null);
+  const [isClaimingTokens, setIsClaimingTokens] = useState(false);
+  const [claimError, setClaimError] = useState<string | null>(null);
+
+  // Wallet connection hooks
+  const { address, isConnected } = useAccount();
+  const { connect, connectors } = useConnect();
+  const { disconnect } = useDisconnect();
+  const farcasterAccount = useFarcasterAccount();
 
   const spinWheel = () => {
     if (isSpinning) return;
@@ -96,11 +106,83 @@ export default function TokenWheel({ isVisible, onClaim, onClose, onViewLeaderbo
     }, 3000);
   };
 
-  const handleClaim = () => {
-    if (result) {
-      onClaim(result);
+  const handleFarcasterWalletConnect = () => {
+    // Find the Farcaster Frame connector
+    const farcasterConnector = connectors.find(connector =>
+      connector.name.toLowerCase().includes('farcaster') ||
+      connector.id.includes('farcaster')
+    );
+
+    if (farcasterConnector) {
+      connect({ connector: farcasterConnector });
+    } else {
+      setClaimError('Farcaster wallet connector not found');
     }
   };
+
+  const handleTokenClaim = async () => {
+    if (!result || !address || !gameData) {
+      const missingItems = [];
+      if (!result) missingItems.push('prize amount');
+      if (!address) missingItems.push('wallet address');
+      if (!gameData) missingItems.push('game data');
+
+      setClaimError(`Missing: ${missingItems.join(', ')}`);
+      console.log('❌ Cannot claim tokens - missing:', missingItems.join(', '));
+      return;
+    }
+
+    setIsClaimingTokens(true);
+    setClaimError(null);
+
+    try {
+      const response = await fetch('/api/tokens/claim', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          gameId: gameData.gameId,
+          userAddress: address,
+          tokensToClaimgame: result,
+          signature: '', // Could add signature verification later
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        console.log('🎉 Tokens claimed successfully:', data.transactionHash);
+        onClaim(result); // Call the original onClaim callback
+      } else {
+        throw new Error(data.error || 'Failed to claim tokens');
+      }
+    } catch (error) {
+      console.error('❌ Token claim failed:', error);
+      setClaimError(error instanceof Error ? error.message : 'Failed to claim tokens');
+    } finally {
+      setIsClaimingTokens(false);
+    }
+  };
+
+  // Check if user has Farcaster wallet connected and verified
+  const hasFarcasterWallet = isConnected && farcasterAccount.isConnected && farcasterAccount.fid;
+  const canClaimTokens = hasFarcasterWallet && result && !isClaimingTokens;
+
+  // Debug logging for development
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🎯 TokenWheel state:', {
+      isVisible,
+      result,
+      isConnected,
+      address: !!address,
+      farcasterAccountConnected: farcasterAccount.isConnected,
+      farcasterFid: farcasterAccount.fid,
+      hasFarcasterWallet,
+      canClaimTokens,
+      hasGameData: !!gameData
+    });
+  }
 
   return (
     <AnimatePresence>
@@ -131,6 +213,31 @@ export default function TokenWheel({ isVisible, onClaim, onClose, onViewLeaderbo
               <div className="mt-2 text-xs text-blue-600 bg-blue-50 rounded px-2 py-1 inline-block">
                 🔒 Powered by Pyth Network for verifiable randomness
               </div>
+
+              {/* Wallet Connection Status */}
+              {!hasFarcasterWallet && (
+                <div className="mt-4 p-3 bg-orange-50 rounded-lg border border-orange-200">
+                  <p className="text-sm text-orange-700 font-medium">
+                    🎯 Connect your Farcaster wallet to claim tokens
+                  </p>
+                  {isConnected && !farcasterAccount.fid && (
+                    <p className="text-xs text-orange-600 mt-1">
+                      Wallet connected but no Farcaster account detected
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {hasFarcasterWallet && (
+                <div className="mt-4 p-3 bg-green-50 rounded-lg border border-green-200">
+                  <p className="text-sm text-green-700 font-medium">
+                    ✅ Farcaster wallet connected
+                  </p>
+                  <p className="text-xs text-green-600 mt-1">
+                    @{farcasterAccount.username} (FID: {farcasterAccount.fid})
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Wheel Container */}
@@ -189,6 +296,24 @@ export default function TokenWheel({ isVisible, onClaim, onClose, onViewLeaderbo
                 <div className="text-2xl font-bold text-green-800">
                   🎉 You won {result} LEXIPOP tokens!
                 </div>
+                {!hasFarcasterWallet && (
+                  <p className="text-sm text-green-600 mt-2">
+                    Connect your Farcaster wallet to claim
+                  </p>
+                )}
+              </motion.div>
+            )}
+
+            {/* Error Display */}
+            {claimError && (
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="text-center mb-6 bg-red-100 rounded-lg p-4 border border-red-200"
+              >
+                <div className="text-sm font-medium text-red-800">
+                  ❌ {claimError}
+                </div>
               </motion.div>
             )}
 
@@ -205,15 +330,26 @@ export default function TokenWheel({ isVisible, onClaim, onClose, onViewLeaderbo
                 >
                   {isSpinning ? 'Spinning...' : 'Spin the Wheel!'}
                 </MiniAppButton>
+              ) : !hasFarcasterWallet ? (
+                <MiniAppButton
+                  onClick={handleFarcasterWalletConnect}
+                  variant="primary"
+                  size="lg"
+                  icon="🎯"
+                  className="w-full"
+                >
+                  Connect Farcaster Wallet
+                </MiniAppButton>
               ) : (
                 <MiniAppButton
-                  onClick={handleClaim}
+                  onClick={handleTokenClaim}
                   variant="primary"
                   size="lg"
                   icon="💰"
+                  disabled={isClaimingTokens}
                   className="w-full"
                 >
-                  Claim {result} Tokens
+                  {isClaimingTokens ? 'Claiming Tokens...' : `Claim ${result} Tokens`}
                 </MiniAppButton>
               )}
 

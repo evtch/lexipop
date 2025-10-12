@@ -203,7 +203,7 @@ export default function LexipopMiniApp() {
 
   if (!gameState.isGameActive) {
     return (
-      <div className="h-screen flex flex-col p-4 text-gray-800">
+      <div className="flex flex-col p-4 text-gray-800" style={{ height: '90vh', maxHeight: '90vh' }}>
         {/* Compact Header */}
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-xl font-bold">Lexipop</h1>
@@ -242,22 +242,7 @@ export default function LexipopMiniApp() {
                   {/* Large Score Display */}
                   <div className="bg-white/20 rounded-lg p-4 mb-4">
                     <div className="text-4xl font-bold">
-                      {gameState.score}/{gameState.totalQuestions}
-                    </div>
-                    <div className="text-lg opacity-90">
-                      {Math.round((gameState.score / gameState.totalQuestions) * 100)}% Correct
-                    </div>
-                  </div>
-
-                  {/* Stats Grid */}
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div className="bg-white/20 rounded-lg p-3">
-                      <div className="font-semibold">Best Streak</div>
-                      <div className="text-xl font-bold">{gameState.streak}</div>
-                    </div>
-                    <div className="bg-white/20 rounded-lg p-3">
-                      <div className="font-semibold">Questions</div>
-                      <div className="text-xl font-bold">{gameState.totalQuestions}</div>
+                      {gameState.score}/{gameState.totalQuestions}, {Math.round((gameState.score / gameState.totalQuestions) * 100)}% correct
                     </div>
                   </div>
 
@@ -394,7 +379,7 @@ export default function LexipopMiniApp() {
   }
 
   return (
-    <div className="h-screen flex flex-col p-4 text-gray-800 overflow-hidden">
+    <div className="flex flex-col p-4 text-gray-800 overflow-hidden" style={{ height: '90vh', maxHeight: '90vh' }}>
       {/* Header - Compact for Frame */}
       <div className="flex justify-between items-center mb-4">
         <div className="flex items-center gap-2">
@@ -416,10 +401,6 @@ export default function LexipopMiniApp() {
           <div className="text-center">
             <div className="font-medium">Score</div>
             <div className="text-lg font-bold">{gameState.score}</div>
-          </div>
-          <div className="text-center">
-            <div className="font-medium">Streak</div>
-            <div className="text-lg font-bold">{gameState.streak}</div>
           </div>
         </div>
       </div>
