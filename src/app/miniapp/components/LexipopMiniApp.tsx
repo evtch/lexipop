@@ -84,6 +84,8 @@ export default function LexipopMiniApp() {
   };
 
   const startNewGame = () => {
+    console.log('🎮 Starting new game - current showTokenWheel:', showTokenWheel);
+
     const gameQuestions = getUniqueWords(5); // 5 questions per game
     const firstWord = gameQuestions[0];
     const allDefinitions = [firstWord.correctDefinition, ...firstWord.incorrectDefinitions];
@@ -104,6 +106,8 @@ export default function LexipopMiniApp() {
       showResult: false,
       isCorrect: null
     });
+
+    console.log('🎮 New game started - showTokenWheel should still be:', showTokenWheel);
   };
 
   const nextQuestion = () => {
@@ -382,26 +386,24 @@ export default function LexipopMiniApp() {
     <div className="flex flex-col p-4 text-gray-800 overflow-hidden" style={{ height: '90vh', maxHeight: '90vh' }}>
       {/* Header - Compact for Frame */}
       <div className="flex justify-between items-center mb-4">
-        <div className="flex items-center gap-2">
-          <h1 className="text-xl font-bold">Lexipop</h1>
+        <h1 className="text-xl font-bold">Lexipop</h1>
+        <div className="flex items-center gap-4">
+          <div className="text-center text-sm">
+            <div className="font-medium">Score</div>
+            <div className="text-lg font-bold">{gameState.score}</div>
+          </div>
           {currentUser && (
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
               {currentUser.pfpUrl && (
                 <img
                   src={currentUser.pfpUrl}
                   alt={currentUser.username}
-                  className="w-6 h-6 rounded-full"
+                  className="w-8 h-8 rounded-full"
                 />
               )}
               <span className="text-sm text-gray-600">@{currentUser.username}</span>
             </div>
           )}
-        </div>
-        <div className="flex gap-4 text-sm">
-          <div className="text-center">
-            <div className="font-medium">Score</div>
-            <div className="text-lg font-bold">{gameState.score}</div>
-          </div>
         </div>
       </div>
 

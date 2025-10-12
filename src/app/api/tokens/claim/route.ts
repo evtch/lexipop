@@ -10,20 +10,30 @@ import { headers } from 'next/headers';
 import { createPublicClient, createWalletClient, http, parseEther } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { base, baseSepolia } from 'viem/chains';
-// Server-side token contract addresses (avoiding client-side wagmi config)
+// Server-side token contract addresses (configurable via environment variables)
+const getContractAddresses = () => {
+  const lexipopToken = (process.env.LEXIPOP_TOKEN_ADDRESS || '0xf732f31f73e7DC21299f3ab42BD22E8a7C6b4B07') as `0x${string}`;
+  const moneyTree = (process.env.MONEYTREE_CONTRACT_ADDRESS || '0xE636BaaF2c390A591EdbffaF748898EB3f6FF9A1') as `0x${string}`;
+
+  return {
+    lexipopToken,
+    moneyTree,
+  };
+};
+
+// Contract addresses by chain - MoneyTree is deployed on Base mainnet
 const tokenContracts = {
-  [base.id]: {
-    lexipopToken: '0xf732f31f73e7DC21299f3ab42BD22E8a7C6b4B07' as const,
-    moneyTree: '0xE636BaaF2c390A591EdbffaF748898EB3f6FF9A1' as const,
-  },
+  [base.id]: getContractAddresses(),
   [baseSepolia.id]: {
-    lexipopToken: '0xf732f31f73e7DC21299f3ab42BD22E8a7C6b4B07' as const,
-    moneyTree: '0xE636BaaF2c390A591EdbffaF748898EB3f6FF9A1' as const,
+    // For testing, we could use different addresses or disable token claiming
+    lexipopToken: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+    moneyTree: '0x0000000000000000000000000000000000000000' as `0x${string}`,
   }
 } as const;
 
-// Server-side default chain
-const defaultChain = process.env.NODE_ENV === 'production' ? base : baseSepolia;
+// Use Base mainnet for token claims (where contract is deployed)
+// NOTE: Changed to always use Base mainnet since that's where the contract exists
+const defaultChain = base;
 import {
   moneyTreeABI,
   lexipopTokenABI,
@@ -159,18 +169,32 @@ export async function POST(request: NextRequest) {
 
       console.log(`💰 Distributing ${tokensToClaimgame} LEXIPOP tokens (${tokenAmountWei} wei) to ${userAddress}`);
 
-      // Check MoneyTree contract balance first
-      const availableBalance = await publicClient.readContract({
-        address: contracts.moneyTree,
-        abi: moneyTreeABI,
-        functionName: 'getAvailableBalance',
-        args: [contracts.lexipopToken]
-      });
+      // Check if MoneyTree contract exists and has expected functions
+      try {
+        // First, try to call the contract to see if it exists
+        const availableBalance = await publicClient.readContract({
+          address: contracts.moneyTree,
+          abi: moneyTreeABI,
+          functionName: 'getAvailableBalance',
+          args: [contracts.lexipopToken]
+        });
 
-      if (availableBalance < tokenAmountWei) {
-        console.warn(`⚠️ Insufficient balance in MoneyTree. Available: ${availableBalance}, Requested: ${tokenAmountWei}`);
+        if (availableBalance < tokenAmountWei) {
+          console.warn(`⚠️ Insufficient balance in MoneyTree. Available: ${availableBalance}, Requested: ${tokenAmountWei}`);
+          return NextResponse.json(
+            { success: false, error: 'Insufficient tokens available for distribution' },
+            { status: 503 }
+          );
+        }
+      } catch (contractError) {
+        console.error('❌ MoneyTree contract not found or invalid:', {
+          address: contracts.moneyTree,
+          chain: defaultChain.name,
+          error: contractError instanceof Error ? contractError.message : String(contractError)
+        });
+
         return NextResponse.json(
-          { success: false, error: 'Insufficient tokens available for distribution' },
+          { success: false, error: 'Token distribution service temporarily unavailable - contract not deployed' },
           { status: 503 }
         );
       }

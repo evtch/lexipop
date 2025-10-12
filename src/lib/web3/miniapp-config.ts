@@ -27,7 +27,7 @@ export const miniappWagmiConfig = createConfig({
   ssr: true,
 });
 
-// Default chain based on environment
-export const defaultChain = process.env.NODE_ENV === 'production' ? base : baseSepolia;
+// Use Base mainnet as default since that's where our contracts are deployed
+export const defaultChain = base;
 
 export default miniappWagmiConfig;

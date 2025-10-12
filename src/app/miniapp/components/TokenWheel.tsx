@@ -198,53 +198,37 @@ export default function TokenWheel({ isVisible, onClaim, onClose, onViewLeaderbo
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.8, opacity: 0 }}
-            className="bg-white rounded-xl p-6 max-w-md w-full"
+            className="bg-white rounded-xl p-4 max-w-sm w-full"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="text-center mb-6">
-              <div className="text-4xl mb-2">🎰</div>
-              <h2 className="text-2xl font-bold text-gray-800 mb-2">
-                Claim LEXIPOP Tokens!
+            <div className="text-center mb-4">
+              <h2 className="text-xl font-bold text-gray-800 mb-1">
+                🎰 Spin to Win!
               </h2>
-              <p className="text-gray-600">
-                Spin the wheel to claim your reward tokens
-              </p>
-              <div className="mt-2 text-xs text-blue-600 bg-blue-50 rounded px-2 py-1 inline-block">
-                🔒 Powered by Pyth Network for verifiable randomness
-              </div>
 
-              {/* Wallet Connection Status */}
+              {/* Compact Wallet Status */}
               {!hasFarcasterWallet && (
-                <div className="mt-4 p-3 bg-orange-50 rounded-lg border border-orange-200">
-                  <p className="text-sm text-orange-700 font-medium">
-                    🎯 Connect your Farcaster wallet to claim tokens
-                  </p>
-                  {isConnected && !farcasterAccount.fid && (
-                    <p className="text-xs text-orange-600 mt-1">
-                      Wallet connected but no Farcaster account detected
-                    </p>
-                  )}
-                </div>
+                <p className="text-sm text-orange-600 mb-2">
+                  Connect Farcaster wallet to claim
+                </p>
               )}
 
               {hasFarcasterWallet && (
-                <div className="mt-4 p-3 bg-green-50 rounded-lg border border-green-200">
-                  <p className="text-sm text-green-700 font-medium">
-                    ✅ Farcaster wallet connected
-                  </p>
-                  <p className="text-xs text-green-600 mt-1">
-                    @{farcasterAccount.username} (FID: {farcasterAccount.fid})
-                  </p>
-                </div>
+                <p className="text-sm text-green-600 mb-2">
+                  ✅ @{farcasterAccount.username}
+                </p>
               )}
             </div>
 
             {/* Wheel Container */}
-            <div className="relative w-64 h-64 mx-auto mb-6">
-              {/* Wheel */}
-              <motion.div
-                className="w-full h-full rounded-full border-4 border-gray-800 relative overflow-hidden"
+            <div className="relative w-48 h-48 mx-auto mb-4">
+              {/* SVG Wheel */}
+              <motion.svg
+                width="192"
+                height="192"
+                viewBox="0 0 256 256"
+                className="absolute inset-0"
                 animate={{ rotate: rotation }}
                 transition={{
                   duration: isSpinning ? 3 : 0,
@@ -252,38 +236,77 @@ export default function TokenWheel({ isVisible, onClaim, onClose, onViewLeaderbo
                 }}
               >
                 {WHEEL_SEGMENTS.map((segment, index) => {
-                  const angle = (360 / WHEEL_SEGMENTS.length) * index;
+                  const segmentAngle = 360 / WHEEL_SEGMENTS.length;
+                  const startAngle = index * segmentAngle - 90; // Start from top
+                  const endAngle = startAngle + segmentAngle;
+
+                  const radius = 120;
+                  const centerX = 128;
+                  const centerY = 128;
+
+                  // Calculate path coordinates
+                  const startX = centerX + radius * Math.cos((startAngle * Math.PI) / 180);
+                  const startY = centerY + radius * Math.sin((startAngle * Math.PI) / 180);
+                  const endX = centerX + radius * Math.cos((endAngle * Math.PI) / 180);
+                  const endY = centerY + radius * Math.sin((endAngle * Math.PI) / 180);
+
+                  const largeArcFlag = segmentAngle > 180 ? 1 : 0;
+
+                  const pathData = [
+                    `M ${centerX} ${centerY}`,
+                    `L ${startX} ${startY}`,
+                    `A ${radius} ${radius} 0 ${largeArcFlag} 1 ${endX} ${endY}`,
+                    'Z'
+                  ].join(' ');
+
+                  // Text position (middle of segment)
+                  const textAngle = startAngle + segmentAngle / 2;
+                  const textRadius = radius * 0.7;
+                  const textX = centerX + textRadius * Math.cos((textAngle * Math.PI) / 180);
+                  const textY = centerY + textRadius * Math.sin((textAngle * Math.PI) / 180);
+
+                  const colors = {
+                    'bg-red-400': '#f87171',
+                    'bg-orange-400': '#fb923c',
+                    'bg-yellow-400': '#facc15',
+                    'bg-green-400': '#4ade80',
+                    'bg-blue-400': '#60a5fa',
+                    'bg-purple-400': '#c084fc',
+                    'bg-pink-400': '#f472b6',
+                    'bg-gray-400': '#9ca3af',
+                  };
+
                   return (
-                    <div
-                      key={index}
-                      className={`absolute w-full h-full ${segment.color}`}
-                      style={{
-                        clipPath: `polygon(50% 50%, 50% 0%, ${
-                          50 + 50 * Math.cos((angle + 45) * Math.PI / 180)
-                        }% ${
-                          50 + 50 * Math.sin((angle + 45) * Math.PI / 180)
-                        }%)`,
-                        transform: `rotate(${angle}deg)`,
-                      }}
-                    >
-                      <div
-                        className="absolute top-4 left-1/2 transform -translate-x-1/2 text-white font-bold text-sm"
-                        style={{ transform: `translateX(-50%) rotate(${45}deg)` }}
+                    <g key={index}>
+                      <path
+                        d={pathData}
+                        fill={colors[segment.color as keyof typeof colors] || '#9ca3af'}
+                        stroke="#ffffff"
+                        strokeWidth="2"
+                      />
+                      <text
+                        x={textX}
+                        y={textY}
+                        fill="white"
+                        fontSize="16"
+                        fontWeight="bold"
+                        textAnchor="middle"
+                        dominantBaseline="middle"
                       >
                         {segment.amount}
-                      </div>
-                    </div>
+                      </text>
+                    </g>
                   );
                 })}
-              </motion.div>
+              </motion.svg>
 
               {/* Pointer */}
               <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1 z-10">
-                <div className="w-0 h-0 border-l-4 border-r-4 border-b-8 border-l-transparent border-r-transparent border-b-gray-800"></div>
+                <div className="w-0 h-0 border-l-[6px] border-r-[6px] border-b-[12px] border-l-transparent border-r-transparent border-b-white drop-shadow-md"></div>
               </div>
 
               {/* Center Circle */}
-              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-gray-800 rounded-full z-10"></div>
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-white rounded-full z-10 shadow-lg border-2 border-gray-300"></div>
             </div>
 
             {/* Result Display */}
@@ -291,16 +314,11 @@ export default function TokenWheel({ isVisible, onClaim, onClose, onViewLeaderbo
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                className="text-center mb-6 bg-green-100 rounded-lg p-4 border border-green-200"
+                className="text-center mb-3 bg-green-100 rounded-lg p-3 border border-green-200"
               >
-                <div className="text-2xl font-bold text-green-800">
-                  🎉 You won {result} LEXIPOP tokens!
+                <div className="text-lg font-bold text-green-800">
+                  🎉 Won {result} tokens!
                 </div>
-                {!hasFarcasterWallet && (
-                  <p className="text-sm text-green-600 mt-2">
-                    Connect your Farcaster wallet to claim
-                  </p>
-                )}
               </motion.div>
             )}
 
@@ -309,7 +327,7 @@ export default function TokenWheel({ isVisible, onClaim, onClose, onViewLeaderbo
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                className="text-center mb-6 bg-red-100 rounded-lg p-4 border border-red-200"
+                className="text-center mb-3 bg-red-100 rounded-lg p-3 border border-red-200"
               >
                 <div className="text-sm font-medium text-red-800">
                   ❌ {claimError}
@@ -318,63 +336,63 @@ export default function TokenWheel({ isVisible, onClaim, onClose, onViewLeaderbo
             )}
 
             {/* Action Buttons */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               {result === null ? (
                 <MiniAppButton
                   onClick={spinWheel}
                   variant="primary"
-                  size="lg"
+                  size="md"
                   icon="🎰"
                   disabled={isSpinning}
                   className="w-full"
                 >
-                  {isSpinning ? 'Spinning...' : 'Spin the Wheel!'}
+                  {isSpinning ? 'Spinning...' : 'Spin!'}
                 </MiniAppButton>
               ) : !hasFarcasterWallet ? (
                 <MiniAppButton
                   onClick={handleFarcasterWalletConnect}
                   variant="primary"
-                  size="lg"
+                  size="md"
                   icon="🎯"
                   className="w-full"
                 >
-                  Connect Farcaster Wallet
+                  Connect Wallet
                 </MiniAppButton>
               ) : (
                 <MiniAppButton
                   onClick={handleTokenClaim}
                   variant="primary"
-                  size="lg"
+                  size="md"
                   icon="💰"
                   disabled={isClaimingTokens}
                   className="w-full"
                 >
-                  {isClaimingTokens ? 'Claiming Tokens...' : `Claim ${result} Tokens`}
+                  {isClaimingTokens ? 'Claiming...' : `Claim ${result}`}
                 </MiniAppButton>
               )}
 
-              {/* Navigation buttons - only show after token claim or immediately */}
+              {/* Navigation buttons */}
               <div className="flex gap-2">
                 {onViewLeaderboard && (
                   <MiniAppButton
                     onClick={onViewLeaderboard}
                     variant="secondary"
-                    size="md"
+                    size="sm"
                     icon="🏆"
                     className="flex-1"
                   >
-                    View Leaderboard
+                    Leaderboard
                   </MiniAppButton>
                 )}
 
                 <MiniAppButton
                   onClick={onClose}
                   variant="secondary"
-                  size="md"
+                  size="sm"
                   icon="🏠"
                   className="flex-1"
                 >
-                  Back Home
+                  Close
                 </MiniAppButton>
               </div>
             </div>
