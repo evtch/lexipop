@@ -482,14 +482,20 @@ export default function LexipopMiniApp() {
                 ) : (
                   // Token Claim Section
                   <div className="text-center">
-                    {/* Result Display */}
+                    {/* Result Display - Same style as generation box */}
                     <motion.div
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
-                      className="bg-green-100 rounded-xl p-4 border border-green-200 mb-4"
+                      className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl p-6 mb-4 shadow-xl"
                     >
-                      <div className="text-xl font-bold text-green-800">
-                        🎉 You won {generatedTokens} $LEXIPOP!
+                      <div className="text-4xl font-bold text-white mb-2">
+                        🎁 {generatedTokens}
+                      </div>
+                      <div className="text-white text-lg mb-2">
+                        $LEXIPOP
+                      </div>
+                      <div className="text-white/90 text-sm">
+                        You won {generatedTokens} $LEXIPOP!
                       </div>
                     </motion.div>
 
