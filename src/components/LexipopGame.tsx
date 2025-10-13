@@ -10,10 +10,14 @@ import { useNeynar } from '@/app/miniapp/components/NeynarProvider';
 import ScoreShare from '@/app/miniapp/components/ScoreShare';
 import SpinningWheel from './SpinningWheel';
 import TokenClaimModal, { useTokenClaimModal } from '@/app/miniapp/components/TokenClaimModal';
+import { useSound } from '@/hooks/useSound';
 
 export default function LexipopGame() {
   const { user, isLoading, error, signIn, signOut, isAuthenticated } = useNeynar();
   const tokenClaimModal = useTokenClaimModal();
+
+  // Sound effects
+  const { playCorrectSound, playWrongSound } = useSound();
 
   const [gameState, setGameState] = useState<GameState>({
     currentWord: null,
@@ -140,6 +144,13 @@ export default function LexipopGame() {
     if (!gameState.currentWord || gameState.showResult) return;
 
     const isCorrect = selectedDefinition === gameState.currentWord.correctDefinition;
+
+    // Play sound effect based on answer correctness
+    if (isCorrect) {
+      playCorrectSound();
+    } else {
+      playWrongSound();
+    }
 
     setGameState(prev => ({
       ...prev,

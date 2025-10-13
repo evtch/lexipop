@@ -43,17 +43,59 @@ export default function LeaderboardPage() {
 
   const fetchLeaderboard = async () => {
     try {
+      console.log('🔍 Fetching leaderboard...');
       const response = await fetch('/api/game/score?type=leaderboard');
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
       const data = await response.json();
+      console.log('📊 Leaderboard response:', data);
 
       if (data.success) {
-        setLeaderboard(data.leaderboard);
+        setLeaderboard(data.leaderboard || []);
+        console.log(`✅ Loaded ${data.leaderboard?.length || 0} leaderboard entries`);
       } else {
-        setError('Failed to load leaderboard');
+        console.error('❌ API returned success: false', data);
+        setError(data.error || 'Failed to load leaderboard');
       }
     } catch (err) {
-      setError('Failed to load leaderboard');
-      console.error('Leaderboard fetch error:', err);
+      console.error('❌ Leaderboard fetch error:', err);
+
+      // Create sample data for testing if API fails
+      const sampleLeaderboard: LeaderboardEntry[] = [
+        {
+          fid: 12345,
+          username: 'TestUser1',
+          latestScore: 5,
+          totalQuestions: 5,
+          gameId: 'test_game_1',
+          timestamp: new Date().toISOString(),
+          highestScore: 5,
+          longestStreak: 3,
+          totalGames: 5,
+          bestAccuracy: 100.0,
+        },
+        {
+          fid: 67890,
+          username: 'TestUser2',
+          latestScore: 4,
+          totalQuestions: 5,
+          gameId: 'test_game_2',
+          timestamp: new Date().toISOString(),
+          highestScore: 4,
+          longestStreak: 2,
+          totalGames: 3,
+          bestAccuracy: 80.0,
+        },
+      ];
+
+      console.log('🧪 Using sample data for testing');
+      setLeaderboard(sampleLeaderboard);
+
+      // Still set error but show sample data
+      setError('Using test data (API unavailable)');
     } finally {
       setIsLoading(false);
     }
@@ -96,6 +138,11 @@ export default function LeaderboardPage() {
       {/* Header */}
       <div className="text-center mb-6">
         <h1 className="text-2xl font-bold">🏆 Leaderboard</h1>
+        {error && leaderboard.length > 0 && (
+          <div className="mt-2 text-xs bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full inline-block">
+            📊 Showing test data
+          </div>
+        )}
       </div>
 
       {/* User Stats Card */}
@@ -133,9 +180,12 @@ export default function LeaderboardPage() {
 
       {/* Leaderboard */}
       <div className="space-y-3">
-        {error ? (
+        {error && leaderboard.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-red-600 mb-4">{error}</p>
+            <p className="text-red-600 mb-2">{error}</p>
+            <p className="text-gray-600 mb-4 text-sm">
+              The leaderboard API might be unavailable. Check console for details.
+            </p>
             <MiniAppButton
               onClick={fetchLeaderboard}
               variant="primary"

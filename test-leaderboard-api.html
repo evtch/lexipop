@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leaderboard API Test</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; background: #007acc; color: white; border: none; border-radius: 4px; }
+        .output { background: #f8f8f8; padding: 15px; border-radius: 4px; margin: 10px 0; white-space: pre-wrap; font-size: 12px; }
+        .error { background: #ffe6e6; color: #cc0000; }
+        .success { background: #e6ffe6; color: #006600; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Lexipop Leaderboard API Test</h1>
+        <p>Use this tool to test the leaderboard API and add sample data if needed.</p>
+
+        <div>
+            <button onclick="testLeaderboardAPI()">📊 Test Leaderboard API</button>
+            <button onclick="addSampleScore()">➕ Add Sample Score</button>
+            <button onclick="clearOutput()">🗑️ Clear Output</button>
+        </div>
+
+        <div id="output" class="output">Click "Test Leaderboard API" to start...</div>
+    </div>
+
+    <script>
+        const output = document.getElementById('output');
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${message}\n`;
+            output.textContent += logEntry;
+            output.className = `output ${type}`;
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function clearOutput() {
+            output.textContent = '';
+            output.className = 'output';
+        }
+
+        async function testLeaderboardAPI() {
+            log('🔍 Testing leaderboard API...');
+
+            try {
+                const response = await fetch('/api/game/score?type=leaderboard');
+                log(`📡 Response status: ${response.status} ${response.statusText}`);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                log('📊 API Response:', 'success');
+                log(JSON.stringify(data, null, 2), 'success');
+
+                if (data.success && data.leaderboard) {
+                    log(`✅ Found ${data.leaderboard.length} leaderboard entries`, 'success');
+
+                    if (data.leaderboard.length === 0) {
+                        log('⚠️ Leaderboard is empty. You might want to add sample data.', 'error');
+                    } else {
+                        log('🏆 Top entries:', 'success');
+                        data.leaderboard.slice(0, 3).forEach((entry, index) => {
+                            log(`  ${index + 1}. ${entry.username || entry.fid}: ${entry.latestScore}/${entry.totalQuestions}`, 'success');
+                        });
+                    }
+                } else {
+                    log('❌ API returned success: false', 'error');
+                    log(data.error || 'Unknown error', 'error');
+                }
+
+            } catch (error) {
+                log('❌ API test failed:', 'error');
+                log(error.message, 'error');
+                log('💡 This might be because the server is not running or the database is not accessible.', 'error');
+            }
+        }
+
+        async function addSampleScore() {
+            log('➕ Adding sample score...');
+
+            const sampleScore = {
+                fid: Math.floor(Math.random() * 100000) + 10000,
+                score: Math.floor(Math.random() * 5) + 1,
+                streak: Math.floor(Math.random() * 3) + 1,
+                totalQuestions: 5,
+                gameId: `test_game_${Date.now()}`
+            };
+
+            log(`📤 Submitting: FID ${sampleScore.fid}, Score ${sampleScore.score}/5`);
+
+            try {
+                const response = await fetch('/api/game/score', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(sampleScore)
+                });
+
+                log(`📡 Response status: ${response.status} ${response.statusText}`);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+
+                if (data.success) {
+                    log('✅ Sample score added successfully!', 'success');
+                    log(`🎮 Game ID: ${data.scoreId}`, 'success');
+                    log('💡 Now test the leaderboard API again to see the new entry.', 'success');
+                } else {
+                    log('❌ Failed to add sample score', 'error');
+                    log(data.error || 'Unknown error', 'error');
+                }
+
+            } catch (error) {
+                log('❌ Failed to add sample score:', 'error');
+                log(error.message, 'error');
+            }
+        }
+
+        // Auto-test on load
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(testLeaderboardAPI, 1000);
+        });
+    </script>
+</body>
+</html>
