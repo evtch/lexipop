@@ -185,13 +185,46 @@ export default function LexipopMiniApp() {
         const hashBytes = commitment.slice(2); // Remove '0x'
         const randomValue = parseInt(hashBytes.slice(0, 8), 16); // Use first 32 bits
 
-        // Generate token amount between 1-10,000 using Pyth entropy
-        const tokenAmount = 1 + (randomValue % 10000);
+        // Generate token amount based on score performance
+        const scoreRatio = gameState.score / gameState.totalQuestions;
+        let minTokens, maxTokens;
+
+        if (scoreRatio >= 1.0) {
+          // Perfect score: 100-10,000 tokens
+          minTokens = 100;
+          maxTokens = 10000;
+        } else if (scoreRatio >= 0.8) {
+          // Great performance: 80-8,000 tokens
+          minTokens = 80;
+          maxTokens = 8000;
+        } else if (scoreRatio >= 0.6) {
+          // Good performance: 60-6,000 tokens
+          minTokens = 60;
+          maxTokens = 6000;
+        } else if (scoreRatio >= 0.4) {
+          // Fair performance: 40-4,000 tokens
+          minTokens = 40;
+          maxTokens = 4000;
+        } else if (scoreRatio >= 0.2) {
+          // Poor performance: 20-2,000 tokens
+          minTokens = 20;
+          maxTokens = 2000;
+        } else {
+          // Very poor performance (1/5): 10-1,000 tokens
+          minTokens = 10;
+          maxTokens = 1000;
+        }
+
+        const range = maxTokens - minTokens;
+        const tokenAmount = minTokens + (randomValue % range);
 
         console.log('🎲 Pyth Entropy Token Generation:', {
           userInput,
           commitment,
           randomValue,
+          score: `${gameState.score}/${gameState.totalQuestions}`,
+          scoreRatio,
+          rewardRange: `${minTokens}-${maxTokens}`,
           tokenAmount,
           source: 'Pyth Network Entropy'
         });
@@ -199,8 +232,25 @@ export default function LexipopMiniApp() {
         return tokenAmount;
       } catch (error) {
         console.error('❌ Pyth entropy failed, fallback to Math.random:', error);
-        // Fallback to regular random if Pyth fails
-        return 1 + Math.floor(Math.random() * 10000);
+        // Fallback to regular random with same score-based logic
+        const scoreRatio = gameState.score / gameState.totalQuestions;
+        let minTokens, maxTokens;
+
+        if (scoreRatio >= 1.0) {
+          minTokens = 100; maxTokens = 10000;
+        } else if (scoreRatio >= 0.8) {
+          minTokens = 80; maxTokens = 8000;
+        } else if (scoreRatio >= 0.6) {
+          minTokens = 60; maxTokens = 6000;
+        } else if (scoreRatio >= 0.4) {
+          minTokens = 40; maxTokens = 4000;
+        } else if (scoreRatio >= 0.2) {
+          minTokens = 20; maxTokens = 2000;
+        } else {
+          minTokens = 10; maxTokens = 1000;
+        }
+
+        return minTokens + Math.floor(Math.random() * (maxTokens - minTokens));
       }
     };
 
