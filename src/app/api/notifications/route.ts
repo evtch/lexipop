@@ -1,0 +1,242 @@
+/**
+ * 🔔 NOTIFICATION API ENDPOINTS
+ *
+ * Handles sending notifications through Neynar API
+ * Supports various notification types and target audiences
+ */
+
+import { NextRequest, NextResponse } from 'next/server';
+import {
+  notifyUser,
+  notifyUserCustom,
+  broadcastNotification,
+  broadcastCustomNotification,
+  notifyMultipleUsers,
+  scheduleDailyReminders,
+  getNotificationStats,
+  NOTIFICATION_TEMPLATES
+} from '@/lib/notifications';
+
+// Supported notification types
+type NotificationType =
+  | 'perfect_game'
+  | 'high_score'
+  | 'streak_milestone'
+  | 'comeback_reminder'
+  | 'leaderboard_update'
+  | 'new_words_added'
+  | 'daily_reminder'
+  | 'custom';
+
+interface NotificationRequest {
+  type: NotificationType;
+  userFid?: number;
+  userFids?: number[];
+  title?: string;
+  body?: string;
+}
+
+/**
+ * GET /api/notifications - Get notification stats and available types
+ */
+export async function GET() {
+  try {
+    const stats = getNotificationStats();
+    const availableTemplates = Object.keys(NOTIFICATION_TEMPLATES);
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        stats,
+        availableTemplates,
+        supportedTypes: [
+          'perfect_game',
+          'high_score',
+          'streak_milestone',
+          'comeback_reminder',
+          'leaderboard_update',
+          'new_words_added',
+          'daily_reminder',
+          'custom'
+        ]
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error getting notification stats:', error);
+    return NextResponse.json(
+      { success: false, error: 'Failed to get notification stats' },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * POST /api/notifications - Send notifications
+ */
+export async function POST(request: NextRequest) {
+  try {
+    const body: NotificationRequest = await request.json();
+    const { type, userFid, userFids, title, body: customBody } = body;
+
+    console.log('📨 Notification request:', { type, userFid, userFids: userFids?.length });
+
+    // Validate request
+    if (!type) {
+      return NextResponse.json(
+        { success: false, error: 'Notification type is required' },
+        { status: 400 }
+      );
+    }
+
+    let result;
+
+    switch (type) {
+      case 'daily_reminder':
+        // Broadcast daily reminder to all users
+        result = await scheduleDailyReminders();
+        break;
+
+      case 'custom':
+        // Custom notification
+        if (!title || !customBody) {
+          return NextResponse.json(
+            { success: false, error: 'Title and body are required for custom notifications' },
+            { status: 400 }
+          );
+        }
+
+        if (userFid) {
+          // Send to specific user
+          result = await notifyUserCustom(userFid, title, customBody);
+        } else if (userFids && userFids.length > 0) {
+          // Send to multiple specific users - need to implement custom multi-user function
+          // For now, send to each user individually
+          let successCount = 0;
+          let errorCount = 0;
+
+          for (const fid of userFids) {
+            const individualResult = await notifyUserCustom(fid, title, customBody);
+            if (individualResult.success) {
+              successCount++;
+            } else {
+              errorCount++;
+            }
+          }
+
+          result = {
+            success: errorCount === 0,
+            message: `Custom notification sent to ${successCount} users, ${errorCount} errors`
+          };
+        } else {
+          // Broadcast to all users
+          result = await broadcastCustomNotification(title, customBody);
+        }
+        break;
+
+      default:
+        // Template-based notifications
+        if (!Object.keys(NOTIFICATION_TEMPLATES).includes(type as keyof typeof NOTIFICATION_TEMPLATES)) {
+          return NextResponse.json(
+            { success: false, error: `Invalid notification type: ${type}` },
+            { status: 400 }
+          );
+        }
+
+        const templateKey = type as keyof typeof NOTIFICATION_TEMPLATES;
+
+        if (userFid) {
+          // Send to specific user
+          result = await notifyUser(userFid, templateKey);
+        } else if (userFids && userFids.length > 0) {
+          // Send to multiple specific users
+          result = await notifyMultipleUsers(userFids, templateKey);
+        } else {
+          // Broadcast to all users
+          result = await broadcastNotification(templateKey);
+        }
+        break;
+    }
+
+    if (result.success) {
+      return NextResponse.json({
+        success: true,
+        message: result.message || 'Notification sent successfully',
+        type,
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      return NextResponse.json(
+        {
+          success: false,
+          error: result.error || 'Failed to send notification',
+          type
+        },
+        { status: 500 }
+      );
+    }
+
+  } catch (error) {
+    console.error('❌ Error in notification API:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * PUT /api/notifications - Test notification endpoint (development only)
+ */
+export async function PUT(request: NextRequest) {
+  // Only allow in development
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json(
+      { success: false, error: 'Test endpoint not available in production' },
+      { status: 403 }
+    );
+  }
+
+  try {
+    const { testType } = await request.json();
+
+    let result;
+
+    switch (testType) {
+      case 'broadcast':
+        result = await broadcastNotification('daily_reminder_1');
+        break;
+      case 'individual':
+        // Test with a specific FID (you can adjust this)
+        result = await notifyUser(12345, 'perfect_game');
+        break;
+      case 'custom':
+        result = await broadcastCustomNotification('🧪 Test', 'This is a test notification from Lexipop!');
+        break;
+      default:
+        return NextResponse.json(
+          { success: false, error: 'Invalid test type' },
+          { status: 400 }
+        );
+    }
+
+    return NextResponse.json({
+      success: true,
+      testType,
+      result,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('❌ Error in notification test:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Test failed'
+      },
+      { status: 500 }
+    );
+  }
+}

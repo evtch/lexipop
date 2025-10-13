@@ -16,6 +16,7 @@ import FrameWordBubble from './FrameWordBubble';
 import FrameAnswerOption from './FrameAnswerOption';
 import ScoreShare from './ScoreShare';
 import MiniAppButton from './MiniAppButton';
+import NotificationPrompt from './NotificationPrompt';
 
 export default function LexipopMiniApp() {
   // Use automatic Farcaster user detection from miniapp context
@@ -43,6 +44,8 @@ export default function LexipopMiniApp() {
   const [gameId, setGameId] = useState<string>('');
   const [showShareModal, setShowShareModal] = useState(false);
   const [completedWords, setCompletedWords] = useState<typeof gameState.gameQuestions>([]);
+  const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
+  const [hasSeenNotificationPrompt, setHasSeenNotificationPrompt] = useState(false);
 
   // Token generation state
   const [generatedTokens, setGeneratedTokens] = useState<number | null>(null);
@@ -76,6 +79,15 @@ export default function LexipopMiniApp() {
 
     initializeMiniApp();
   }, []);
+
+  // Check if user has seen notification prompt
+  useEffect(() => {
+    if (currentUser?.fid) {
+      const hasSeenKey = `lexipop_notification_prompt_seen_${currentUser.fid}`;
+      const hasSeen = localStorage.getItem(hasSeenKey) === 'true';
+      setHasSeenNotificationPrompt(hasSeen);
+    }
+  }, [currentUser?.fid]);
 
   const submitScore = async (score: number, streak: number, totalQuestions: number) => {
     if (!currentUser) return;
@@ -372,6 +384,14 @@ export default function LexipopMiniApp() {
         isGameActive: false,
         currentWord: null
       }));
+
+      // Show notification prompt after first game completion (if not seen before)
+      if (currentUser?.fid && !hasSeenNotificationPrompt) {
+        setTimeout(() => {
+          setShowNotificationPrompt(true);
+        }, 2000); // Wait 2 seconds after game completion
+      }
+
       return;
     }
 
@@ -866,7 +886,35 @@ export default function LexipopMiniApp() {
         completedWords={completedWords}
       />
 
+      {/* Notification Prompt */}
+      {showNotificationPrompt && (
+        <NotificationPrompt
+          onNotificationEnabled={(enabled) => {
+            console.log(`🔔 Notification ${enabled ? 'enabled' : 'declined'} by user ${currentUser?.fid}`);
+            setShowNotificationPrompt(false);
 
+            // Mark as seen so we don't show again
+            if (currentUser?.fid) {
+              const hasSeenKey = `lexipop_notification_prompt_seen_${currentUser.fid}`;
+              localStorage.setItem(hasSeenKey, 'true');
+              setHasSeenNotificationPrompt(true);
+            }
+
+            // Send achievement notification if they enabled
+            if (enabled && currentUser?.fid) {
+              fetch('/api/notifications', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  type: 'perfect_game',
+                  userFid: currentUser.fid
+                })
+              }).catch(err => console.error('Failed to send welcome notification:', err));
+            }
+          }}
+          autoShow={true}
+        />
+      )}
 
     </div>
   );

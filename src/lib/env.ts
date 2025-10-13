@@ -53,7 +53,10 @@ export const serverEnv = {
   DATABASE_URL: getEnvVar('DATABASE_URL', false),
 
   // Node environment
-  NODE_ENV: getEnvVar('NODE_ENV', false) || 'development'
+  NODE_ENV: getEnvVar('NODE_ENV', false) || 'development',
+
+  // Cron job security
+  CRON_SECRET: getEnvVar('CRON_SECRET', false)
 };
 
 // ✅ CLIENT-SAFE - These can be exposed to browser (prefixed with NEXT_PUBLIC_)

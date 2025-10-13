@@ -24,7 +24,8 @@
     "primaryCategory": "games",
     "tags": ["vocabulary", "education", "quiz", "learning", "words"],
     "ogImageUrl": "https://lexipop.xyz/og-image.png",
-    "castShareUrl": "https://lexipop.xyz/miniapp"
+    "castShareUrl": "https://lexipop.xyz/miniapp",
+    "webhookUrl": "https://lexipop.xyz/api/webhooks/notifications"
   },
   "other": {
     "fc:miniapp": "{\"version\":\"1\",\"name\":\"Lexipop\",\"imageUrl\":\"https://lexipop.xyz/farcaster-embed.png\",\"aspectRatio\":\"3:2\",\"button\":{\"title\":\"Play\",\"action\":{\"type\":\"launch_frame\",\"name\":\"Play\",\"url\":\"https://lexipop.xyz/miniapp\",\"splashImageUrl\":\"https://lexipop.xyz/lexipop-splash.png\",\"splashBackgroundColor\":\"#2563eb\"}}}"

@@ -126,6 +126,11 @@ model UserStats {
   currentDifficultyLevel Int @default(1)
   wordsLearned           Int @default(0) // unique words answered correctly
 
+  // Notification fields
+  notificationToken     String?
+  notificationUrl       String?
+  notificationsEnabled  Boolean @default(false)
+
   // Timestamps
   firstGameAt DateTime @default(now())
   updatedAt   DateTime @updatedAt

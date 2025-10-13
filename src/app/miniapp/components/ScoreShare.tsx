@@ -114,11 +114,14 @@ export default function ScoreShare({
       const miniappUrl = window.location.origin + '/miniapp';
 
       // Generate SVG embed if we have words
-      let embeds = [miniappUrl];
+      // Farcaster SDK only allows 0-2 embeds, so we need to be explicit about the types
+      let embeds: [] | [string] | [string, string];
       if (completedWords.length > 0) {
         // Create a data URL for the SVG and add it as an embed
         const svgDataUrl = generateScoreSVG();
         embeds = [svgDataUrl, miniappUrl];
+      } else {
+        embeds = [miniappUrl];
       }
 
       // Use Farcaster miniapp SDK for native cast creation
