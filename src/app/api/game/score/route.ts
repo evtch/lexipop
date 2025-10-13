@@ -47,25 +47,16 @@ export async function POST(request: NextRequest) {
     const accuracy = (score / totalQuestions) * 100;
     const now = new Date();
 
-    // Update user statistics FIRST (creates UserStats record if needed)
-    await updateUserStats(fid, score, streak, totalQuestions, accuracy);
-
-    // Create game session AFTER UserStats exists
-    const gameSession = await prisma.gameSession.create({
-      data: {
-        gameId: gameIdFinal,
-        userFid: fid,
-        score,
-        totalQuestions,
-        streak,
-        accuracy,
-        gameStartTime: now,
-        gameEndTime: now,
-        totalDuration: 0,
-        tokensEarned: 0,
-        bonusMultiplier: 1,
-      },
-    });
+    // Store game session with raw SQL to avoid all schema issues
+    await prisma.$executeRaw`
+      INSERT INTO game_sessions (
+        id, gameId, userFid, score, totalQuestions, streak, accuracy,
+        gameStartTime, gameEndTime, totalDuration, tokensEarned, bonusMultiplier, createdAt
+      ) VALUES (
+        gen_random_uuid(), ${gameIdFinal}, ${fid}, ${score}, ${totalQuestions}, ${streak}, ${accuracy},
+        NOW(), NOW(), 0, 0, 1, NOW()
+      )
+    `;
 
     console.log(`✅ Score recorded: FID ${fid}, Score ${score}, Streak ${streak}`);
 
@@ -98,47 +89,42 @@ export async function GET(request: NextRequest) {
 
   try {
     if (type === 'leaderboard') {
-      console.log('📊 Fetching leaderboard data...');
+      console.log('📊 Fetching leaderboard data from game sessions...');
 
-      // Get top 100 players with their latest scores
-      console.log('🔍 Querying userStats table...');
-      const topPlayers = await prisma.userStats.findMany({
-        select: {
-          userFid: true,
-          totalGamesPlayed: true,
-          highestScore: true,
-          longestStreak: true,
-          bestAccuracy: true,
-          gameSessions: {
-            orderBy: { createdAt: 'desc' },
-            take: 1,
-            select: {
-              score: true,
-              totalQuestions: true,
-              gameId: true,
-              createdAt: true,
-            }
-          }
-        },
-        orderBy: [
-          { highestScore: 'desc' },
-          { bestAccuracy: 'desc' }
-        ],
-        take: 100
-      });
+      // Calculate stats from game sessions directly using SQL
+      const leaderboardData = await prisma.$queryRaw<Array<{
+        userFid: number;
+        totalGames: bigint;
+        highestScore: number;
+        longestStreak: number;
+        bestAccuracy: number;
+        latestScore: number;
+        latestTotalQuestions: number;
+        latestGameId: string;
+        latestTimestamp: Date;
+      }>>`
+        SELECT
+          userFid,
+          COUNT(*) as totalGames,
+          MAX(score) as highestScore,
+          MAX(streak) as longestStreak,
+          MAX(accuracy) as bestAccuracy,
+          (SELECT score FROM game_sessions gs2 WHERE gs2.userFid = game_sessions.userFid ORDER BY createdAt DESC LIMIT 1) as latestScore,
+          (SELECT totalQuestions FROM game_sessions gs3 WHERE gs3.userFid = game_sessions.userFid ORDER BY createdAt DESC LIMIT 1) as latestTotalQuestions,
+          (SELECT gameId FROM game_sessions gs4 WHERE gs4.userFid = game_sessions.userFid ORDER BY createdAt DESC LIMIT 1) as latestGameId,
+          (SELECT createdAt FROM game_sessions gs5 WHERE gs5.userFid = game_sessions.userFid ORDER BY createdAt DESC LIMIT 1) as latestTimestamp
+        FROM game_sessions
+        GROUP BY userFid
+        ORDER BY highestScore DESC, bestAccuracy DESC
+        LIMIT 100
+      `;
 
-      console.log(`📊 Found ${topPlayers.length} players in userStats table`);
-      console.log('🔍 Sample player data:', topPlayers.slice(0, 3).map(p => ({
-        fid: p.userFid,
-        highestScore: p.highestScore,
-        totalGames: p.totalGamesPlayed,
-        latestGame: p.gameSessions[0]
-      })));
+      console.log(`📊 Found ${leaderboardData.length} players from game sessions`);
 
       // Fetch usernames for all players in parallel (only if Neynar API key is available)
       const hasNeynarKey = !!process.env.NEYNAR_API_KEY;
       const leaderboardWithUsernames = await Promise.all(
-        topPlayers.map(async (player) => {
+        leaderboardData.map(async (player) => {
           let username = undefined;
 
           if (hasNeynarKey) {
@@ -153,18 +139,16 @@ export async function GET(request: NextRequest) {
             }
           }
 
-          const latestGame = player.gameSessions[0];
-
           return {
             fid: player.userFid,
             username: username || `User ${player.userFid}`,
-            latestScore: latestGame?.score || 0,
-            totalQuestions: latestGame?.totalQuestions || 0,
-            gameId: latestGame?.gameId || '',
-            timestamp: latestGame?.createdAt || '',
+            latestScore: player.latestScore || 0,
+            totalQuestions: player.latestTotalQuestions || 0,
+            gameId: player.latestGameId || '',
+            timestamp: player.latestTimestamp || '',
             highestScore: player.highestScore,
             longestStreak: player.longestStreak,
-            totalGames: player.totalGamesPlayed,
+            totalGames: Number(player.totalGames),
             bestAccuracy: player.bestAccuracy,
           };
         })
@@ -191,61 +175,58 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get user stats
-    const userStats = await prisma.userStats.findUnique({
+    // Get user stats calculated from game sessions
+    const userGames = await prisma.gameSession.findMany({
       where: { userFid: fidNumber },
+      orderBy: { createdAt: 'desc' },
+      take: 10,
       select: {
-        userFid: true,
-        totalGamesPlayed: true,
-        totalQuestionsAnswered: true,
-        totalCorrectAnswers: true,
-        highestScore: true,
-        longestStreak: true,
-        bestAccuracy: true,
-        gameSessions: {
-          orderBy: { createdAt: 'desc' },
-          take: 10,
-          select: {
-            score: true,
-            streak: true,
-            totalQuestions: true,
-            createdAt: true,
-            gameId: true,
-            accuracy: true,
-          }
-        }
+        score: true,
+        streak: true,
+        totalQuestions: true,
+        createdAt: true,
+        gameId: true,
+        accuracy: true,
       }
     });
 
-    if (!userStats) {
+    if (userGames.length === 0) {
       return NextResponse.json({
         success: true,
         stats: {
           latestScore: 0,
           totalQuestions: 0,
-          accuracy: 0
+          accuracy: 0,
+          totalGames: 0,
+          highestScore: 0,
+          bestStreak: 0,
+          averageScore: 0,
+          totalQuestionsAnswered: 0
         },
         recentGames: []
       });
     }
 
-    const latestGame = userStats.gameSessions[0];
+    const latestGame = userGames[0];
+    const totalGames = userGames.length;
+    const highestScore = Math.max(...userGames.map(g => g.score));
+    const bestStreak = Math.max(...userGames.map(g => g.streak));
+    const averageScore = userGames.reduce((sum, game) => sum + game.score, 0) / totalGames;
+    const totalQuestionsAnswered = userGames.reduce((sum, game) => sum + game.totalQuestions, 0);
 
     return NextResponse.json({
       success: true,
       stats: {
-        latestScore: latestGame?.score || 0,
-        totalQuestions: latestGame?.totalQuestions || 0,
-        accuracy: latestGame?.accuracy || 0,
-        totalGames: userStats.totalGamesPlayed,
-        highestScore: userStats.highestScore,
-        bestStreak: userStats.longestStreak,
-        averageScore: userStats.gameSessions.length > 0
-          ? userStats.gameSessions.reduce((sum, game) => sum + game.score, 0) / userStats.gameSessions.length
-          : 0,
-        totalQuestionsAnswered: userStats.totalQuestionsAnswered
+        latestScore: latestGame.score,
+        totalQuestions: latestGame.totalQuestions,
+        accuracy: latestGame.accuracy,
+        totalGames,
+        highestScore,
+        bestStreak,
+        averageScore: Math.round(averageScore * 10) / 10, // Round to 1 decimal
+        totalQuestionsAnswered
       },
-      recentGames: userStats.gameSessions.map(game => ({
+      recentGames: userGames.map(game => ({
         score: game.score,
         streak: game.streak,
         totalQuestions: game.totalQuestions,
@@ -273,45 +254,3 @@ export async function GET(request: NextRequest) {
   }
 }
 
-async function updateUserStats(fid: number, score: number, streak: number, totalQuestions: number, accuracy: number) {
-  try {
-    console.log('📊 Updating user stats:', { fid, score, streak, totalQuestions, accuracy });
-
-    // Use raw SQL to avoid schema mismatch issues with notification fields
-    await prisma.$executeRaw`
-      INSERT INTO user_stats (
-        userFid, totalGamesPlayed, totalQuestionsAnswered, totalCorrectAnswers,
-        highestScore, longestStreak, bestAccuracy, currentDailyStreak,
-        longestDailyStreak, lastPlayedDate, currentDifficultyLevel, wordsLearned,
-        totalTokensEarned, totalSpins, firstGameAt, updatedAt
-      ) VALUES (
-        ${fid}, 1, ${totalQuestions}, ${score}, ${score}, ${streak}, ${accuracy},
-        1, 1, NOW(), 1, ${score}, 0, 0, NOW(), NOW()
-      )
-      ON CONFLICT (userFid) DO UPDATE SET
-        totalGamesPlayed = user_stats.totalGamesPlayed + 1,
-        totalQuestionsAnswered = user_stats.totalQuestionsAnswered + ${totalQuestions},
-        totalCorrectAnswers = user_stats.totalCorrectAnswers + ${score},
-        lastPlayedDate = NOW(),
-        wordsLearned = user_stats.wordsLearned + ${score},
-        updatedAt = NOW()
-    `;
-
-    console.log('✅ User stats upserted successfully');
-
-    // Update max values using raw SQL to avoid schema issues
-    await prisma.$executeRaw`
-      UPDATE user_stats SET
-        highestScore = GREATEST(highestScore, ${score}),
-        longestStreak = GREATEST(longestStreak, ${streak}),
-        bestAccuracy = GREATEST(bestAccuracy, ${accuracy})
-      WHERE userFid = ${fid}
-    `;
-
-    console.log('✅ User stats update completed successfully');
-
-  } catch (error) {
-    console.error('❌ Failed to update user stats:', error);
-    throw error; // Re-throw to let the main handler catch it
-  }
-}

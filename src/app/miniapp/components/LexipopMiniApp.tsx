@@ -72,34 +72,11 @@ export default function LexipopMiniApp() {
     hash,
   });
 
-  // Helper function to add miniapp to Farcaster (following official docs)
-  const addMiniAppToFarcaster = async (): Promise<boolean> => {
-    try {
-      console.log('🎯 Attempting to add miniapp to Farcaster...');
-
-      // Ensure SDK is ready
-      if (!sdk || !sdk.actions) {
-        throw new Error('Farcaster SDK not available');
-      }
-
-      // Call the official addMiniApp method
-      await sdk.actions.addMiniApp();
-      console.log('✅ Miniapp added to Farcaster successfully');
-      return true;
-
-    } catch (error: any) {
-      // Handle specific errors as per documentation
-      if (error.name === 'RejectedByUser') {
-        console.log('⚠️ User rejected adding the app');
-        return false;
-      } else if (error.name === 'InvalidDomainManifestJson') {
-        console.error('❌ Domain or manifest configuration is incorrect:', error);
-        return false;
-      } else {
-        console.error('❌ Failed to add miniapp:', error);
-        return false;
-      }
-    }
+  // Helper function to add miniapp to Farcaster
+  const addMiniAppToFarcaster = async (): Promise<void> => {
+    console.log('🎯 Adding miniapp to Farcaster...');
+    await sdk.actions.addMiniApp();
+    console.log('✅ Miniapp added to Farcaster successfully');
   };
 
   // Initialize Farcaster miniapp SDK
@@ -117,10 +94,8 @@ export default function LexipopMiniApp() {
           if (!hasAutoPrompted) {
             console.log('🎉 Auto-prompting user to add miniapp...');
 
-            const success = await addMiniAppToFarcaster();
-
-            if (success) {
-              console.log('✅ Auto-add miniapp successful');
+            try {
+              await addMiniAppToFarcaster();
 
               // Try to enable notifications automatically
               try {
@@ -140,6 +115,8 @@ export default function LexipopMiniApp() {
               } catch (webhookError) {
                 console.warn('Failed to trigger auto notification webhook:', webhookError);
               }
+            } catch (error) {
+              console.log('⚠️ Auto-add miniapp failed:', error);
             }
 
             // Mark as auto-prompted regardless of success/failure
@@ -704,9 +681,9 @@ export default function LexipopMiniApp() {
                       <div className="mb-3">
                         <MiniAppButton
                           onClick={async () => {
-                            const success = await addMiniAppToFarcaster();
+                            try {
+                              await addMiniAppToFarcaster();
 
-                            if (success) {
                               // Try to enable notifications automatically
                               try {
                                 await fetch('/api/webhooks/notifications', {
@@ -725,7 +702,8 @@ export default function LexipopMiniApp() {
                               } catch (webhookError) {
                                 console.warn('Failed to trigger notification webhook:', webhookError);
                               }
-                            } else {
+                            } catch (error) {
+                              console.error('❌ Failed to add miniapp:', error);
                               // Show user-friendly error message for failed attempts
                               alert('Unable to add to Farcaster. Please make sure you\'re using the app within Farcaster for full functionality.');
                             }
