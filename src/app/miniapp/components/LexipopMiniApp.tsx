@@ -5,8 +5,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GameState, VocabularyWord } from '@/types/game';
 import { getUniqueWords, shuffleArray } from '@/data/vocabulary';
-// Note: Neynar useMiniApp is imported dynamically to avoid SSR issues
-import { sdk } from '@farcaster/miniapp-sdk'; // Fallback for miniapp functionality
+import { sdk } from '@farcaster/miniapp-sdk'; // For miniapp functionality
 import { useFarcasterUser } from '@/lib/hooks/useFarcasterUser'; // Uses Farcaster SDK for user context
 import { generateCommitment } from '@/lib/pyth-entropy';
 import { useSound } from '@/hooks/useSound';
@@ -21,9 +20,8 @@ import MiniAppButton from './MiniAppButton';
 // import NotificationPrompt from './NotificationPrompt'; // Removed - miniapp handles notifications via SDK
 
 export default function LexipopMiniApp() {
-  // Temporarily disable Neynar to fix SSR issues - will fall back to Farcaster SDK
-  const isSDKLoaded = false;
-  const addMiniApp = null;
+  // Using Farcaster SDK directly for miniapp functionality (Neynar disabled due to SSR issues)
+  // No additional variables needed - will use sdk.actions.addMiniApp() directly
 
   // Use automatic Farcaster user detection from miniapp context
   const farcasterUser = useFarcasterUser();
@@ -77,43 +75,22 @@ export default function LexipopMiniApp() {
     hash,
   });
 
-  // Helper function to add miniapp to Farcaster with Neynar + Farcaster SDK fallback
+  // Helper function to add miniapp to Farcaster using Farcaster SDK
   const addMiniAppToFarcaster = async (): Promise<void> => {
     console.log('🎯 Adding miniapp to Farcaster...');
 
     try {
-      // Try Neynar approach first if available
-      if (addMiniApp && typeof addMiniApp === 'function' && isSDKLoaded) {
-        console.log('🔥 Using Neynar SDK for miniapp addition...');
-        const result = await addMiniApp();
-
-        if (result?.added && result?.notificationDetails) {
-          console.log('✅ Miniapp added successfully with notifications enabled');
-          console.log('🔔 Notification token:', result.notificationDetails.token);
-          return;
-        } else if (result?.added) {
-          console.log('✅ Miniapp added successfully (notifications not enabled)');
-          return;
-        } else {
-          console.log('❌ Neynar failed to add miniapp:', result?.reason);
-          // Fall through to Farcaster SDK approach
-        }
-      }
-
-      // Fallback to Farcaster SDK approach
-      console.log('🔄 Falling back to Farcaster SDK...');
       await sdk.actions.addMiniApp();
-      console.log('✅ Miniapp added via Farcaster SDK');
-
+      console.log('✅ Miniapp added to Farcaster successfully');
     } catch (error) {
       console.error('❌ Error adding miniapp:', error);
     }
   };
 
-  // Auto-prompt to add miniapp on first visit for new users (using Neynar)
+  // Auto-prompt to add miniapp on first visit for new users (using Farcaster SDK)
   useEffect(() => {
     const autoPromptMiniApp = async () => {
-      if (!isSDKLoaded || !currentUser?.fid || !isFirstTimeClaim) {
+      if (!currentUser?.fid || !isFirstTimeClaim) {
         return;
       }
 
@@ -121,7 +98,7 @@ export default function LexipopMiniApp() {
       const hasAutoPrompted = localStorage.getItem(hasAutoPromptedKey) === 'true';
 
       if (!hasAutoPrompted) {
-        console.log('🎉 Auto-prompting user to add miniapp via Neynar...');
+        console.log('🎉 Auto-prompting user to add miniapp...');
 
         try {
           await addMiniAppToFarcaster();
@@ -136,7 +113,7 @@ export default function LexipopMiniApp() {
     };
 
     autoPromptMiniApp();
-  }, [isSDKLoaded, currentUser?.fid, isFirstTimeClaim]);
+  }, [currentUser?.fid, isFirstTimeClaim]);
 
   // Check if user has seen notification prompt and claimed tokens before
   useEffect(() => {
