@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, gameSessions, userStats } from '@/db';
-import { eq, desc, count, max, avg, and, sql } from 'drizzle-orm';
+import { prisma } from '@/lib/prisma';
 
 /**
- * 🔒 SECURE GAME SCORE API
+ * 🔒 SECURE GAME SCORE API WITH PRISMA
  *
  * POST /api/game/score - Submit a score
  * GET /api/game/score?fid=123 - Get user's scores
@@ -44,30 +43,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // TODO: Validate frameMessage with Neynar in production
-    // const validation = await validateFrameMessage(frameMessage);
-    // if (!validation.valid) {
-    //   return NextResponse.json({ error: 'Invalid frame interaction' }, { status: 401 });
-    // }
-
     const gameIdFinal = gameId || `game_${Date.now()}_${fid}`;
     const accuracy = (score / totalQuestions) * 100;
     const now = new Date();
 
-    // Insert game session into database
-    const [gameSession] = await db.insert(gameSessions).values({
-      gameId: gameIdFinal,
-      userFid: fid,
-      score,
-      totalQuestions,
-      streak,
-      accuracy,
-      gameStartTime: now,
-      gameEndTime: now,
-      totalDuration: 0, // Could be calculated if we track start/end times
-      tokensEarned: 0, // Will be updated when tokens are claimed
-      bonusMultiplier: 1,
-    }).returning();
+    // Create game session
+    const gameSession = await prisma.gameSession.create({
+      data: {
+        gameId: gameIdFinal,
+        userFid: fid,
+        score,
+        totalQuestions,
+        streak,
+        accuracy,
+        gameStartTime: now,
+        gameEndTime: now,
+        totalDuration: 0,
+        tokensEarned: 0,
+        bonusMultiplier: 1,
+      },
+    });
 
     // Update user statistics
     await updateUserStats(fid, score, streak, totalQuestions, accuracy);
@@ -97,23 +92,29 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const fid = searchParams.get('fid');
-    const type = searchParams.get('type') || 'user'; // 'user' or 'leaderboard'
+    const type = searchParams.get('type') || 'user';
 
     if (type === 'leaderboard') {
-      // Get top 100 players with their latest scores and fetch usernames
-      const topPlayers = await db
-        .select({
-          fid: userStats.userFid,
-          highestScore: userStats.highestScore,
-          longestStreak: userStats.longestStreak,
-          totalGamesPlayed: userStats.totalGamesPlayed,
-          totalTokensEarned: userStats.totalTokensEarned,
-          bestAccuracy: userStats.bestAccuracy,
-          lastPlayedDate: userStats.lastPlayedDate,
-        })
-        .from(userStats)
-        .orderBy(desc(userStats.highestScore), desc(userStats.bestAccuracy))
-        .limit(100);
+      // Get top 100 players with their latest scores
+      const topPlayers = await prisma.userStats.findMany({
+        orderBy: [
+          { highestScore: 'desc' },
+          { bestAccuracy: 'desc' }
+        ],
+        take: 100,
+        include: {
+          gameSessions: {
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+            select: {
+              score: true,
+              totalQuestions: true,
+              gameId: true,
+              createdAt: true,
+            }
+          }
+        }
+      });
 
       // Fetch usernames for all players in parallel (only if Neynar API key is available)
       const hasNeynarKey = !!process.env.NEYNAR_API_KEY;
@@ -123,38 +124,25 @@ export async function GET(request: NextRequest) {
 
           if (hasNeynarKey) {
             try {
-              const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3004'}/api/neynar/user?fid=${player.fid}`);
+              const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3004'}/api/neynar/user?fid=${player.userFid}`);
               if (response.ok) {
                 const userData = await response.json();
                 username = userData.user?.username;
               }
             } catch (error) {
-              console.log(`Could not fetch username for FID ${player.fid} (Neynar API unavailable)`);
+              console.log(`Could not fetch username for FID ${player.userFid} (Neynar API unavailable)`);
             }
-          } else {
-            console.log(`Skipping username fetch for FID ${player.fid} - No Neynar API key configured`);
           }
 
-          // Get the latest game score for this user
-          const latestGame = await db
-            .select({
-              latestScore: gameSessions.score,
-              totalQuestions: gameSessions.totalQuestions,
-              gameId: gameSessions.gameId,
-              timestamp: gameSessions.createdAt,
-            })
-            .from(gameSessions)
-            .where(eq(gameSessions.userFid, player.fid))
-            .orderBy(desc(gameSessions.createdAt))
-            .limit(1);
+          const latestGame = player.gameSessions[0];
 
           return {
-            fid: player.fid,
-            username: username || `User ${player.fid}`,
-            latestScore: latestGame[0]?.latestScore || 0,
-            totalQuestions: latestGame[0]?.totalQuestions || 0,
-            gameId: latestGame[0]?.gameId || '',
-            timestamp: latestGame[0]?.timestamp || '',
+            fid: player.userFid,
+            username: username || `User ${player.userFid}`,
+            latestScore: latestGame?.score || 0,
+            totalQuestions: latestGame?.totalQuestions || 0,
+            gameId: latestGame?.gameId || '',
+            timestamp: latestGame?.createdAt || '',
             highestScore: player.highestScore,
             longestStreak: player.longestStreak,
             totalGames: player.totalGamesPlayed,
@@ -185,13 +173,25 @@ export async function GET(request: NextRequest) {
     }
 
     // Get user stats
-    const userStatsResult = await db
-      .select()
-      .from(userStats)
-      .where(eq(userStats.userFid, fidNumber))
-      .limit(1);
+    const userStats = await prisma.userStats.findUnique({
+      where: { userFid: fidNumber },
+      include: {
+        gameSessions: {
+          orderBy: { createdAt: 'desc' },
+          take: 10,
+          select: {
+            score: true,
+            streak: true,
+            totalQuestions: true,
+            createdAt: true,
+            gameId: true,
+            accuracy: true,
+          }
+        }
+      }
+    });
 
-    if (userStatsResult.length === 0) {
+    if (!userStats) {
       return NextResponse.json({
         success: true,
         stats: {
@@ -203,53 +203,27 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const stats = userStatsResult[0];
-
-    // Get latest game for accurate latest score display
-    const latestGame = await db
-      .select({
-        score: gameSessions.score,
-        totalQuestions: gameSessions.totalQuestions,
-        accuracy: gameSessions.accuracy,
-      })
-      .from(gameSessions)
-      .where(eq(gameSessions.userFid, fidNumber))
-      .orderBy(desc(gameSessions.createdAt))
-      .limit(1);
-
-    // Get recent games
-    const recentGames = await db
-      .select({
-        score: gameSessions.score,
-        streak: gameSessions.streak,
-        totalQuestions: gameSessions.totalQuestions,
-        timestamp: gameSessions.createdAt,
-        gameId: gameSessions.gameId,
-      })
-      .from(gameSessions)
-      .where(eq(gameSessions.userFid, fidNumber))
-      .orderBy(desc(gameSessions.createdAt))
-      .limit(10);
+    const latestGame = userStats.gameSessions[0];
 
     return NextResponse.json({
       success: true,
       stats: {
-        latestScore: latestGame[0]?.score || 0,
-        totalQuestions: latestGame[0]?.totalQuestions || 0,
-        accuracy: latestGame[0]?.accuracy || 0,
-        totalGames: stats.totalGamesPlayed,
-        highestScore: stats.highestScore,
-        bestStreak: stats.longestStreak,
-        averageScore: recentGames.length > 0
-          ? recentGames.reduce((sum, game) => sum + game.score, 0) / recentGames.length
+        latestScore: latestGame?.score || 0,
+        totalQuestions: latestGame?.totalQuestions || 0,
+        accuracy: latestGame?.accuracy || 0,
+        totalGames: userStats.totalGamesPlayed,
+        highestScore: userStats.highestScore,
+        bestStreak: userStats.longestStreak,
+        averageScore: userStats.gameSessions.length > 0
+          ? userStats.gameSessions.reduce((sum, game) => sum + game.score, 0) / userStats.gameSessions.length
           : 0,
-        totalQuestionsAnswered: stats.totalQuestionsAnswered
+        totalQuestionsAnswered: userStats.totalQuestionsAnswered
       },
-      recentGames: recentGames.map(game => ({
+      recentGames: userStats.gameSessions.map(game => ({
         score: game.score,
         streak: game.streak,
         totalQuestions: game.totalQuestions,
-        timestamp: Number(game.timestamp),
+        timestamp: Number(game.createdAt),
         gameId: game.gameId
       }))
     });
@@ -269,16 +243,10 @@ export async function GET(request: NextRequest) {
 
 async function updateUserStats(fid: number, score: number, streak: number, totalQuestions: number, accuracy: number) {
   try {
-    // Check if user stats exist
-    const existingStats = await db
-      .select()
-      .from(userStats)
-      .where(eq(userStats.userFid, fid))
-      .limit(1);
-
-    if (existingStats.length === 0) {
-      // Create new user stats
-      await db.insert(userStats).values({
+    // Upsert user stats (create if doesn't exist, update if exists)
+    await prisma.userStats.upsert({
+      where: { userFid: fid },
+      create: {
         userFid: fid,
         totalGamesPlayed: 1,
         totalQuestionsAnswered: totalQuestions,
@@ -290,28 +258,39 @@ async function updateUserStats(fid: number, score: number, streak: number, total
         longestDailyStreak: 1,
         lastPlayedDate: new Date(),
         currentDifficultyLevel: 1,
-        wordsLearned: score, // Approximate based on correct answers
+        wordsLearned: score,
         totalTokensEarned: 0,
         totalSpins: 0,
+      },
+      update: {
+        totalGamesPlayed: { increment: 1 },
+        totalQuestionsAnswered: { increment: totalQuestions },
+        totalCorrectAnswers: { increment: score },
+        highestScore: { set: Math.max(score) }, // Will be overridden by the where clause update below
+        longestStreak: { set: Math.max(streak) }, // Will be overridden by the where clause update below
+        bestAccuracy: { set: Math.max(accuracy) }, // Will be overridden by the where clause update below
+        lastPlayedDate: new Date(),
+        wordsLearned: { increment: score },
+        updatedAt: new Date(),
+      },
+    });
+
+    // Update max values properly (Prisma doesn't support Math.max in upsert update)
+    const currentStats = await prisma.userStats.findUnique({
+      where: { userFid: fid }
+    });
+
+    if (currentStats) {
+      await prisma.userStats.update({
+        where: { userFid: fid },
+        data: {
+          highestScore: Math.max(currentStats.highestScore, score),
+          longestStreak: Math.max(currentStats.longestStreak, streak),
+          bestAccuracy: Math.max(currentStats.bestAccuracy, accuracy),
+        }
       });
-    } else {
-      // Update existing stats
-      const stats = existingStats[0];
-      await db
-        .update(userStats)
-        .set({
-          totalGamesPlayed: stats.totalGamesPlayed + 1,
-          totalQuestionsAnswered: stats.totalQuestionsAnswered + totalQuestions,
-          totalCorrectAnswers: stats.totalCorrectAnswers + score,
-          highestScore: Math.max(stats.highestScore, score),
-          longestStreak: Math.max(stats.longestStreak, streak),
-          bestAccuracy: Math.max(stats.bestAccuracy, accuracy),
-          lastPlayedDate: new Date(),
-          wordsLearned: stats.wordsLearned + score, // Approximate
-          updatedAt: new Date(),
-        })
-        .where(eq(userStats.userFid, fid));
     }
+
   } catch (error) {
     console.error('❌ Failed to update user stats:', error);
   }

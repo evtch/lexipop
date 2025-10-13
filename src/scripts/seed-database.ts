@@ -1,14 +1,14 @@
 /**
- * 🌱 DATABASE SEEDING SCRIPT
+ * 🌱 DATABASE SEEDING SCRIPT WITH PRISMA
  *
  * Seeds the database with initial vocabulary words
  * Run with: npm run db:seed
  */
 
-import { importVocabulary, type VocabularyEntry } from '@/lib/vocabulary-import';
+import { prisma } from '../lib/prisma';
 
 // Initial vocabulary words from the existing data
-const initialWords: VocabularyEntry[] = [
+const initialWords = [
   {
     word: 'ephemeral',
     correctDefinition: 'lasting for a very short time',
@@ -165,30 +165,66 @@ async function seedDatabase() {
   console.log('🌱 Starting database seeding...');
 
   try {
-    const result = await importVocabulary(
-      initialWords,
-      'Initial Seed Data',
-      'Lexipop vocabulary words for game testing and initial content'
-    );
+    // Clear existing data
+    await prisma.questionResponse.deleteMany();
+    await prisma.gameSession.deleteMany();
+    await prisma.userStats.deleteMany();
+    await prisma.word.deleteMany();
+    await prisma.category.deleteMany();
+    await prisma.importBatch.deleteMany();
 
-    console.log('\n📊 Seeding Results:');
-    console.log(`✅ Total words: ${result.stats.total}`);
-    console.log(`✅ Successfully imported: ${result.stats.imported}`);
-    console.log(`⚠️  Duplicates skipped: ${result.stats.duplicates}`);
-    console.log(`❌ Failed imports: ${result.stats.failed}`);
+    console.log('🗑️ Cleared existing data');
 
-    if (result.errors.length > 0) {
-      console.log('\n⚠️  Warnings/Errors:');
-      result.errors.forEach(error => console.log(`   ${error}`));
+    // Seed vocabulary words
+    let importedCount = 0;
+    for (const wordData of initialWords) {
+      try {
+        await prisma.word.create({ data: wordData });
+        importedCount++;
+      } catch (error) {
+        console.warn(`⚠️ Failed to import word: ${wordData.word}`, error);
+      }
     }
 
-    if (result.success) {
-      console.log('\n🎉 Database seeding completed successfully!');
-      console.log(`Batch ID: ${result.batchId}`);
-    } else {
-      console.log('\n❌ Database seeding failed!');
-      process.exit(1);
-    }
+    console.log(`✅ Seeded ${importedCount} vocabulary words`);
+
+    // Create categories
+    await prisma.category.createMany({
+      data: [
+        {
+          name: "academic",
+          description: "Advanced academic vocabulary",
+          difficultyRange: "3-5",
+          wordCount: initialWords.filter(w => w.category === "academic").length,
+        },
+        {
+          name: "general",
+          description: "General vocabulary for everyday use",
+          difficultyRange: "1-3",
+          wordCount: initialWords.filter(w => w.category === "general").length,
+        }
+      ]
+    });
+
+    console.log('✅ Created word categories');
+
+    // Create import batch record
+    await prisma.importBatch.create({
+      data: {
+        batchName: "Initial vocabulary set",
+        description: "First batch of vocabulary words for testing",
+        totalWords: initialWords.length,
+        successfulImports: importedCount,
+        failedImports: initialWords.length - importedCount,
+        duplicatesSkipped: 0,
+        status: "completed",
+        importedBy: "system",
+        completedAt: new Date(),
+      }
+    });
+
+    console.log('✅ Created import batch record');
+    console.log('🎉 Database seeded successfully!');
 
   } catch (error) {
     console.error('\n💥 Seeding error:', error);
@@ -197,4 +233,11 @@ async function seedDatabase() {
 }
 
 // Run the seeding
-seedDatabase();
+seedDatabase()
+  .catch((e) => {
+    console.error('❌ Seeding failed:', e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
