@@ -478,6 +478,11 @@ export default function LexipopMiniApp() {
         currentWord: null
       }));
 
+      // Submit final score when game is complete
+      if (isUserAuthenticated && currentUser) {
+        submitScore(gameState.score, gameState.streak, gameState.totalQuestions);
+      }
+
       // Show notification prompt after first game completion (if not seen before) - Disabled for miniapp
       // if (currentUser?.fid && !hasSeenNotificationPrompt) {
       //   setTimeout(() => {
@@ -525,10 +530,7 @@ export default function LexipopMiniApp() {
       // totalQuestions should stay constant at 5, not increment
     }));
 
-    // Submit score if user is authenticated
-    if (isUserAuthenticated && currentUser) {
-      submitScore(gameState.score + (isCorrect ? 1 : 0), isCorrect ? gameState.streak + 1 : 0, gameState.totalQuestions);
-    }
+    // Don't submit score here - wait until game is complete
 
     // Auto-advance to next question after 2 seconds
     setTimeout(() => {
