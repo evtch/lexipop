@@ -28,9 +28,9 @@ export default function AnswerOption({
         : 'bg-blue-500 border-blue-600 hover:border-blue-700 hover:bg-blue-600';
     }
 
-    if (isSelected && isCorrect) return 'bg-green-500 border-green-600';
+    if (isSelected && isCorrect) return 'bg-green-500 border-green-600 shadow-green-400/50 shadow-lg';
     if (isSelected && !isCorrect) return 'bg-red-500 border-red-600';
-    if (!isSelected && isCorrect) return 'bg-green-100 border-green-500';
+    if (!isSelected && isCorrect) return 'bg-green-100 border-green-500 shadow-green-300/30 shadow-md';
     return 'bg-blue-400 border-blue-500';
   };
 
@@ -69,6 +69,25 @@ export default function AnswerOption({
         `}
         whileHover={!showResult ? { scale: 1.02 } : {}}
         whileTap={!showResult ? { scale: 0.98 } : {}}
+        animate={
+          showResult && isCorrect
+            ? {
+                boxShadow: [
+                  "0 0 0px rgba(34, 197, 94, 0)",
+                  "0 0 20px rgba(34, 197, 94, 0.4)",
+                  "0 0 30px rgba(34, 197, 94, 0.6)",
+                  "0 0 20px rgba(34, 197, 94, 0.4)",
+                  "0 0 0px rgba(34, 197, 94, 0)"
+                ]
+              }
+            : {}
+        }
+        transition={{
+          boxShadow: {
+            duration: 1.5,
+            ease: "easeInOut"
+          }
+        }}
         disabled={showResult}
       >
         {/* Letter badge */}

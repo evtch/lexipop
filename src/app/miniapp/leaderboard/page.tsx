@@ -62,40 +62,7 @@ export default function LeaderboardPage() {
       }
     } catch (err) {
       console.error('❌ Leaderboard fetch error:', err);
-
-      // Create sample data for testing if API fails
-      const sampleLeaderboard: LeaderboardEntry[] = [
-        {
-          fid: 12345,
-          username: 'TestUser1',
-          latestScore: 5,
-          totalQuestions: 5,
-          gameId: 'test_game_1',
-          timestamp: new Date().toISOString(),
-          highestScore: 5,
-          longestStreak: 3,
-          totalGames: 5,
-          bestAccuracy: 100.0,
-        },
-        {
-          fid: 67890,
-          username: 'TestUser2',
-          latestScore: 4,
-          totalQuestions: 5,
-          gameId: 'test_game_2',
-          timestamp: new Date().toISOString(),
-          highestScore: 4,
-          longestStreak: 2,
-          totalGames: 3,
-          bestAccuracy: 80.0,
-        },
-      ];
-
-      console.log('🧪 Using sample data for testing');
-      setLeaderboard(sampleLeaderboard);
-
-      // Still set error but show sample data
-      setError('Using test data (API unavailable)');
+      setError('Failed to load leaderboard');
     } finally {
       setIsLoading(false);
     }
@@ -138,54 +105,38 @@ export default function LeaderboardPage() {
       {/* Header */}
       <div className="text-center mb-6">
         <h1 className="text-2xl font-bold">🏆 Leaderboard</h1>
-        {error && leaderboard.length > 0 && (
-          <div className="mt-2 text-xs bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full inline-block">
-            📊 Showing test data
-          </div>
-        )}
       </div>
 
       {/* User Stats Card */}
       {isAuthenticated && user && userStats && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white/60 rounded-lg p-4 mb-6 border border-blue-200"
-        >
-          <div className="flex items-center gap-3 mb-3">
+        <div className="bg-white/60 rounded-lg p-3 mb-4 border border-blue-200">
+          <div className="flex items-center gap-2 mb-2">
             {user.pfpUrl && (
               <img
                 src={user.pfpUrl}
                 alt={user.username}
-                className="w-10 h-10 rounded-full"
+                className="w-8 h-8 rounded-full"
               />
             )}
-            <div>
-              <div className="font-semibold text-gray-800">{user.displayName}</div>
-              <div className="text-sm text-gray-600">@{user.username}</div>
+            <div className="flex-1">
+              <div className="font-medium text-gray-800 text-sm">{user.displayName}</div>
+              <div className="text-xs text-gray-600">@{user.username}</div>
+            </div>
+            <div className="text-right">
+              <div className="text-lg font-bold text-blue-600">
+                {userStats.latestScore}/{userStats.totalQuestions}
+              </div>
+              <div className="text-xs text-gray-600">Latest Score</div>
             </div>
           </div>
-
-          <div className="text-center bg-blue-50 rounded-lg p-4">
-            <div className="text-3xl font-bold text-blue-600">
-              {userStats.latestScore}/{userStats.totalQuestions}
-            </div>
-            <div className="text-lg text-blue-700 font-semibold">
-              {userStats.latestScore === userStats.totalQuestions ? "Perfect!" : "Good try!"}
-            </div>
-            <div className="text-sm text-gray-600 mt-1">Latest Game Score</div>
-          </div>
-        </motion.div>
+        </div>
       )}
 
       {/* Leaderboard */}
-      <div className="space-y-3">
-        {error && leaderboard.length === 0 ? (
+      <div className="space-y-1">
+        {error ? (
           <div className="text-center py-8">
-            <p className="text-red-600 mb-2">{error}</p>
-            <p className="text-gray-600 mb-4 text-sm">
-              The leaderboard API might be unavailable. Check console for details.
-            </p>
+            <p className="text-red-600 mb-4">{error}</p>
             <MiniAppButton
               onClick={fetchLeaderboard}
               variant="primary"
@@ -213,54 +164,43 @@ export default function LeaderboardPage() {
             const isCurrentUser = user?.fid === entry.fid;
 
             return (
-              <motion.div
+              <div
                 key={entry.fid}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
                 className={`
-                  bg-white/60 rounded-lg p-3 border transition-all
+                  bg-white/60 rounded-lg p-2 border
                   ${isCurrentUser
                     ? 'border-blue-400 bg-blue-50/60'
-                    : 'border-blue-200 hover:border-blue-300'
+                    : 'border-blue-200'
                   }
                 `}
               >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                   {/* Rank - Fixed width for consistent spacing */}
-                  <div className="w-8 flex justify-center text-lg font-bold">
+                  <div className="w-6 flex justify-center text-sm font-bold">
                     {getRankDisplay(rank)}
                   </div>
 
                   {/* Avatar */}
-                  <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-sm font-medium">
+                  <div className="w-7 h-7 bg-gray-200 rounded-full flex items-center justify-center text-xs">
                     👤
                   </div>
 
-                  {/* Name and Username - Flexible width */}
+                  {/* Name and Score - Flexible width */}
                   <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-gray-800 truncate">
-                      {entry.username || `User ${entry.fid}`}
-                      {isCurrentUser && (
-                        <span className="text-xs text-blue-600 ml-1">(You)</span>
-                      )}
-                    </div>
-                    <div className="text-sm text-gray-600 truncate">
-                      @{entry.username || `user${entry.fid}`}
-                    </div>
-                  </div>
-
-                  {/* Score - Fixed width */}
-                  <div className="text-right min-w-[60px]">
-                    <div className="font-bold text-lg text-blue-600">
-                      {entry.latestScore}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      /{entry.totalQuestions}
+                    <div className="flex items-center justify-between">
+                      <div className="font-medium text-gray-800 truncate text-sm">
+                        {entry.username || `User ${entry.fid}`}
+                        {isCurrentUser && (
+                          <span className="text-xs text-blue-600 ml-1">(You)</span>
+                        )}
+                      </div>
+                      <div className="font-bold text-blue-600 text-sm ml-2">
+                        {entry.latestScore}/{entry.totalQuestions}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </motion.div>
+              </div>
             );
           })
         )}
@@ -268,12 +208,8 @@ export default function LeaderboardPage() {
 
       {/* Call to Action */}
       {!isAuthenticated && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white/60 rounded-lg p-6 mt-6 border border-blue-200 text-center"
-        >
-          <p className="text-gray-700 mb-4">
+        <div className="bg-white/60 rounded-lg p-4 mt-4 border border-blue-200 text-center">
+          <p className="text-gray-700 mb-3 text-sm">
             Sign in with Farcaster to track your scores and compete!
           </p>
           <MiniAppButton
@@ -284,16 +220,17 @@ export default function LeaderboardPage() {
           >
             Start Playing
           </MiniAppButton>
-        </motion.div>
+        </div>
       )}
 
       {/* Bottom Navigation */}
-      <div className="mt-8 space-y-3">
+      <div className="mt-4">
         <MiniAppButton
           href="/miniapp"
           variant="primary"
           size="lg"
           icon="🏠"
+          className="w-full"
         >
           Back to Game
         </MiniAppButton>
