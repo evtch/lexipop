@@ -41,7 +41,27 @@ export default function FrameWordBubble({ word, isVisible, isCorrect, showResult
           flex items-center justify-center
           overflow-hidden
         `}
-        animate={floatingAnimation}
+        animate={{
+          ...floatingAnimation,
+          ...(showResult && isCorrect
+            ? {
+                boxShadow: [
+                  "0 0 0px rgba(34, 197, 94, 0)",
+                  "0 0 30px rgba(34, 197, 94, 0.6)",
+                  "0 0 50px rgba(34, 197, 94, 0.8)",
+                  "0 0 30px rgba(34, 197, 94, 0.6)",
+                  "0 0 0px rgba(34, 197, 94, 0)"
+                ]
+              }
+            : {})
+        }}
+        transition={{
+          ...floatingAnimation.transition,
+          boxShadow: {
+            duration: 1.5,
+            ease: "easeInOut"
+          }
+        }}
       >
         {/* Word text */}
         <h2 className="vocabulary-word text-white font-bold text-2xl text-center px-4 drop-shadow-lg">

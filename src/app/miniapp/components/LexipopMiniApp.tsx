@@ -269,9 +269,6 @@ export default function LexipopMiniApp() {
     setClaimError(null);
     setCurrentNumber(0);
 
-    // Play reward generating sound
-    playRewardGeneratingSound();
-
     // Generate final token amount using Pyth entropy
     const generateFinalAmount = () => {
       try {
@@ -399,9 +396,6 @@ export default function LexipopMiniApp() {
 
     setIsClaimingTokens(true);
     setClaimError(null);
-
-    // Play generating sound when starting claim process
-    playRewardGeneratingSound();
 
     try {
       // Step 1: Get withdrawal signature from server

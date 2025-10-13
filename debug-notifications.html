@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔔 Neynar Notifications Debug Tool</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; background: #007acc; color: white; border: none; border-radius: 4px; }
+        .success { background: #28a745; }
+        .error { background: #dc3545; }
+        .output { background: #f8f8f8; padding: 15px; border-radius: 4px; margin: 10px 0; white-space: pre-wrap; font-size: 12px; max-height: 400px; overflow-y: auto; }
+        .input-group { margin: 10px 0; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, textarea { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        .status { padding: 10px; border-radius: 4px; margin: 10px 0; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; color: #856404; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔔 Lexipop Neynar Notifications Debug Tool</h1>
+        <p>Use this tool to test and debug Neynar notifications integration.</p>
+
+        <div class="status warning">
+            <strong>⚠️ Important:</strong> Make sure your NEYNAR_API_KEY is properly configured in your environment variables.
+        </div>
+
+        <div class="input-group">
+            <label>Test User FID (for individual notifications):</label>
+            <input type="number" id="testFid" value="12345" placeholder="Enter a valid Farcaster FID">
+        </div>
+
+        <div class="input-group">
+            <label>Custom Notification Title:</label>
+            <input type="text" id="customTitle" value="🧪 Test from Lexipop" maxlength="32">
+        </div>
+
+        <div class="input-group">
+            <label>Custom Notification Body:</label>
+            <textarea id="customBody" rows="3" maxlength="128">This is a test notification to verify Neynar integration is working properly!</textarea>
+        </div>
+
+        <div>
+            <h3>🧪 Test Actions</h3>
+            <button onclick="checkEnvironment()">🔍 Check Environment</button>
+            <button onclick="testNotificationAPI()">📊 Test API Endpoint</button>
+            <button onclick="testEnvironmentAPI()">🔧 Test Environment</button>
+            <button onclick="sendTestNotification()">🔔 Send Test Notification</button>
+            <button onclick="sendBroadcastTest()">📢 Broadcast Test</button>
+            <button onclick="testWelcomeNotification()">🎉 Test Welcome</button>
+            <button onclick="testPerfectGame()">🏆 Test Perfect Game</button>
+            <button onclick="testIndividualAPI()">👤 Test Individual (API)</button>
+            <button onclick="clearOutput()">🗑️ Clear Output</button>
+        </div>
+
+        <div id="output" class="output">Click any test button to start debugging...\n</div>
+    </div>
+
+    <script>
+        const output = document.getElementById('output');
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${message}\n`;
+            output.textContent += logEntry;
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function clearOutput() {
+            output.textContent = '';
+        }
+
+        async function checkEnvironment() {
+            log('🔍 Checking environment and API availability...');
+
+            try {
+                const response = await fetch('/api/notifications');
+                if (response.ok) {
+                    const data = await response.json();
+                    log('✅ Notifications API is available');
+                    log(`📊 Available templates: ${data.data.availableTemplates.join(', ')}`);
+                    log(`📈 Stats: ${JSON.stringify(data.data.stats, null, 2)}`);
+                } else {
+                    log(`❌ API error: ${response.status} ${response.statusText}`);
+                }
+            } catch (error) {
+                log(`❌ Failed to check environment: ${error.message}`);
+            }
+        }
+
+        async function testNotificationAPI() {
+            log('📊 Testing notification API basic functionality...');
+
+            try {
+                // Test GET endpoint
+                const getResponse = await fetch('/api/notifications');
+                log(`📡 GET /api/notifications: ${getResponse.status}`);
+
+                if (getResponse.ok) {
+                    const data = await getResponse.json();
+                    log(`✅ GET successful: ${JSON.stringify(data, null, 2)}`);
+                } else {
+                    const errorText = await getResponse.text();
+                    log(`❌ GET failed: ${errorText}`);
+                }
+
+            } catch (error) {
+                log(`❌ API test failed: ${error.message}`);
+            }
+        }
+
+        async function sendTestNotification() {
+            const fid = document.getElementById('testFid').value;
+            const title = document.getElementById('customTitle').value;
+            const body = document.getElementById('customBody').value;
+
+            if (!fid) {
+                log('❌ Please enter a valid FID');
+                return;
+            }
+
+            log(`🔔 Sending test notification to FID ${fid}...`);
+            log(`📝 Title: "${title}"`);
+            log(`📝 Body: "${body}"`);
+
+            try {
+                const response = await fetch('/api/notifications', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        type: 'custom',
+                        userFid: parseInt(fid),
+                        title: title,
+                        body: body
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    log(`✅ Notification sent successfully!`);
+                    log(`📊 Response: ${JSON.stringify(data, null, 2)}`);
+                } else {
+                    log(`❌ Failed to send notification: ${data.error || 'Unknown error'}`);
+                    log(`📊 Full response: ${JSON.stringify(data, null, 2)}`);
+                }
+
+            } catch (error) {
+                log(`❌ Request failed: ${error.message}`);
+            }
+        }
+
+        async function sendBroadcastTest() {
+            const title = document.getElementById('customTitle').value;
+            const body = document.getElementById('customBody').value;
+
+            log(`📢 Broadcasting test notification to all users...`);
+            log(`📝 Title: "${title}"`);
+            log(`📝 Body: "${body}"`);
+
+            try {
+                const response = await fetch('/api/notifications', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        type: 'custom',
+                        title: title,
+                        body: body
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    log(`✅ Broadcast sent successfully!`);
+                    log(`📊 Response: ${JSON.stringify(data, null, 2)}`);
+                } else {
+                    log(`❌ Failed to broadcast: ${data.error || 'Unknown error'}`);
+                    log(`📊 Full response: ${JSON.stringify(data, null, 2)}`);
+                }
+
+            } catch (error) {
+                log(`❌ Broadcast failed: ${error.message}`);
+            }
+        }
+
+        async function testWelcomeNotification() {
+            const fid = document.getElementById('testFid').value;
+
+            if (!fid) {
+                log('❌ Please enter a valid FID');
+                return;
+            }
+
+            log(`🎉 Testing welcome notification for FID ${fid}...`);
+
+            try {
+                const response = await fetch('/api/notifications', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        type: 'welcome_miniapp',
+                        userFid: parseInt(fid)
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    log(`✅ Welcome notification sent!`);
+                    log(`📊 Response: ${JSON.stringify(data, null, 2)}`);
+                } else {
+                    log(`❌ Failed to send welcome: ${data.error || 'Unknown error'}`);
+                    log(`📊 Full response: ${JSON.stringify(data, null, 2)}`);
+                }
+
+            } catch (error) {
+                log(`❌ Welcome test failed: ${error.message}`);
+            }
+        }
+
+        async function testPerfectGame() {
+            const fid = document.getElementById('testFid').value;
+
+            if (!fid) {
+                log('❌ Please enter a valid FID');
+                return;
+            }
+
+            log(`🏆 Testing perfect game notification for FID ${fid}...`);
+
+            try {
+                const response = await fetch('/api/notifications', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        type: 'perfect_game',
+                        userFid: parseInt(fid)
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    log(`✅ Perfect game notification sent!`);
+                    log(`📊 Response: ${JSON.stringify(data, null, 2)}`);
+                } else {
+                    log(`❌ Failed to send perfect game: ${data.error || 'Unknown error'}`);
+                    log(`📊 Full response: ${JSON.stringify(data, null, 2)}`);
+                }
+
+            } catch (error) {
+                log(`❌ Perfect game test failed: ${error.message}`);
+            }
+        }
+
+        // Auto-run environment check on load
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(checkEnvironment, 1000);
+        });
+    </script>
+</body>
+</html>

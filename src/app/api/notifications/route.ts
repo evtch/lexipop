@@ -188,36 +188,47 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * PUT /api/notifications - Test notification endpoint (development only)
+ * PUT /api/notifications - Test notification endpoint (development and testing)
  */
 export async function PUT(request: NextRequest) {
-  // Only allow in development
-  if (process.env.NODE_ENV === 'production') {
-    return NextResponse.json(
-      { success: false, error: 'Test endpoint not available in production' },
-      { status: 403 }
-    );
-  }
 
   try {
-    const { testType } = await request.json();
+    const { testType, fid } = await request.json();
+
+    console.log(`🧪 Running notification test: ${testType}`, { fid });
 
     let result;
 
     switch (testType) {
       case 'broadcast':
+        console.log('📢 Testing broadcast notification...');
         result = await broadcastNotification('daily_reminder_1');
         break;
       case 'individual':
-        // Test with a specific FID (you can adjust this)
-        result = await notifyUser(12345, 'perfect_game');
+        const testFid = fid || 12345;
+        console.log(`👤 Testing individual notification to FID ${testFid}...`);
+        result = await notifyUser(testFid, 'perfect_game');
         break;
       case 'custom':
-        result = await broadcastCustomNotification('🧪 Test', 'This is a test notification from Lexipop!');
+        console.log('🎨 Testing custom notification...');
+        result = await broadcastCustomNotification('🧪 Test from Lexipop', 'This is a test notification to verify Neynar integration is working!');
+        break;
+      case 'environment':
+        console.log('🔍 Testing environment configuration...');
+        const { serverEnv } = await import('@/lib/env');
+        result = {
+          success: true,
+          message: 'Environment check completed',
+          data: {
+            hasNeynarKey: !!serverEnv.NEYNAR_API_KEY,
+            hasClientId: !!serverEnv.NEYNAR_CLIENT_ID,
+            nodeEnv: serverEnv.NODE_ENV
+          }
+        };
         break;
       default:
         return NextResponse.json(
-          { success: false, error: 'Invalid test type' },
+          { success: false, error: 'Invalid test type. Use: broadcast, individual, custom, environment' },
           { status: 400 }
         );
     }

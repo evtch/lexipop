@@ -54,9 +54,6 @@ export default function SpinningWheel({
 
     setIsSpinning(true);
 
-    // Play reward generation sound when spinning starts
-    playRewardGeneratingSound();
-
     try {
       let reward: RewardTier;
 

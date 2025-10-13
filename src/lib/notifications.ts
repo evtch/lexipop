@@ -6,12 +6,16 @@
  */
 
 import { serverEnv } from './env';
+import { prisma } from './prisma';
 
 // Notification API Types
 interface NotificationPayload {
-  target_user_fids?: number[];  // Specific users (optional for broadcast)
-  title: string;               // Max 32 characters
-  body: string;                // Max 128 characters
+  target_fids?: number[];      // Specific users (optional for broadcast, max 100)
+  notification: {
+    title: string;             // Max 32 characters
+    body: string;              // Max 128 characters
+    target_url: string;        // Valid URL where users will be directed
+  };
 }
 
 interface NotificationResponse {
@@ -91,45 +95,61 @@ async function sendNeynarNotification(payload: NotificationPayload): Promise<Not
   }
 
   // Validate payload constraints
-  if (payload.title.length > 32) {
+  if (payload.notification.title.length > 32) {
     console.warn('⚠️ Notification title truncated to 32 characters');
-    payload.title = payload.title.substring(0, 32);
+    payload.notification.title = payload.notification.title.substring(0, 32);
   }
 
-  if (payload.body.length > 128) {
+  if (payload.notification.body.length > 128) {
     console.warn('⚠️ Notification body truncated to 128 characters');
-    payload.body = payload.body.substring(0, 128);
+    payload.notification.body = payload.notification.body.substring(0, 128);
   }
 
   try {
-    console.log('📤 Sending notification:', {
-      target: payload.target_user_fids ? `${payload.target_user_fids.length} users` : 'broadcast',
-      title: payload.title,
-      body: payload.body
-    });
+    console.log('📤 Sending notification to Neynar API:');
+    console.log('🎯 Target:', payload.target_fids ? `${payload.target_fids.length} users` : 'broadcast');
+    console.log('📝 Title:', payload.notification.title);
+    console.log('📝 Body:', payload.notification.body);
+    console.log('🔑 API Key present:', !!NEYNAR_API_KEY);
+    console.log('📦 Full payload:', JSON.stringify(payload, null, 2));
 
-    const response = await fetch('https://api.neynar.com/v2/farcaster-frame/notifications', {
+    // Use the correct Neynar v2 frame notifications endpoint
+    const requestUrl = 'https://api.neynar.com/v2/farcaster/frame/notifications/';
+    console.log('🌐 Request URL:', requestUrl);
+
+    const requestHeaders = {
+      'x-api-key': NEYNAR_API_KEY,
+      'Content-Type': 'application/json',
+    };
+    console.log('📋 Request headers:', { ...requestHeaders, 'x-api-key': requestHeaders['x-api-key'] ? '[PRESENT]' : '[MISSING]' });
+
+    const response = await fetch(requestUrl, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${NEYNAR_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
+      headers: requestHeaders,
       body: JSON.stringify(payload),
     });
 
+    console.log('📡 Response status:', response.status, response.statusText);
+    console.log('📊 Response headers:', Object.fromEntries(response.headers.entries()));
+
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Neynar API error:', response.status, errorText);
+      console.error('❌ Neynar API error details:');
+      console.error('   Status:', response.status, response.statusText);
+      console.error('   Response body:', errorText);
+      console.error('   Request payload was:', JSON.stringify(payload, null, 2));
+
       return {
         success: false,
-        error: `API error: ${response.status} - ${errorText}`
+        error: `Neynar API error: ${response.status} ${response.statusText} - ${errorText}`
       };
     }
 
     const result = await response.json();
-    console.log('✅ Notification sent successfully:', result);
+    console.log('✅ Notification sent successfully!');
+    console.log('📊 Neynar response:', JSON.stringify(result, null, 2));
 
-    return { success: true, message: 'Notification sent successfully' };
+    return { success: true, message: 'Notification sent successfully', neynarResponse: result };
 
   } catch (error) {
     console.error('❌ Network error sending notification:', error);
@@ -150,9 +170,12 @@ export async function notifyUser(
   const template = NOTIFICATION_TEMPLATES[templateKey];
 
   return sendNeynarNotification({
-    target_user_fids: [userFid],
-    title: template.title,
-    body: template.body,
+    target_fids: [userFid],
+    notification: {
+      title: template.title,
+      body: template.body,
+      target_url: 'https://www.lexipop.xyz/miniapp',
+    },
   });
 }
 
@@ -165,24 +188,51 @@ export async function notifyUserCustom(
   body: string
 ): Promise<NotificationResponse> {
   return sendNeynarNotification({
-    target_user_fids: [userFid],
-    title,
-    body,
+    target_fids: [userFid],
+    notification: {
+      title,
+      body,
+      target_url: 'https://www.lexipop.xyz/miniapp',
+    },
   });
 }
 
 /**
- * Broadcast notification to all users (no target_user_fids)
+ * Broadcast notification to all users (fetches users from database)
  */
 export async function broadcastNotification(
   templateKey: keyof typeof NOTIFICATION_TEMPLATES
 ): Promise<NotificationResponse> {
   const template = NOTIFICATION_TEMPLATES[templateKey];
 
-  return sendNeynarNotification({
-    title: template.title,
-    body: template.body,
-  });
+  try {
+    // Get all user FIDs from the database
+    const users = await prisma.userStats.findMany({
+      select: { userFid: true },
+      take: 100, // Neynar limit is 100 per request
+    });
+
+    const userFids = users.map(user => user.userFid);
+
+    if (userFids.length === 0) {
+      console.log('📭 No users found for broadcast notification');
+      return { success: false, error: 'No users found to notify' };
+    }
+
+    console.log(`📢 Broadcasting to ${userFids.length} users`);
+
+    return sendNeynarNotification({
+      target_fids: userFids,
+      notification: {
+        title: template.title,
+        body: template.body,
+        target_url: 'https://www.lexipop.xyz/miniapp',
+      },
+    });
+  } catch (error) {
+    console.error('❌ Error fetching users for broadcast:', error);
+    return { success: false, error: 'Failed to fetch users for broadcast' };
+  }
 }
 
 /**
@@ -192,10 +242,34 @@ export async function broadcastCustomNotification(
   title: string,
   body: string
 ): Promise<NotificationResponse> {
-  return sendNeynarNotification({
-    title,
-    body,
-  });
+  try {
+    // Get all user FIDs from the database
+    const users = await prisma.userStats.findMany({
+      select: { userFid: true },
+      take: 100, // Neynar limit is 100 per request
+    });
+
+    const userFids = users.map(user => user.userFid);
+
+    if (userFids.length === 0) {
+      console.log('📭 No users found for broadcast notification');
+      return { success: false, error: 'No users found to notify' };
+    }
+
+    console.log(`📢 Broadcasting custom notification to ${userFids.length} users`);
+
+    return sendNeynarNotification({
+      target_fids: userFids,
+      notification: {
+        title,
+        body,
+        target_url: 'https://www.lexipop.xyz/miniapp',
+      },
+    });
+  } catch (error) {
+    console.error('❌ Error fetching users for custom broadcast:', error);
+    return { success: false, error: 'Failed to fetch users for broadcast' };
+  }
 }
 
 /**
@@ -222,9 +296,12 @@ export async function notifyMultipleUsers(
 
   for (const batch of batches) {
     const result = await sendNeynarNotification({
-      target_user_fids: batch,
-      title: template.title,
-      body: template.body,
+      target_fids: batch,
+      notification: {
+        title: template.title,
+        body: template.body,
+        target_url: 'https://www.lexipop.xyz/miniapp',
+      },
     });
 
     if (result.success) {

@@ -85,13 +85,34 @@ export default function FrameAnswerOption({
       disabled={showResult}
     >
       {/* Letter badge */}
-      <div className={`
-        w-6 h-6 rounded-full flex items-center justify-center
-        font-bold text-xs transition-all duration-200 flex-shrink-0
-        ${getLetterColor()}
-      `}>
+      <motion.div
+        className={`
+          w-6 h-6 rounded-full flex items-center justify-center
+          font-bold text-xs transition-all duration-200 flex-shrink-0
+          ${getLetterColor()}
+        `}
+        animate={
+          showResult && isCorrect
+            ? {
+                boxShadow: [
+                  "0 0 0px rgba(34, 197, 94, 0)",
+                  "0 0 8px rgba(34, 197, 94, 0.6)",
+                  "0 0 12px rgba(34, 197, 94, 0.8)",
+                  "0 0 8px rgba(34, 197, 94, 0.6)",
+                  "0 0 0px rgba(34, 197, 94, 0)"
+                ]
+              }
+            : {}
+        }
+        transition={{
+          boxShadow: {
+            duration: 1.5,
+            ease: "easeInOut"
+          }
+        }}
+      >
         {letter}
-      </div>
+      </motion.div>
 
       {/* Answer text */}
       <p className={`flex-1 font-medium text-sm leading-snug ${getTextColor()} break-words pr-2 flex items-center`}>
