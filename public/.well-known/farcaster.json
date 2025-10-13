@@ -7,27 +7,27 @@
   "version": "1",
   "appId": "lexipop-miniapp",
   "name": "Lexipop",
-  "iconUrl": "https://lexipop.xyz/icon-192.png",
+  "iconUrl": "https://www.lexipop.xyz/icon-192.png",
   "buttonTitle": "Add to Farcaster",
   "frame": {
     "version": "1",
     "name": "Lexipop",
     "tagline": "Learn vocabulary the fun way!",
-    "iconUrl": "https://lexipop.xyz/icon-192.png",
-    "homeUrl": "https://lexipop.xyz/miniapp",
-    "imageUrl": "https://lexipop.xyz/farcaster-embed.png",
-    "splashImageUrl": "https://lexipop.xyz/lexipop-splash.png",
+    "iconUrl": "https://www.lexipop.xyz/icon-192.png",
+    "homeUrl": "https://www.lexipop.xyz/miniapp",
+    "imageUrl": "https://www.lexipop.xyz/farcaster-embed.png",
+    "splashImageUrl": "https://www.lexipop.xyz/lexipop-splash.png",
     "buttonTitle": "Play Lexipop",
     "splashBackgroundColor": "#2563eb",
     "subtitle": "Test your vocabulary!",
     "description": "Learn new words through interactive vocabulary games. Challenge yourself and improve your word skills!",
     "primaryCategory": "games",
     "tags": ["vocabulary", "education", "quiz", "learning", "words"],
-    "ogImageUrl": "https://lexipop.xyz/og-image.png",
-    "castShareUrl": "https://lexipop.xyz/miniapp",
-    "webhookUrl": "https://lexipop.xyz/api/webhooks/notifications"
+    "ogImageUrl": "https://www.lexipop.xyz/og-image.png",
+    "castShareUrl": "https://www.lexipop.xyz/miniapp",
+    "webhookUrl": "https://www.lexipop.xyz/api/webhooks/notifications"
   },
   "other": {
-    "fc:miniapp": "{\"version\":\"1\",\"name\":\"Lexipop\",\"imageUrl\":\"https://lexipop.xyz/farcaster-embed.png\",\"aspectRatio\":\"3:2\",\"button\":{\"title\":\"Play\",\"action\":{\"type\":\"launch_frame\",\"name\":\"Play\",\"url\":\"https://lexipop.xyz/miniapp\",\"splashImageUrl\":\"https://lexipop.xyz/lexipop-splash.png\",\"splashBackgroundColor\":\"#2563eb\"}}}"
+    "fc:miniapp": "{\"version\":\"1\",\"name\":\"Lexipop\",\"imageUrl\":\"https://www.lexipop.xyz/farcaster-embed.png\",\"aspectRatio\":\"3:2\",\"button\":{\"title\":\"Play\",\"action\":{\"type\":\"launch_frame\",\"name\":\"Play\",\"url\":\"https://www.lexipop.xyz/miniapp\",\"splashImageUrl\":\"https://www.lexipop.xyz/lexipop-splash.png\",\"splashBackgroundColor\":\"#2563eb\"}}}"
   }
 }

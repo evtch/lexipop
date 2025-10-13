@@ -90,7 +90,7 @@ export async function GET() {
       methods: ['POST'],
       description: 'Handles Sign In With Farcaster authentication',
       example: {
-        message: 'lexipop.xyz wants you to sign in...',
+        message: 'www.lexipop.xyz wants you to sign in...',
         signature: '0x...',
         nonce: 'random-nonce-string'
       }

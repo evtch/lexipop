@@ -22,6 +22,7 @@ interface NotificationResponse {
   success: boolean;
   message?: string;
   error?: string;
+  neynarResponse?: any;
 }
 
 // Notification Templates for Lexipop

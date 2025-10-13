@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     description: 'Learn vocabulary the fun way! Test your word knowledge with floating bubbles and interactive games.',
     images: [
       {
-        url: 'https://lexipop.xyz/og-image.png',
+        url: 'https://www.lexipop.xyz/og-image.png',
         width: 1200,
         height: 630,
         alt: 'Lexipop - Vocabulary Learning Game'
@@ -25,17 +25,17 @@ export const metadata: Metadata = {
     ],
     siteName: 'Lexipop',
     type: 'website',
-    url: 'https://lexipop.xyz/miniapp'
+    url: 'https://www.lexipop.xyz/miniapp'
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Lexipop - Vocabulary Learning Game',
     description: 'Learn vocabulary the fun way! Test your word knowledge with floating bubbles.',
-    images: ['https://lexipop.xyz/og-image.png']
+    images: ['https://www.lexipop.xyz/og-image.png']
   },
   other: {
     // Mini App embed metadata for Farcaster Frames v2
-    'fc:miniapp': '{"version":"1","name":"Lexipop","imageUrl":"https://lexipop.xyz/farcaster-embed.png","aspectRatio":"3:2","button":{"title":"Learn and earn!","action":{"type":"launch_frame","name":"Learn and earn!","url":"https://lexipop.xyz/miniapp","splashImageUrl":"https://lexipop.xyz/lexipop-splash.png","splashBackgroundColor":"#222632"}}}'
+    'fc:miniapp': '{"version":"1","name":"Lexipop","imageUrl":"https://www.lexipop.xyz/farcaster-embed.png","aspectRatio":"3:2","button":{"title":"Learn and earn!","action":{"type":"launch_frame","name":"Learn and earn!","url":"https://www.lexipop.xyz/miniapp","splashImageUrl":"https://www.lexipop.xyz/lexipop-splash.png","splashBackgroundColor":"#222632"}}}'
   }
 };
 

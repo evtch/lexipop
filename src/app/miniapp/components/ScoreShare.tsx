@@ -72,7 +72,7 @@ export default function ScoreShare({
 
         <!-- Footer -->
         <text x="300" y="370" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle">
-          Play at lexipop.xyz 🎈
+          Play at www.lexipop.xyz 🎈
         </text>
       </svg>
     `;
@@ -96,7 +96,7 @@ export default function ScoreShare({
       message += ' Almost perfect! ⭐';
     }
 
-    message += '\n\nPlay Lexipop and test your vocabulary: https://lexipop.xyz/miniapp';
+    message += '\n\nPlay Lexipop and test your vocabulary: https://www.lexipop.xyz/miniapp';
 
     return message;
   };
