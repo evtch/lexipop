@@ -44,7 +44,7 @@ export default function ScoreShare({
       message += ' Almost perfect! ⭐';
     }
 
-    message += '\n\nPlay Lexipop and test your vocabulary: https://lexipop.vercel.app/miniapp';
+    message += '\n\nPlay Lexipop and test your vocabulary: https://lexipop.xyz/miniapp';
 
     return message;
   };

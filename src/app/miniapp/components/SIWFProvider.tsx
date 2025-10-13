@@ -22,12 +22,12 @@ const authConfig = {
 
   // Your app's domain (update in production)
   domain: process.env.NODE_ENV === 'production'
-    ? 'lexipop.vercel.app'
+    ? 'lexipop.xyz'
     : 'localhost:3004',
 
   // SIWE login endpoint
   siweUri: process.env.NODE_ENV === 'production'
-    ? 'https://lexipop.vercel.app/api/auth/login'
+    ? 'https://lexipop.xyz/api/auth/login'
     : 'http://localhost:3004/api/auth/login',
 
   // Optional: Customize relay URL
