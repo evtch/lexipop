@@ -20,7 +20,9 @@ export async function GET() {
       by: ['category'],
       _count: true,
       orderBy: {
-        _count: 'desc'
+        _count: {
+          _all: 'desc'
+        }
       }
     });
 
