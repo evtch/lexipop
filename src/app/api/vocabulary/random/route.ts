@@ -12,6 +12,20 @@ import { VocabularyWord } from '@/types/game';
 const prisma = new PrismaClient();
 
 /**
+ * Convert database difficulty (number) to game difficulty (string)
+ */
+function getDifficultyLevel(difficulty: number): string {
+  switch (difficulty) {
+    case 1: return 'easy';
+    case 2: return 'easy';
+    case 3: return 'medium';
+    case 4: return 'hard';
+    case 5: return 'hard';
+    default: return 'medium';
+  }
+}
+
+/**
  * GET /api/vocabulary/random - Get random vocabulary words for a game
  * Query params:
  * - count: number of words to return (default: 5)
@@ -81,15 +95,29 @@ export async function GET(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Use database-level randomization for better performance
-    // This approach works well for PostgreSQL and most databases
-    const randomWords = await prisma.$queryRaw<any[]>`
-      SELECT * FROM words
-      ${difficulty ? `WHERE difficulty = ${parseInt(difficulty)}` : ''}
-      ${category ? `${difficulty ? 'AND' : 'WHERE'} category = '${category}'` : ''}
-      ORDER BY RANDOM()
-      LIMIT ${count}
-    `;
+    // Use Prisma-based random selection (safer and more compatible)
+    console.log('🎲 Fetching random words with Prisma...');
+
+    // Get all matching words first
+    const allWords = await prisma.word.findMany({
+      where,
+      select: {
+        id: true,
+        word: true,
+        correctDefinition: true,
+        incorrectDefinition1: true,
+        incorrectDefinition2: true,
+        incorrectDefinition3: true,
+        difficulty: true,
+        category: true
+      }
+    });
+
+    console.log(`📊 Found ${allWords.length} words matching filters, selecting ${count} randomly`);
+
+    // Shuffle and select random words
+    const shuffled = allWords.sort(() => Math.random() - 0.5);
+    const randomWords = shuffled.slice(0, count);
 
     // Convert database format to game format
     const gameWords: VocabularyWord[] = randomWords.map(word => ({
