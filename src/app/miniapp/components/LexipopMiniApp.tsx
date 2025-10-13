@@ -155,6 +155,14 @@ export default function LexipopMiniApp() {
   const submitScore = async (score: number, streak: number, totalQuestions: number) => {
     if (!currentUser) return;
 
+    console.log('🎯 Submitting score:', {
+      fid: currentUser.fid,
+      score,
+      streak,
+      totalQuestions,
+      gameId
+    });
+
     try {
       const response = await fetch('/api/game/score', {
         method: 'POST',
@@ -171,8 +179,11 @@ export default function LexipopMiniApp() {
       });
 
       const data = await response.json();
+      console.log('📊 Score submission response:', data);
       if (data.success) {
         console.log('✅ Score submitted successfully');
+      } else {
+        console.error('❌ Score submission failed:', data.error);
       }
     } catch (error) {
       console.error('❌ Failed to submit score:', error);
@@ -480,7 +491,18 @@ export default function LexipopMiniApp() {
 
       // Submit final score when game is complete
       if (isUserAuthenticated && currentUser) {
+        console.log('🎮 Game complete! Submitting final score:', {
+          score: gameState.score,
+          streak: gameState.streak,
+          totalQuestions: gameState.totalQuestions,
+          user: currentUser.fid
+        });
         submitScore(gameState.score, gameState.streak, gameState.totalQuestions);
+      } else {
+        console.log('⚠️ Not submitting score - user not authenticated or missing:', {
+          isUserAuthenticated,
+          currentUser: currentUser?.fid
+        });
       }
 
       // Show notification prompt after first game completion (if not seen before) - Disabled for miniapp
@@ -779,9 +801,9 @@ export default function LexipopMiniApp() {
                         variant="secondary"
                         size="lg"
                         icon="👥"
-                        className="w-full"
+                        className="w-full whitespace-nowrap"
                       >
-                        Invite friends {hasSharedCast ? '✓' : '(+50% rewards)'}
+                        {hasSharedCast ? 'Invited friends ✓' : 'Invite friends (+50%)'}
                       </MiniAppButton>
                       <div className="text-xs text-gray-500 text-center mt-1">
                         {hasSharedCast ? 'Thanks for sharing!' : 'Increases chance for a higher reward by 50%'}

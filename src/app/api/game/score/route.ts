@@ -127,6 +127,12 @@ export async function GET(request: NextRequest) {
       });
 
       console.log(`📊 Found ${topPlayers.length} players in userStats table`);
+      console.log('🔍 Sample player data:', topPlayers.slice(0, 3).map(p => ({
+        fid: p.userFid,
+        highestScore: p.highestScore,
+        totalGames: p.totalGamesPlayed,
+        latestGame: p.gameSessions[0]
+      })));
 
       // Fetch usernames for all players in parallel (only if Neynar API key is available)
       const hasNeynarKey = !!process.env.NEYNAR_API_KEY;

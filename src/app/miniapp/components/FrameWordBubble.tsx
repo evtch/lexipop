@@ -62,7 +62,7 @@ export default function FrameWordBubble({ word, isVisible, isCorrect, showResult
         transition={{
           ...floatingAnimation.transition,
           boxShadow: {
-            duration: 0.8,
+            duration: 0.3,
             ease: "easeInOut",
             repeat: 2,
             repeatType: "loop"
