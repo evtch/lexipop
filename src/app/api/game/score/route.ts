@@ -89,13 +89,13 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
-  try {
-    console.log('🎯 Game score API called');
-    const { searchParams } = new URL(request.url);
-    const fid = searchParams.get('fid');
-    const type = searchParams.get('type') || 'user';
-    console.log('📝 Score API params:', { fid, type });
+  console.log('🎯 Game score API called');
+  const { searchParams } = new URL(request.url);
+  const fid = searchParams.get('fid');
+  const type = searchParams.get('type') || 'user';
+  console.log('📝 Score API params:', { fid, type });
 
+  try {
     if (type === 'leaderboard') {
       console.log('📊 Fetching leaderboard data...');
 
