@@ -144,8 +144,8 @@ export async function POST(request: NextRequest) {
           where: { userFid: targetUserFid },
           data: {
             notificationsEnabled: true,
-            notificationToken: userData.notification_token || null,
-            notificationUrl: userData.notification_url || null,
+            notificationToken: (userData && 'notification_token' in userData) ? userData.notification_token || null : null,
+            notificationUrl: (userData && 'notification_url' in userData) ? userData.notification_url || null : null,
             updatedAt: new Date()
           }
         });
