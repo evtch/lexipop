@@ -10,9 +10,16 @@ import { prisma } from '@/lib/prisma';
  */
 
 export async function POST(request: NextRequest) {
+  let fid: number | undefined;
+  let score: number | undefined;
+  let streak: number | undefined;
+  let totalQuestions: number | undefined;
+  let gameIdFinal: string | undefined;
+
   try {
     const body = await request.json();
-    const { fid, score, streak, totalQuestions, gameId, frameMessage } = body;
+    ({ fid, score, streak, totalQuestions } = body);
+    const { gameId, frameMessage } = body;
 
     // Validate input
     if (!fid || typeof fid !== 'number' || fid <= 0) {
@@ -43,7 +50,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const gameIdFinal = gameId || `game_${Date.now()}_${fid}`;
+    gameIdFinal = gameId || `game_${Date.now()}_${fid}`;
     const accuracy = (score / totalQuestions) * 100;
     const now = new Date();
 
@@ -81,11 +88,11 @@ export async function POST(request: NextRequest) {
       name: error instanceof Error ? error.name : 'Unknown',
       message: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
-      fid,
-      score,
-      streak,
-      totalQuestions,
-      gameIdFinal
+      fid: fid || 'undefined',
+      score: score || 'undefined',
+      streak: streak || 'undefined',
+      totalQuestions: totalQuestions || 'undefined',
+      gameIdFinal: gameIdFinal || 'undefined'
     });
 
     return NextResponse.json(
@@ -345,11 +352,11 @@ async function updateUserStats(fid: number, score: number, streak: number, total
       name: error instanceof Error ? error.name : 'Unknown',
       message: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
-      fid,
-      score,
-      streak,
-      totalQuestions,
-      accuracy
+      fid: fid,
+      score: score,
+      streak: streak,
+      totalQuestions: totalQuestions,
+      accuracy: accuracy
     });
     throw error; // Re-throw to let the main handler catch it
   }
