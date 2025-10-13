@@ -57,7 +57,7 @@ export default function FrameAnswerOption({
       onClick={!showResult ? onClick : undefined}
       className={`
         w-full p-3 rounded-lg border-2 transition-all duration-200
-        flex items-start gap-3 text-left min-h-[60px]
+        flex items-start gap-2 text-left min-h-[56px]
         answer-option
         ${getBackgroundColor()}
         ${showResult ? 'cursor-default' : 'cursor-pointer'}
@@ -67,8 +67,8 @@ export default function FrameAnswerOption({
     >
       {/* Letter badge */}
       <div className={`
-        w-8 h-8 rounded-full flex items-center justify-center
-        font-bold text-sm transition-all duration-200 flex-shrink-0 mt-1
+        w-7 h-7 rounded-full flex items-center justify-center
+        font-bold text-xs transition-all duration-200 flex-shrink-0 mt-1
         ${getLetterColor()}
       `}>
         {letter}

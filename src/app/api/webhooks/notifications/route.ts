@@ -10,47 +10,126 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-// Neynar webhook event types
+// Farcaster miniapp webhook event types
 interface NotificationWebhookEvent {
-  type: 'notifications_enabled' | 'notifications_disabled';
-  data: {
+  event: 'miniapp_added' | 'notifications_enabled' | 'notifications_disabled';
+  notificationDetails?: {
+    url: string;
+    token: string;
+  };
+  data?: {
     user_fid: number;
     notification_token?: string;
     notification_url?: string;
   };
+  userFid?: number; // For miniapp_added events
 }
 
 /**
- * POST /api/webhooks/notifications - Handle Neynar notification events
+ * POST /api/webhooks/notifications - Handle Farcaster miniapp and notification events
  */
 export async function POST(request: NextRequest) {
   try {
     console.log('📥 Received notification webhook');
 
     const body: NotificationWebhookEvent = await request.json();
-    const { type, data } = body;
+    const { event, notificationDetails, data, userFid } = body;
 
-    console.log('📨 Webhook event:', { type, userFid: data.user_fid });
+    console.log('📨 Webhook event:', { event, userFid: userFid || data?.user_fid });
 
-    if (!type || !data?.user_fid) {
+    // Handle miniapp_added event
+    if (event === 'miniapp_added') {
+      if (!userFid) {
+        return NextResponse.json(
+          { success: false, error: 'userFid required for miniapp_added event' },
+          { status: 400 }
+        );
+      }
+
+      console.log(`🎉 User ${userFid} added miniapp to Farcaster!`);
+
+      // Create or update user stats record with notification settings
+      let userStats = await prisma.userStats.findUnique({
+        where: { userFid }
+      });
+
+      if (!userStats) {
+        console.log(`👤 Creating new user stats record for FID: ${userFid}`);
+        userStats = await prisma.userStats.create({
+          data: {
+            userFid,
+            notificationsEnabled: !!notificationDetails,
+            notificationToken: notificationDetails?.token || null,
+            notificationUrl: notificationDetails?.url || null,
+          }
+        });
+      } else {
+        // Update existing user with notification details if provided
+        if (notificationDetails) {
+          await prisma.userStats.update({
+            where: { userFid },
+            data: {
+              notificationsEnabled: true,
+              notificationToken: notificationDetails.token,
+              notificationUrl: notificationDetails.url,
+              updatedAt: new Date()
+            }
+          });
+          console.log(`🔔 Notifications enabled for user ${userFid} via miniapp_added`);
+        }
+      }
+
+      // Send welcome notification if notifications are enabled
+      if (notificationDetails) {
+        try {
+          const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3004'}/api/notifications`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'welcome_miniapp', // Welcome notification
+              userFid: userFid
+            })
+          });
+
+          if (response.ok) {
+            console.log(`✅ Welcome notification sent to user ${userFid}`);
+          }
+        } catch (error) {
+          console.error(`❌ Failed to send welcome notification to user ${userFid}:`, error);
+        }
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: `Processed miniapp_added for user ${userFid}`,
+        notificationsEnabled: !!notificationDetails,
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Handle legacy notification events
+    const type = event || (body as any).type; // Support both new and old format
+    const userData = data || { user_fid: userFid };
+
+    if (!type || !userData?.user_fid) {
       return NextResponse.json(
         { success: false, error: 'Invalid webhook payload' },
         { status: 400 }
       );
     }
 
-    const userFid = data.user_fid;
+    const targetUserFid = userData.user_fid;
 
     // Find or create user stats record
     let userStats = await prisma.userStats.findUnique({
-      where: { userFid }
+      where: { userFid: targetUserFid }
     });
 
     if (!userStats) {
-      console.log(`👤 Creating new user stats record for FID: ${userFid}`);
+      console.log(`👤 Creating new user stats record for FID: ${targetUserFid}`);
       userStats = await prisma.userStats.create({
         data: {
-          userFid,
+          userFid: targetUserFid,
           notificationsEnabled: false,
         }
       });
@@ -59,26 +138,26 @@ export async function POST(request: NextRequest) {
     // Update notification settings based on event type
     switch (type) {
       case 'notifications_enabled':
-        console.log(`✅ Enabling notifications for FID: ${userFid}`);
+        console.log(`✅ Enabling notifications for FID: ${targetUserFid}`);
 
         await prisma.userStats.update({
-          where: { userFid },
+          where: { userFid: targetUserFid },
           data: {
             notificationsEnabled: true,
-            notificationToken: data.notification_token || null,
-            notificationUrl: data.notification_url || null,
+            notificationToken: userData.notification_token || null,
+            notificationUrl: userData.notification_url || null,
             updatedAt: new Date()
           }
         });
 
-        console.log(`🔔 Notifications enabled for user ${userFid}`);
+        console.log(`🔔 Notifications enabled for user ${targetUserFid}`);
         break;
 
       case 'notifications_disabled':
-        console.log(`❌ Disabling notifications for FID: ${userFid}`);
+        console.log(`❌ Disabling notifications for FID: ${targetUserFid}`);
 
         await prisma.userStats.update({
-          where: { userFid },
+          where: { userFid: targetUserFid },
           data: {
             notificationsEnabled: false,
             notificationToken: null,
@@ -87,7 +166,7 @@ export async function POST(request: NextRequest) {
           }
         });
 
-        console.log(`🔕 Notifications disabled for user ${userFid}`);
+        console.log(`🔕 Notifications disabled for user ${targetUserFid}`);
         break;
 
       default:
@@ -100,7 +179,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `Processed ${type} for user ${userFid}`,
+      message: `Processed ${type} for user ${targetUserFid}`,
       timestamp: new Date().toISOString()
     });
 

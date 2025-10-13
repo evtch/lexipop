@@ -46,6 +46,8 @@ export default function LexipopMiniApp() {
   const [completedWords, setCompletedWords] = useState<typeof gameState.gameQuestions>([]);
   const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
   const [hasSeenNotificationPrompt, setHasSeenNotificationPrompt] = useState(false);
+  const [hasSharedCast, setHasSharedCast] = useState(false);
+  const [isFirstTimeClaim, setIsFirstTimeClaim] = useState(true);
 
   // Token generation state
   const [generatedTokens, setGeneratedTokens] = useState<number | null>(null);
@@ -80,12 +82,24 @@ export default function LexipopMiniApp() {
     initializeMiniApp();
   }, []);
 
-  // Check if user has seen notification prompt
+  // Check if user has seen notification prompt and claimed tokens before
   useEffect(() => {
     if (currentUser?.fid) {
       const hasSeenKey = `lexipop_notification_prompt_seen_${currentUser.fid}`;
       const hasSeen = localStorage.getItem(hasSeenKey) === 'true';
       setHasSeenNotificationPrompt(hasSeen);
+
+      // Check if user has claimed tokens before OR been prompted to add miniapp
+      const hasClaimedKey = `lexipop_has_claimed_${currentUser.fid}`;
+      const hasClaimed = localStorage.getItem(hasClaimedKey) === 'true';
+      const hasBeenPromptedKey = `lexipop_add_prompted_${currentUser.fid}`;
+      const hasBeenPrompted = localStorage.getItem(hasBeenPromptedKey) === 'true';
+      setIsFirstTimeClaim(!hasClaimed && !hasBeenPrompted);
+
+      // Check if user has shared cast for first claim
+      const hasSharedKey = `lexipop_has_shared_${currentUser.fid}`;
+      const hasShared = localStorage.getItem(hasSharedKey) === 'true';
+      setHasSharedCast(hasShared);
     }
   }, [currentUser?.fid]);
 
@@ -184,8 +198,15 @@ export default function LexipopMiniApp() {
       setCurrentNumber(0);
       setIsClaimingTokens(false);
       setClaimError(null);
+
+      // Mark that user has claimed tokens
+      if (currentUser?.fid) {
+        const hasClaimedKey = `lexipop_has_claimed_${currentUser.fid}`;
+        localStorage.setItem(hasClaimedKey, 'true');
+        setIsFirstTimeClaim(false);
+      }
     }
-  }, [isConfirmed, hash]);
+  }, [isConfirmed, hash, currentUser?.fid]);
 
   const generateTokens = () => {
     if (isGeneratingTokens) return;
@@ -308,6 +329,13 @@ export default function LexipopMiniApp() {
 
       setClaimError(`Missing: ${missingItems.join(', ')}`);
       console.log('❌ Cannot claim $LEXIPOP - missing:', missingItems.join(', '));
+      return;
+    }
+
+    // Check if this is first time claim and user hasn't shared cast yet
+    if (isFirstTimeClaim && !hasSharedCast) {
+      setClaimError('Please share your score on Farcaster first to claim your first $LEXIPOP tokens!');
+      console.log('❌ First time claim requires sharing cast');
       return;
     }
 
@@ -559,6 +587,42 @@ export default function LexipopMiniApp() {
                       {isGeneratingTokens ? 'Generating...' : 'Generate my reward'}
                     </MiniAppButton>
 
+                    {/* Add to Farcaster Button (only for first-time claim) */}
+                    {isFirstTimeClaim && (
+                      <div className="mb-3">
+                        <MiniAppButton
+                          onClick={async () => {
+                            try {
+                              // Use Farcaster miniapp SDK to prompt user to add miniapp
+                              await sdk.actions.addMiniApp();
+                              setIsFirstTimeClaim(false);
+                              // Save that user has been prompted to add miniapp
+                              if (currentUser?.fid) {
+                                localStorage.setItem(`lexipop_add_prompted_${currentUser.fid}`, 'true');
+                              }
+                              console.log('🎉 User prompted to add miniapp to Farcaster');
+                            } catch (error) {
+                              console.error('Failed to add miniapp:', error);
+                              // Fallback behavior - still mark as attempted
+                              setIsFirstTimeClaim(false);
+                              if (currentUser?.fid) {
+                                localStorage.setItem(`lexipop_add_prompted_${currentUser.fid}`, 'true');
+                              }
+                            }
+                          }}
+                          variant="primary"
+                          size="lg"
+                          icon="⭐"
+                          className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
+                        >
+                          Add to Farcaster for Notifications
+                        </MiniAppButton>
+                        <div className="text-xs text-gray-500 text-center mt-1">
+                          Get notified about daily challenges and new features!
+                        </div>
+                      </div>
+                    )}
+
                     {/* Invite Friends Button */}
                     <div className="mb-3">
                       <MiniAppButton
@@ -572,12 +636,21 @@ export default function LexipopMiniApp() {
                               text: castText,
                               embeds: [miniappUrl]
                             });
+                            setHasSharedCast(true);
+                            // Save that user has shared cast
+                            if (currentUser?.fid) {
+                              localStorage.setItem(`lexipop_has_shared_${currentUser.fid}`, 'true');
+                            }
                           } catch (error) {
                             console.error('Failed to create cast:', error);
                             // Fallback to web share for non-Farcaster environments
                             try {
                               const shareUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(castText)}&embeds[]=${encodeURIComponent(miniappUrl)}`;
                               window.open(shareUrl, '_blank');
+                              setHasSharedCast(true);
+                              if (currentUser?.fid) {
+                                localStorage.setItem(`lexipop_has_shared_${currentUser.fid}`, 'true');
+                              }
                             } catch (fallbackError) {
                               // Final fallback - copy to clipboard
                               const simpleCastText = `I crushed it at Lexipop! Check it out: ${window.location.origin}/miniapp`;
@@ -591,10 +664,10 @@ export default function LexipopMiniApp() {
                         icon="👥"
                         className="w-full"
                       >
-                        Invite friends (+50% rewards)
+                        Invite friends {hasSharedCast ? '✓' : '(+50% rewards)'}
                       </MiniAppButton>
                       <div className="text-xs text-gray-500 text-center mt-1">
-                        Increases chance for a higher reward by 50%
+                        {hasSharedCast ? 'Thanks for sharing!' : 'Increases chance for a higher reward by 50%'}
                       </div>
                     </div>
                   </div>
@@ -633,12 +706,36 @@ export default function LexipopMiniApp() {
                       </div>
                     ) : (
                       <div>
+                        {/* Show sharing requirement for first-time users */}
+                        {isFirstTimeClaim && !hasSharedCast && (
+                          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-3">
+                            <div className="text-sm font-medium text-yellow-800 mb-1">
+                              🎉 First Time Claim!
+                            </div>
+                            <div className="text-xs text-yellow-700">
+                              Share your achievement on Farcaster above to unlock your first $LEXIPOP claim!
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Show success message when sharing is completed for first-time users */}
+                        {isFirstTimeClaim && hasSharedCast && (
+                          <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-3">
+                            <div className="text-sm font-medium text-green-800 mb-1">
+                              ✅ Thanks for sharing!
+                            </div>
+                            <div className="text-xs text-green-700">
+                              You can now claim your first $LEXIPOP tokens below!
+                            </div>
+                          </div>
+                        )}
+
                         <MiniAppButton
                           onClick={handleTokenClaim}
                           variant="primary"
                           size="lg"
                           icon="💰"
-                          disabled={isClaimingTokens || isWritePending || isConfirming}
+                          disabled={isClaimingTokens || isWritePending || isConfirming || (isFirstTimeClaim && !hasSharedCast)}
                           className="w-full mb-3"
                         >
                           {isWritePending
@@ -647,6 +744,8 @@ export default function LexipopMiniApp() {
                             ? 'Processing...'
                             : isClaimingTokens
                             ? 'Claiming...'
+                            : (isFirstTimeClaim && !hasSharedCast)
+                            ? 'Share First to Claim'
                             : `Claim ${generatedTokens} $LEXIPOP`}
                         </MiniAppButton>
                       </div>
@@ -840,26 +939,26 @@ export default function LexipopMiniApp() {
         </AnimatePresence>
       </div>
 
-      {/* Progress Indicator */}
-      <div className="text-center mb-4">
-        <div className="text-xs text-gray-500 mb-2">
-          Question {gameState.currentQuestionIndex + 1} of {gameState.totalQuestions}
-        </div>
-        <div className="w-full bg-gray-200 rounded-full h-2">
+      {/* Progress Indicator - More Compact */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex-1 bg-gray-200 rounded-full h-1.5 mr-3">
           <div
-            className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+            className="bg-blue-500 h-1.5 rounded-full transition-all duration-300"
             style={{ width: `${((gameState.currentQuestionIndex + 1) / gameState.totalQuestions) * 100}%` }}
           />
+        </div>
+        <div className="text-xs text-gray-500 font-medium">
+          {gameState.currentQuestionIndex + 1}/{gameState.totalQuestions}
         </div>
       </div>
 
       {/* Instructions */}
-      <div className="text-center mb-6">
+      <div className="text-center mb-3">
         <p className="text-sm text-gray-600">Choose the correct definition:</p>
       </div>
 
-      {/* Answer Options - Compact for Frame */}
-      <div className="space-y-2">
+      {/* Answer Options - Compact for Frame with proper spacing */}
+      <div className="space-y-2 flex-1 flex flex-col justify-start pb-4">
         {shuffledDefinitions.map((definition, index) => {
           const letters = ['A', 'B', 'C', 'D'] as const;
           return (

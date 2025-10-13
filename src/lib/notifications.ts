@@ -44,6 +44,12 @@ export const NOTIFICATION_TEMPLATES = {
     body: "Challenge yourself with new vocabulary! Your personal best awaits."
   },
 
+  // Welcome notification
+  welcome_miniapp: {
+    title: "🎉 Welcome to Lexipop!",
+    body: "Thanks for adding Lexipop! Get ready to boost your vocabulary and earn rewards."
+  },
+
   // Achievement notifications
   perfect_game: {
     title: "🎉 Perfect Game!",
