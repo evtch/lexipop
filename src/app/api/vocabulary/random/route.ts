@@ -20,10 +20,12 @@ const prisma = new PrismaClient();
  */
 export async function GET(request: NextRequest) {
   try {
+    console.log('🎯 Random vocabulary API called');
     const { searchParams } = new URL(request.url);
     const count = parseInt(searchParams.get('count') || '5');
     const difficulty = searchParams.get('difficulty');
     const category = searchParams.get('category');
+    console.log('📝 Request params:', { count, difficulty, category });
 
     // Validate count parameter
     if (count < 1 || count > 20) {
@@ -46,12 +48,29 @@ export async function GET(request: NextRequest) {
     }
 
     // Get total count of words matching criteria
+    console.log('🔍 Checking word count with filters:', { where, difficulty, category });
     const totalWords = await prisma.word.count({ where });
+    console.log('📊 Total words found:', totalWords);
+
+    // Also check total count without filters for debugging
+    const totalWordsUnfiltered = await prisma.word.count();
+    console.log('📊 Total words in database (no filters):', totalWordsUnfiltered);
 
     if (totalWords === 0) {
+      console.warn('⚠️ No words found with current filters! Database has', totalWordsUnfiltered, 'total words');
       return NextResponse.json({
         success: false,
-        error: 'No words found matching the specified criteria'
+        error: totalWordsUnfiltered === 0
+          ? 'No vocabulary words found in database. Database needs to be seeded.'
+          : `No words found matching filters. Database has ${totalWordsUnfiltered} total words.`,
+        hint: totalWordsUnfiltered === 0
+          ? 'Run: npm run db:seed to populate the database with vocabulary words'
+          : 'Try removing difficulty or category filters',
+        debug: {
+          totalWordsInDB: totalWordsUnfiltered,
+          appliedFilters: { difficulty, category },
+          whereClause: where
+        }
       }, { status: 404 });
     }
 
