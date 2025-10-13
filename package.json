@@ -21,6 +21,7 @@
     "@farcaster/miniapp-wagmi-connector": "^1.1.0",
     "@libsql/client": "^0.15.15",
     "@neynar/nodejs-sdk": "^3.34.0",
+    "@neynar/react": "^1.2.14",
     "@prisma/client": "^6.17.1",
     "@pythnetwork/entropy-sdk-solidity": "^2.0.0",
     "@rainbow-me/rainbowkit": "^2.0.8",

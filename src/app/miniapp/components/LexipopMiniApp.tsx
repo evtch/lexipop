@@ -5,8 +5,8 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GameState, VocabularyWord } from '@/types/game';
 import { getUniqueWords, shuffleArray } from '@/data/vocabulary';
-import { sdk } from '@farcaster/miniapp-sdk';
-import { useFarcasterUser } from '@/lib/hooks/useFarcasterUser';
+import { useMiniApp } from '@neynar/react'; // For miniapp add functionality
+import { useFarcasterUser } from '@/lib/hooks/useFarcasterUser'; // Uses Farcaster SDK for user context
 import { generateCommitment } from '@/lib/pyth-entropy';
 import { useSound } from '@/hooks/useSound';
 import { useAccount, useConnect, useDisconnect, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
@@ -20,6 +20,9 @@ import MiniAppButton from './MiniAppButton';
 // import NotificationPrompt from './NotificationPrompt'; // Removed - miniapp handles notifications via SDK
 
 export default function LexipopMiniApp() {
+  // Use Neynar's useMiniApp hook for adding miniapp functionality
+  const { isSDKLoaded, addMiniApp } = useMiniApp();
+
   // Use automatic Farcaster user detection from miniapp context
   const farcasterUser = useFarcasterUser();
 
@@ -72,67 +75,68 @@ export default function LexipopMiniApp() {
     hash,
   });
 
-  // Helper function to add miniapp to Farcaster
+  // Helper function to add miniapp to Farcaster using Neynar
   const addMiniAppToFarcaster = async (): Promise<void> => {
-    console.log('🎯 Adding miniapp to Farcaster...');
-    await sdk.actions.addMiniApp();
-    console.log('✅ Miniapp added to Farcaster successfully');
+    if (!isSDKLoaded) {
+      console.log('⏳ Neynar SDK not loaded yet, skipping add miniapp');
+      return;
+    }
+
+    console.log('🎯 Adding miniapp to Farcaster via Neynar...');
+
+    try {
+      const result = await addMiniApp();
+
+      if (result.added && result.notificationDetails) {
+        // Mini app was added and notifications were enabled
+        console.log('✅ Miniapp added successfully with notifications enabled');
+        console.log('🔔 Notification token:', result.notificationDetails.token);
+
+        // The Neynar SDK will automatically call our webhook with the notification details
+        // No need to manually call our webhook endpoint
+
+      } else if (result.added) {
+        console.log('✅ Miniapp added successfully (notifications not enabled)');
+      } else {
+        console.log('❌ Failed to add miniapp:', result.reason);
+        if (result.reason === 'rejected_by_user') {
+          console.log('👤 User rejected the miniapp addition');
+        } else if (result.reason === 'invalid_domain_manifest') {
+          console.log('🚫 Invalid domain manifest - check Farcaster configuration');
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error adding miniapp:', error);
+    }
   };
 
-  // Initialize Farcaster miniapp SDK
+  // Auto-prompt to add miniapp on first visit for new users (using Neynar)
   useEffect(() => {
-    const initializeMiniApp = async () => {
-      try {
-        await sdk.actions.ready();
-        console.log('🎯 Farcaster miniapp ready');
+    const autoPromptMiniApp = async () => {
+      if (!isSDKLoaded || !currentUser?.fid || !isFirstTimeClaim) {
+        return;
+      }
 
-        // Auto-prompt to add miniapp on first visit for new users
-        if (currentUser?.fid && isFirstTimeClaim) {
-          const hasAutoPromptedKey = `lexipop_auto_add_prompted_${currentUser.fid}`;
-          const hasAutoPrompted = localStorage.getItem(hasAutoPromptedKey) === 'true';
+      const hasAutoPromptedKey = `lexipop_auto_add_prompted_${currentUser.fid}`;
+      const hasAutoPrompted = localStorage.getItem(hasAutoPromptedKey) === 'true';
 
-          if (!hasAutoPrompted) {
-            console.log('🎉 Auto-prompting user to add miniapp...');
+      if (!hasAutoPrompted) {
+        console.log('🎉 Auto-prompting user to add miniapp via Neynar...');
 
-            try {
-              await addMiniAppToFarcaster();
-
-              // Try to enable notifications automatically
-              try {
-                await fetch('/api/webhooks/notifications', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    event: 'miniapp_added',
-                    userFid: currentUser.fid,
-                    notificationDetails: {
-                      url: window.location.origin,
-                      token: 'lexipop_notifications'
-                    }
-                  })
-                });
-                console.log('📱 Auto notification webhook triggered');
-              } catch (webhookError) {
-                console.warn('Failed to trigger auto notification webhook:', webhookError);
-              }
-            } catch (error) {
-              console.log('⚠️ Auto-add miniapp failed:', error);
-            }
-
-            // Mark as auto-prompted regardless of success/failure
-            localStorage.setItem(hasAutoPromptedKey, 'true');
-            if (currentUser?.fid) {
-              localStorage.setItem(`lexipop_add_prompted_${currentUser.fid}`, 'true');
-            }
-          }
+        try {
+          await addMiniAppToFarcaster();
+        } catch (error) {
+          console.log('⚠️ Auto-add miniapp failed:', error);
         }
-      } catch (error) {
-        console.error('❌ Failed to initialize Farcaster miniapp:', error);
+
+        // Mark as auto-prompted regardless of success/failure
+        localStorage.setItem(hasAutoPromptedKey, 'true');
+        localStorage.setItem(`lexipop_add_prompted_${currentUser.fid}`, 'true');
       }
     };
 
-    initializeMiniApp();
-  }, [currentUser?.fid]); // Remove isFirstTimeClaim to prevent infinite loop
+    autoPromptMiniApp();
+  }, [isSDKLoaded, currentUser?.fid, isFirstTimeClaim, addMiniApp]);
 
   // Check if user has seen notification prompt and claimed tokens before
   useEffect(() => {
@@ -683,25 +687,7 @@ export default function LexipopMiniApp() {
                           onClick={async () => {
                             try {
                               await addMiniAppToFarcaster();
-
-                              // Try to enable notifications automatically
-                              try {
-                                await fetch('/api/webhooks/notifications', {
-                                  method: 'POST',
-                                  headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({
-                                    event: 'miniapp_added',
-                                    userFid: currentUser?.fid,
-                                    notificationDetails: {
-                                      url: window.location.origin,
-                                      token: 'lexipop_notifications'
-                                    }
-                                  })
-                                });
-                                console.log('📱 Notification webhook triggered');
-                              } catch (webhookError) {
-                                console.warn('Failed to trigger notification webhook:', webhookError);
-                              }
+                              // Neynar automatically handles webhook notifications
                             } catch (error) {
                               console.error('❌ Failed to add miniapp:', error);
                               // Show user-friendly error message for failed attempts

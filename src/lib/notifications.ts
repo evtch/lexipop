@@ -162,13 +162,40 @@ async function sendNeynarNotification(payload: NotificationPayload): Promise<Not
 }
 
 /**
- * Send notification to specific user by FID
+ * Check if user has notifications enabled
+ */
+async function canUserReceiveNotifications(userFid: number): Promise<boolean> {
+  try {
+    const userStats = await prisma.userStats.findUnique({
+      where: { userFid },
+      select: { notificationsEnabled: true }
+    });
+
+    return userStats?.notificationsEnabled === true;
+  } catch (error) {
+    console.error(`❌ Error checking notification status for user ${userFid}:`, error);
+    return false;
+  }
+}
+
+/**
+ * Send notification to specific user by FID (only if they have notifications enabled)
  */
 export async function notifyUser(
   userFid: number,
   templateKey: keyof typeof NOTIFICATION_TEMPLATES
 ): Promise<NotificationResponse> {
   const template = NOTIFICATION_TEMPLATES[templateKey];
+
+  // Check if user can receive notifications
+  const canReceive = await canUserReceiveNotifications(userFid);
+  if (!canReceive) {
+    console.log(`🔇 User ${userFid} does not have notifications enabled, skipping`);
+    return {
+      success: false,
+      error: `User ${userFid} does not have notifications enabled`
+    };
+  }
 
   return sendNeynarNotification({
     target_fids: [userFid],
@@ -181,13 +208,23 @@ export async function notifyUser(
 }
 
 /**
- * Send custom notification to specific user
+ * Send custom notification to specific user (only if they have notifications enabled)
  */
 export async function notifyUserCustom(
   userFid: number,
   title: string,
   body: string
 ): Promise<NotificationResponse> {
+  // Check if user can receive notifications
+  const canReceive = await canUserReceiveNotifications(userFid);
+  if (!canReceive) {
+    console.log(`🔇 User ${userFid} does not have notifications enabled, skipping custom notification`);
+    return {
+      success: false,
+      error: `User ${userFid} does not have notifications enabled`
+    };
+  }
+
   return sendNeynarNotification({
     target_fids: [userFid],
     notification: {
@@ -199,7 +236,7 @@ export async function notifyUserCustom(
 }
 
 /**
- * Broadcast notification to all users (fetches users from database)
+ * Broadcast notification to all users with notifications enabled
  */
 export async function broadcastNotification(
   templateKey: keyof typeof NOTIFICATION_TEMPLATES
@@ -207,20 +244,21 @@ export async function broadcastNotification(
   const template = NOTIFICATION_TEMPLATES[templateKey];
 
   try {
-    // Get all user FIDs from the database
+    // Get all user FIDs who have notifications enabled
     const users = await prisma.userStats.findMany({
       select: { userFid: true },
+      where: { notificationsEnabled: true },
       take: 100, // Neynar limit is 100 per request
     });
 
     const userFids = users.map(user => user.userFid);
 
     if (userFids.length === 0) {
-      console.log('📭 No users found for broadcast notification');
-      return { success: false, error: 'No users found to notify' };
+      console.log('📭 No users with notifications enabled found for broadcast');
+      return { success: false, error: 'No users with notifications enabled found' };
     }
 
-    console.log(`📢 Broadcasting to ${userFids.length} users`);
+    console.log(`📢 Broadcasting to ${userFids.length} users with notifications enabled`);
 
     return sendNeynarNotification({
       target_fids: userFids,
@@ -237,27 +275,28 @@ export async function broadcastNotification(
 }
 
 /**
- * Broadcast custom notification to all users
+ * Broadcast custom notification to all users with notifications enabled
  */
 export async function broadcastCustomNotification(
   title: string,
   body: string
 ): Promise<NotificationResponse> {
   try {
-    // Get all user FIDs from the database
+    // Get all user FIDs who have notifications enabled
     const users = await prisma.userStats.findMany({
       select: { userFid: true },
+      where: { notificationsEnabled: true },
       take: 100, // Neynar limit is 100 per request
     });
 
     const userFids = users.map(user => user.userFid);
 
     if (userFids.length === 0) {
-      console.log('📭 No users found for broadcast notification');
-      return { success: false, error: 'No users found to notify' };
+      console.log('📭 No users with notifications enabled found for broadcast');
+      return { success: false, error: 'No users with notifications enabled found' };
     }
 
-    console.log(`📢 Broadcasting custom notification to ${userFids.length} users`);
+    console.log(`📢 Broadcasting custom notification to ${userFids.length} users with notifications enabled`);
 
     return sendNeynarNotification({
       target_fids: userFids,
