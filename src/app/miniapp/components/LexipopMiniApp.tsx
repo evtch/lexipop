@@ -17,7 +17,7 @@ import FrameWordBubble from './FrameWordBubble';
 import FrameAnswerOption from './FrameAnswerOption';
 import ScoreShare from './ScoreShare';
 import MiniAppButton from './MiniAppButton';
-import NotificationPrompt from './NotificationPrompt';
+// import NotificationPrompt from './NotificationPrompt'; // Removed - miniapp handles notifications via SDK
 
 export default function LexipopMiniApp() {
   // Use automatic Farcaster user detection from miniapp context
@@ -48,8 +48,8 @@ export default function LexipopMiniApp() {
   const [gameId, setGameId] = useState<string>('');
   const [showShareModal, setShowShareModal] = useState(false);
   const [completedWords, setCompletedWords] = useState<typeof gameState.gameQuestions>([]);
-  const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
-  const [hasSeenNotificationPrompt, setHasSeenNotificationPrompt] = useState(false);
+  // const [showNotificationPrompt, setShowNotificationPrompt] = useState(false); // Disabled for miniapp
+  // const [hasSeenNotificationPrompt, setHasSeenNotificationPrompt] = useState(false); // Disabled for miniapp
   const [hasSharedCast, setHasSharedCast] = useState(false);
   const [isFirstTimeClaim, setIsFirstTimeClaim] = useState(true);
 
@@ -134,9 +134,9 @@ export default function LexipopMiniApp() {
   // Check if user has seen notification prompt and claimed tokens before
   useEffect(() => {
     if (currentUser?.fid) {
-      const hasSeenKey = `lexipop_notification_prompt_seen_${currentUser.fid}`;
-      const hasSeen = localStorage.getItem(hasSeenKey) === 'true';
-      setHasSeenNotificationPrompt(hasSeen);
+      // const hasSeenKey = `lexipop_notification_prompt_seen_${currentUser.fid}`;
+      // const hasSeen = localStorage.getItem(hasSeenKey) === 'true';
+      // setHasSeenNotificationPrompt(hasSeen); // Disabled for miniapp
 
       // Check if user has claimed tokens before OR been prompted to add miniapp
       const hasClaimedKey = `lexipop_has_claimed_${currentUser.fid}`;
@@ -472,12 +472,12 @@ export default function LexipopMiniApp() {
         currentWord: null
       }));
 
-      // Show notification prompt after first game completion (if not seen before)
-      if (currentUser?.fid && !hasSeenNotificationPrompt) {
-        setTimeout(() => {
-          setShowNotificationPrompt(true);
-        }, 2000); // Wait 2 seconds after game completion
-      }
+      // Show notification prompt after first game completion (if not seen before) - Disabled for miniapp
+      // if (currentUser?.fid && !hasSeenNotificationPrompt) {
+      //   setTimeout(() => {
+      //     setShowNotificationPrompt(true);
+      //   }, 2000); // Wait 2 seconds after game completion
+      // }
 
       return;
     }
@@ -1104,8 +1104,8 @@ export default function LexipopMiniApp() {
         completedWords={completedWords}
       />
 
-      {/* Notification Prompt */}
-      {showNotificationPrompt && (
+      {/* Notification Prompt - Disabled for miniapp (uses SDK notifications instead) */}
+      {/* {showNotificationPrompt && (
         <NotificationPrompt
           onNotificationEnabled={(enabled) => {
             console.log(`🔔 Notification ${enabled ? 'enabled' : 'declined'} by user ${currentUser?.fid}`);
@@ -1132,7 +1132,7 @@ export default function LexipopMiniApp() {
           }}
           autoShow={true}
         />
-      )}
+      )} */}
 
     </div>
   );
