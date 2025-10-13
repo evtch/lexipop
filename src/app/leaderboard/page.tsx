@@ -9,6 +9,7 @@ import Link from 'next/link';
 interface LeaderboardEntry {
   fid: number;
   username?: string;
+  totalTokensEarned: number;
   highestScore: number;
   bestStreak: number;
   totalGames: number;
@@ -16,6 +17,7 @@ interface LeaderboardEntry {
 
 interface UserStats {
   totalGames: number;
+  totalTokensEarned: number;
   highestScore: number;
   bestStreak: number;
   averageScore: number;
@@ -133,12 +135,12 @@ function LeaderboardPageContent() {
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               <div className="text-center">
-                <div className="font-bold text-2xl text-blue-600">{userStats.highestScore}</div>
-                <div className="text-gray-600 text-sm">Best Score</div>
+                <div className="font-bold text-2xl text-green-600">{userStats.totalTokensEarned || 0}</div>
+                <div className="text-gray-600 text-sm">$LEXIPOP Earned</div>
               </div>
               <div className="text-center">
-                <div className="font-bold text-2xl text-blue-600">{userStats.bestStreak}</div>
-                <div className="text-gray-600 text-sm">Best Streak</div>
+                <div className="font-bold text-2xl text-blue-600">{userStats.highestScore}</div>
+                <div className="text-gray-600 text-sm">Best Score</div>
               </div>
               <div className="text-center">
                 <div className="font-bold text-2xl text-blue-600">{userStats.totalGames}</div>
@@ -212,11 +214,11 @@ function LeaderboardPageContent() {
                     </div>
 
                     <div className="text-right">
-                      <div className="font-bold text-2xl text-blue-600">
-                        {entry.highestScore}
+                      <div className="font-bold text-2xl text-green-600">
+                        {entry.totalTokensEarned} $LEXIPOP
                       </div>
                       <div className="text-gray-600">
-                        Best: {entry.bestStreak} streak
+                        Best Score: {entry.highestScore}/5
                       </div>
                     </div>
                   </div>

@@ -49,12 +49,12 @@ export async function POST(request: NextRequest) {
 
     // Simple: Just store/update the highest score for this user
     await prisma.$executeRaw`
-      INSERT INTO user_stats (userFid, highestScore, updatedAt)
-      VALUES (${fid}, ${score}, NOW())
-      ON CONFLICT (userFid)
+      INSERT INTO user_stats ("userFid", "highestScore", "totalTokensEarned", "updatedAt")
+      VALUES (${fid}, ${score}, 0, NOW())
+      ON CONFLICT ("userFid")
       DO UPDATE SET
-        highestScore = GREATEST(user_stats.highestScore, ${score}),
-        updatedAt = NOW()
+        "highestScore" = GREATEST(user_stats."highestScore", ${score}),
+        "updatedAt" = NOW()
     `;
 
     console.log(`✅ Score recorded: FID ${fid}, Score ${score}, Streak ${streak}`);
@@ -90,15 +90,16 @@ export async function GET(request: NextRequest) {
     if (type === 'leaderboard') {
       console.log('📊 Fetching simple leaderboard...');
 
-      // Super simple: just get FID and highest score
+      // Super simple: just get FID and total tokens earned
       const leaderboardData = await prisma.$queryRaw<Array<{
         userFid: number;
+        totalTokensEarned: number;
         highestScore: number;
       }>>`
-        SELECT userFid, highestScore
+        SELECT "userFid", "totalTokensEarned", "highestScore"
         FROM user_stats
-        WHERE highestScore > 0
-        ORDER BY highestScore DESC
+        WHERE "totalTokensEarned" > 0
+        ORDER BY "totalTokensEarned" DESC, "highestScore" DESC
         LIMIT 100
       `;
 
@@ -125,6 +126,7 @@ export async function GET(request: NextRequest) {
           return {
             fid: player.userFid,
             username: username || `User ${player.userFid}`,
+            totalTokensEarned: player.totalTokensEarned,
             highestScore: player.highestScore,
             bestStreak: 0, // Not tracking for now
             totalGames: 1, // Not tracking for now
@@ -156,11 +158,12 @@ export async function GET(request: NextRequest) {
     // Get simple user stats
     const userStats = await prisma.$queryRaw<Array<{
       userFid: number;
+      totalTokensEarned: number;
       highestScore: number;
     }>>`
-      SELECT userFid, highestScore
+      SELECT "userFid", "totalTokensEarned", "highestScore"
       FROM user_stats
-      WHERE userFid = ${fidNumber}
+      WHERE "userFid" = ${fidNumber}
     `;
 
     if (userStats.length === 0) {
@@ -181,6 +184,7 @@ export async function GET(request: NextRequest) {
     }
 
     const highestScore = userStats[0].highestScore;
+    const totalTokensEarned = userStats[0].totalTokensEarned;
 
     return NextResponse.json({
       success: true,
@@ -192,7 +196,8 @@ export async function GET(request: NextRequest) {
         highestScore: highestScore,
         bestStreak: highestScore, // Use score as streak approximation
         averageScore: highestScore,
-        totalQuestionsAnswered: 5
+        totalQuestionsAnswered: 5,
+        totalTokensEarned: totalTokensEarned
       },
       recentGames: []
     });

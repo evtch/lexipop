@@ -241,6 +241,26 @@ export default function LexipopMiniApp() {
       // Play success sound for successful claim
       playRewardClaimSound();
 
+      // Track tokens for leaderboard
+      if (generatedTokens && currentUser?.fid) {
+        fetch('/api/tokens/track', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fid: currentUser.fid,
+            tokensEarned: generatedTokens
+          })
+        }).then(response => {
+          if (response.ok) {
+            console.log(`💰 Tracked ${generatedTokens} $LEXIPOP for leaderboard`);
+          } else {
+            console.warn('Failed to track tokens for leaderboard');
+          }
+        }).catch(error => {
+          console.warn('Error tracking tokens:', error);
+        });
+      }
+
       // Reset the token generation state after successful claim
       setGeneratedTokens(null);
       setCurrentNumber(0);
