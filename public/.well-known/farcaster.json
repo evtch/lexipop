@@ -1,8 +1,8 @@
 {
   "accountAssociation": {
-    "header": "eyJmaWQiOjE0ODIsInR5cGUiOiJjdXN0b2R5Iiwia2V5IjoiMHg0RkVjQjk3ZjRjMTI1N2VCQTgyOTZhYWNBNEVBOUVmMjI3ODg3YkI4In0",
-    "payload": "eyJkb21haW4iOiJsZXhpcG9wLnZlcmNlbC5hcHAifQ",
-    "signature": "MHg2YmJjNDRkYzNlNzk0MzkwMTZiNTVlMDQ3NjllYmRlOTczODlhZWJkNjZlZjUxNGQ3YTZmZWQzMGRmZDI5NzBiNzJhMzhiOGE0MWU4Y2FhYWRlNTQwOTlhZDcwN2I2MTljOGYyZDU3YTc3MzAwMjA3MTI4Mjc3ZjY0NDU0YzlhZDFj"
+    "header": "eyJmaWQiOjE0ODIsInR5cGUiOiJhdXRoIiwia2V5IjoiMHhkMkQzZERGNTA0QzdBMTBkNkYwQTg5RTUxMUM3OTM2Nzg5QzBjMDdCIn0",
+    "payload": "eyJkb21haW4iOiJsZXhpcG9wLnh5eiJ9",
+    "signature": "T/DEsDK3EMT/zE2iRSOGcHN7hQWRNWPPP2FpP7xOlMYa7w593o47DyHNqz6FDP96My4aZqJTFkqcksBo/NgQ+hs="
   },
   "version": "1",
   "appId": "lexipop-miniapp",
