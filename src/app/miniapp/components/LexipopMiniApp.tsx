@@ -421,13 +421,13 @@ export default function LexipopMiniApp() {
       showResult: true,
       isCorrect,
       score: isCorrect ? prev.score + 1 : prev.score,
-      streak: isCorrect ? prev.streak + 1 : 0,
-      totalQuestions: prev.totalQuestions + 1
+      streak: isCorrect ? prev.streak + 1 : 0
+      // totalQuestions should stay constant at 5, not increment
     }));
 
     // Submit score if user is authenticated
     if (isUserAuthenticated && currentUser) {
-      submitScore(gameState.score + (isCorrect ? 1 : 0), isCorrect ? gameState.streak + 1 : 0, gameState.totalQuestions + 1);
+      submitScore(gameState.score + (isCorrect ? 1 : 0), isCorrect ? gameState.streak + 1 : 0, gameState.totalQuestions);
     }
 
     // Auto-advance to next question after 2 seconds
@@ -798,7 +798,7 @@ export default function LexipopMiniApp() {
         <div className="flex items-center gap-4">
           <div className="text-center text-sm">
             <div className="font-medium">Score</div>
-            <div className="text-lg font-bold">{gameState.score}</div>
+            <div className="text-lg font-bold">{gameState.score}/{gameState.totalQuestions}</div>
           </div>
           {currentUser && (
             <div className="flex items-center gap-2">

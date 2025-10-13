@@ -57,7 +57,7 @@ export default function FrameAnswerOption({
       onClick={!showResult ? onClick : undefined}
       className={`
         w-full p-3 rounded-lg border-2 transition-all duration-200
-        flex items-center gap-3 text-left
+        flex items-start gap-3 text-left min-h-[60px]
         answer-option
         ${getBackgroundColor()}
         ${showResult ? 'cursor-default' : 'cursor-pointer'}
@@ -68,14 +68,14 @@ export default function FrameAnswerOption({
       {/* Letter badge */}
       <div className={`
         w-8 h-8 rounded-full flex items-center justify-center
-        font-bold text-sm transition-all duration-200 flex-shrink-0
+        font-bold text-sm transition-all duration-200 flex-shrink-0 mt-1
         ${getLetterColor()}
       `}>
         {letter}
       </div>
 
       {/* Answer text */}
-      <p className={`flex-1 font-medium text-xs leading-relaxed ${getTextColor()}`}>
+      <p className={`flex-1 font-medium text-xs leading-relaxed ${getTextColor()} break-words pr-2`}>
         {text}
       </p>
 
@@ -85,7 +85,7 @@ export default function FrameAnswerOption({
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ delay: 0.2, type: "spring", stiffness: 300 }}
-          className="text-lg flex-shrink-0"
+          className="text-lg flex-shrink-0 mt-1"
         >
           {isSelected && isCorrect && '✓'}
           {isSelected && !isCorrect && '✗'}
