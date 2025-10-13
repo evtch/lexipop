@@ -47,7 +47,10 @@ export async function POST(request: NextRequest) {
     const accuracy = (score / totalQuestions) * 100;
     const now = new Date();
 
-    // Create game session
+    // Update user statistics FIRST (creates UserStats record if needed)
+    await updateUserStats(fid, score, streak, totalQuestions, accuracy);
+
+    // Create game session AFTER UserStats exists
     const gameSession = await prisma.gameSession.create({
       data: {
         gameId: gameIdFinal,
@@ -63,9 +66,6 @@ export async function POST(request: NextRequest) {
         bonusMultiplier: 1,
       },
     });
-
-    // Update user statistics
-    await updateUserStats(fid, score, streak, totalQuestions, accuracy);
 
     console.log(`✅ Score recorded: FID ${fid}, Score ${score}, Streak ${streak}`);
 
