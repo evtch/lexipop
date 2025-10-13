@@ -538,14 +538,11 @@ export default function LexipopMiniApp() {
                       animate={{ scale: 1 }}
                       className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl p-6 mb-4 shadow-xl"
                     >
-                      <div className="text-4xl font-bold text-white mb-2">
-                        🎁 {generatedTokens}
+                      <div className="text-4xl font-bold text-white mb-2 text-center">
+                        {generatedTokens}
                       </div>
-                      <div className="text-white text-lg mb-2">
-                        $LEXIPOP
-                      </div>
-                      <div className="text-white/90 text-sm">
-                        You won {generatedTokens} $LEXIPOP!
+                      <div className="text-white text-lg text-center">
+                        You won {generatedTokens} $LEXIPOP
                       </div>
                     </motion.div>
 
