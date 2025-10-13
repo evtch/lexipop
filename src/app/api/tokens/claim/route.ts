@@ -117,11 +117,13 @@ export async function POST(request: NextRequest) {
     const lastClaim = recentClaims.get(rateLimitKey);
 
     if (lastClaim && Date.now() - lastClaim < CLAIM_COOLDOWN) {
-      const remainingTime = Math.ceil((CLAIM_COOLDOWN - (Date.now() - lastClaim)) / 1000);
+      const remainingTimeMs = CLAIM_COOLDOWN - (Date.now() - lastClaim);
+      const remainingMinutes = Math.ceil(remainingTimeMs / (1000 * 60));
+
       return NextResponse.json(
         {
           success: false,
-          error: `Rate limit exceeded. Try again in ${remainingTime} seconds.`
+          error: `You already claimed tokens. Play again in ${remainingMinutes} minute${remainingMinutes > 1 ? 's' : ''}.`
         },
         { status: 429 }
       );
