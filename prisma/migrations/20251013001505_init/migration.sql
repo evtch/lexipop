@@ -1,6 +1,6 @@
 -- CreateTable
 CREATE TABLE "words" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id" SERIAL NOT NULL,
     "word" TEXT NOT NULL,
     "correctDefinition" TEXT NOT NULL,
     "incorrectDefinition1" TEXT NOT NULL,
@@ -12,33 +12,36 @@ CREATE TABLE "words" (
     "partOfSpeech" TEXT,
     "timesShown" INTEGER NOT NULL DEFAULT 0,
     "timesCorrect" INTEGER NOT NULL DEFAULT 0,
-    "averageResponseTime" REAL,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
-    "lastShown" DATETIME
+    "averageResponseTime" DOUBLE PRECISION,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "lastShown" TIMESTAMP(3),
+
+    CONSTRAINT "words_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "game_sessions" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "gameId" TEXT NOT NULL,
     "userFid" INTEGER NOT NULL,
     "score" INTEGER NOT NULL,
     "totalQuestions" INTEGER NOT NULL,
     "streak" INTEGER NOT NULL DEFAULT 0,
-    "accuracy" REAL NOT NULL,
-    "gameStartTime" DATETIME NOT NULL,
-    "gameEndTime" DATETIME NOT NULL,
+    "accuracy" DOUBLE PRECISION NOT NULL,
+    "gameStartTime" TIMESTAMP(3) NOT NULL,
+    "gameEndTime" TIMESTAMP(3) NOT NULL,
     "totalDuration" INTEGER NOT NULL,
     "tokensEarned" INTEGER NOT NULL DEFAULT 0,
-    "bonusMultiplier" REAL NOT NULL DEFAULT 1,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "game_sessions_userFid_fkey" FOREIGN KEY ("userFid") REFERENCES "user_stats" ("userFid") ON DELETE RESTRICT ON UPDATE CASCADE
+    "bonusMultiplier" DOUBLE PRECISION NOT NULL DEFAULT 1,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "game_sessions_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "question_responses" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id" SERIAL NOT NULL,
     "gameSessionId" TEXT NOT NULL,
     "wordId" INTEGER NOT NULL,
     "selectedAnswer" TEXT NOT NULL,
@@ -46,47 +49,51 @@ CREATE TABLE "question_responses" (
     "responseTime" INTEGER NOT NULL,
     "questionOrder" INTEGER NOT NULL,
     "shuffledOptions" TEXT NOT NULL,
-    "answeredAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "question_responses_gameSessionId_fkey" FOREIGN KEY ("gameSessionId") REFERENCES "game_sessions" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
-    CONSTRAINT "question_responses_wordId_fkey" FOREIGN KEY ("wordId") REFERENCES "words" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    "answeredAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "question_responses_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "user_stats" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id" SERIAL NOT NULL,
     "userFid" INTEGER NOT NULL,
     "totalGamesPlayed" INTEGER NOT NULL DEFAULT 0,
     "totalQuestionsAnswered" INTEGER NOT NULL DEFAULT 0,
     "totalCorrectAnswers" INTEGER NOT NULL DEFAULT 0,
     "highestScore" INTEGER NOT NULL DEFAULT 0,
     "longestStreak" INTEGER NOT NULL DEFAULT 0,
-    "bestAccuracy" REAL NOT NULL DEFAULT 0,
-    "fastestAverageTime" REAL,
+    "bestAccuracy" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "fastestAverageTime" DOUBLE PRECISION,
     "totalTokensEarned" INTEGER NOT NULL DEFAULT 0,
     "totalSpins" INTEGER NOT NULL DEFAULT 0,
     "currentDailyStreak" INTEGER NOT NULL DEFAULT 0,
     "longestDailyStreak" INTEGER NOT NULL DEFAULT 0,
-    "lastPlayedDate" DATETIME,
+    "lastPlayedDate" TIMESTAMP(3),
     "currentDifficultyLevel" INTEGER NOT NULL DEFAULT 1,
     "wordsLearned" INTEGER NOT NULL DEFAULT 0,
-    "firstGameAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "firstGameAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "user_stats_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "categories" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
     "description" TEXT,
     "difficultyRange" TEXT,
     "wordCount" INTEGER NOT NULL DEFAULT 0,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "categories_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "import_batches" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id" SERIAL NOT NULL,
     "batchName" TEXT NOT NULL,
     "description" TEXT,
     "totalWords" INTEGER NOT NULL DEFAULT 0,
@@ -96,8 +103,10 @@ CREATE TABLE "import_batches" (
     "sourceFile" TEXT,
     "importedBy" TEXT,
     "status" TEXT NOT NULL DEFAULT 'pending',
-    "startedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "completedAt" DATETIME
+    "startedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "completedAt" TIMESTAMP(3),
+
+    CONSTRAINT "import_batches_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -111,3 +120,12 @@ CREATE UNIQUE INDEX "user_stats_userFid_key" ON "user_stats"("userFid");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "categories_name_key" ON "categories"("name");
+
+-- AddForeignKey
+ALTER TABLE "game_sessions" ADD CONSTRAINT "game_sessions_userFid_fkey" FOREIGN KEY ("userFid") REFERENCES "user_stats"("userFid") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "question_responses" ADD CONSTRAINT "question_responses_gameSessionId_fkey" FOREIGN KEY ("gameSessionId") REFERENCES "game_sessions"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "question_responses" ADD CONSTRAINT "question_responses_wordId_fkey" FOREIGN KEY ("wordId") REFERENCES "words"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
