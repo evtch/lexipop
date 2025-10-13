@@ -528,6 +528,27 @@ export default function LexipopMiniApp() {
                     >
                       {isGeneratingTokens ? 'Generating...' : 'Generate my reward'}
                     </MiniAppButton>
+
+                    {/* Invite Friends Button */}
+                    <div className="mb-3">
+                      <MiniAppButton
+                        onClick={() => {
+                          const castText = `I crushed it at Lexipop! 🧠✨ Just learned some amazing vocabulary words and earned $LEXIPOP tokens! 🪙\n\nJoin me to:\n📚 Learn new words\n🎯 Test your vocabulary\n💰 Earn crypto rewards\n🔥 Have fun while learning!\n\nPlay now and show me your score! 👇`;
+                          const miniappUrl = window.location.origin + '/miniapp';
+                          const shareUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(castText)}&embeds[]=${encodeURIComponent(miniappUrl)}`;
+                          window.open(shareUrl, '_blank');
+                        }}
+                        variant="secondary"
+                        size="lg"
+                        icon="👥"
+                        className="w-full"
+                      >
+                        Invite friends (+50% rewards)
+                      </MiniAppButton>
+                      <div className="text-xs text-gray-500 text-center mt-1">
+                        Increases chance for a higher reward by 50%
+                      </div>
+                    </div>
                   </div>
                 ) : (
                   // Token Claim Section
