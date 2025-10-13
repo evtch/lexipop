@@ -538,7 +538,7 @@ export default function LexipopMiniApp() {
                             const miniappUrl = window.location.origin + '/miniapp';
 
                             // Use Farcaster miniapp SDK for native cast creation
-                            await sdk.actions.requestCast({
+                            await sdk.actions.composeCast({
                               text: castText,
                               embeds: [{
                                 url: miniappUrl
