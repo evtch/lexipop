@@ -72,6 +72,36 @@ export default function LexipopMiniApp() {
     hash,
   });
 
+  // Helper function to add miniapp to Farcaster (following official docs)
+  const addMiniAppToFarcaster = async (): Promise<boolean> => {
+    try {
+      console.log('🎯 Attempting to add miniapp to Farcaster...');
+
+      // Ensure SDK is ready
+      if (!sdk || !sdk.actions) {
+        throw new Error('Farcaster SDK not available');
+      }
+
+      // Call the official addMiniApp method
+      await sdk.actions.addMiniApp();
+      console.log('✅ Miniapp added to Farcaster successfully');
+      return true;
+
+    } catch (error: any) {
+      // Handle specific errors as per documentation
+      if (error.name === 'RejectedByUser') {
+        console.log('⚠️ User rejected adding the app');
+        return false;
+      } else if (error.name === 'InvalidDomainManifestJson') {
+        console.error('❌ Domain or manifest configuration is incorrect:', error);
+        return false;
+      } else {
+        console.error('❌ Failed to add miniapp:', error);
+        return false;
+      }
+    }
+  };
+
   // Initialize Farcaster miniapp SDK
   useEffect(() => {
     const initializeMiniApp = async () => {
@@ -87,15 +117,10 @@ export default function LexipopMiniApp() {
           if (!hasAutoPrompted) {
             console.log('🎉 Auto-prompting user to add miniapp...');
 
-            try {
-              await sdk.actions.addMiniApp();
-              console.log('✅ Auto-add miniapp successful');
+            const success = await addMiniAppToFarcaster();
 
-              // Mark as auto-prompted
-              localStorage.setItem(hasAutoPromptedKey, 'true');
-              if (currentUser?.fid) {
-                localStorage.setItem(`lexipop_add_prompted_${currentUser.fid}`, 'true');
-              }
+            if (success) {
+              console.log('✅ Auto-add miniapp successful');
 
               // Try to enable notifications automatically
               try {
@@ -115,11 +140,12 @@ export default function LexipopMiniApp() {
               } catch (webhookError) {
                 console.warn('Failed to trigger auto notification webhook:', webhookError);
               }
+            }
 
-            } catch (addError) {
-              console.log('⚠️ Auto-add miniapp failed (expected in some contexts):', addError);
-              // Mark as attempted so we don't keep trying
-              localStorage.setItem(hasAutoPromptedKey, 'true');
+            // Mark as auto-prompted regardless of success/failure
+            localStorage.setItem(hasAutoPromptedKey, 'true');
+            if (currentUser?.fid) {
+              localStorage.setItem(`lexipop_add_prompted_${currentUser.fid}`, 'true');
             }
           }
         }
@@ -678,25 +704,9 @@ export default function LexipopMiniApp() {
                       <div className="mb-3">
                         <MiniAppButton
                           onClick={async () => {
-                            try {
-                              console.log('🎯 Attempting to add miniapp to Farcaster...');
+                            const success = await addMiniAppToFarcaster();
 
-                              // Check if SDK is ready
-                              if (!sdk || !sdk.actions) {
-                                throw new Error('Farcaster SDK not available');
-                              }
-
-                              // Use Farcaster miniapp SDK to prompt user to add miniapp
-                              const result = await sdk.actions.addMiniApp();
-                              console.log('✅ AddMiniApp result:', result);
-
-                              setIsFirstTimeClaim(false);
-                              // Save that user has been prompted to add miniapp
-                              if (currentUser?.fid) {
-                                localStorage.setItem(`lexipop_add_prompted_${currentUser.fid}`, 'true');
-                              }
-                              console.log('🎉 User prompted to add miniapp to Farcaster');
-
+                            if (success) {
                               // Try to enable notifications automatically
                               try {
                                 await fetch('/api/webhooks/notifications', {
@@ -715,38 +725,15 @@ export default function LexipopMiniApp() {
                               } catch (webhookError) {
                                 console.warn('Failed to trigger notification webhook:', webhookError);
                               }
+                            } else {
+                              // Show user-friendly error message for failed attempts
+                              alert('Unable to add to Farcaster. Please make sure you\'re using the app within Farcaster for full functionality.');
+                            }
 
-                            } catch (error) {
-                              console.error('❌ Failed to add miniapp:', error);
-
-                              // Try alternative approach - open Farcaster directly
-                              try {
-                                // Use the frame add URL approach
-                                const miniappUrl = `${window.location.origin}/miniapp`;
-                                const addUrl = `https://warpcast.com/~/add-cast-action?url=${encodeURIComponent(miniappUrl)}`;
-
-                                // Open in new tab/window
-                                window.open(addUrl, '_blank');
-
-                                console.log('🔗 Opened Farcaster add URL as fallback');
-
-                                // Still mark as attempted
-                                setIsFirstTimeClaim(false);
-                                if (currentUser?.fid) {
-                                  localStorage.setItem(`lexipop_add_prompted_${currentUser.fid}`, 'true');
-                                }
-                              } catch (fallbackError) {
-                                console.error('❌ Fallback also failed:', fallbackError);
-
-                                // Show user-friendly error message
-                                alert('Unable to add to Farcaster automatically. Please visit the app in Farcaster to enable notifications.');
-
-                                // Still mark as attempted to avoid showing this button again
-                                setIsFirstTimeClaim(false);
-                                if (currentUser?.fid) {
-                                  localStorage.setItem(`lexipop_add_prompted_${currentUser.fid}`, 'true');
-                                }
-                              }
+                            // Mark as attempted regardless of success
+                            setIsFirstTimeClaim(false);
+                            if (currentUser?.fid) {
+                              localStorage.setItem(`lexipop_add_prompted_${currentUser.fid}`, 'true');
                             }
                           }}
                           variant="primary"

@@ -1,8 +1,8 @@
 {
   "accountAssociation": {
     "header": "eyJmaWQiOjE0ODIsInR5cGUiOiJhdXRoIiwia2V5IjoiMHhkMkQzZERGNTA0QzdBMTBkNkYwQTg5RTUxMUM3OTM2Nzg5QzBjMDdCIn0",
-    "payload": "eyJkb21haW4iOiJsZXhpcG9wLnh5eiJ9",
-    "signature": "T/DEsDK3EMT/zE2iRSOGcHN7hQWRNWPPP2FpP7xOlMYa7w593o47DyHNqz6FDP96My4aZqJTFkqcksBo/NgQ+hs="
+    "payload": "eyJkb21haW4iOiJ3d3cubGV4aXBvcC54eXoifQ",
+    "signature": "HX95s0abInw30t8AAhSbm7jqn91JmjH3hrg9JiMOlmgTnbiVxgMFHZWyuQGIoPVid6XEfCj+TsLb0KxTVmgBbBs="
   },
   "version": "1",
   "appId": "lexipop-miniapp",
@@ -22,7 +22,13 @@
     "subtitle": "Test your vocabulary!",
     "description": "Learn new words through interactive vocabulary games. Challenge yourself and improve your word skills!",
     "primaryCategory": "games",
-    "tags": ["vocabulary", "education", "quiz", "learning", "words"],
+    "tags": [
+      "vocabulary",
+      "education",
+      "quiz",
+      "learning",
+      "words"
+    ],
     "ogImageUrl": "https://www.lexipop.xyz/og-image.png",
     "castShareUrl": "https://www.lexipop.xyz/miniapp",
     "webhookUrl": "https://www.lexipop.xyz/api/webhooks/notifications"

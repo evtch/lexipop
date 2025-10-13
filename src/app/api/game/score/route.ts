@@ -277,55 +277,36 @@ async function updateUserStats(fid: number, score: number, streak: number, total
   try {
     console.log('📊 Updating user stats:', { fid, score, streak, totalQuestions, accuracy });
 
-    // Upsert user stats (create if doesn't exist, update if exists)
-    const upsertResult = await prisma.userStats.upsert({
-      where: { userFid: fid },
-      create: {
-        userFid: fid,
-        totalGamesPlayed: 1,
-        totalQuestionsAnswered: totalQuestions,
-        totalCorrectAnswers: score,
-        highestScore: score,
-        longestStreak: streak,
-        bestAccuracy: accuracy,
-        currentDailyStreak: 1,
-        longestDailyStreak: 1,
-        lastPlayedDate: new Date(),
-        currentDifficultyLevel: 1,
-        wordsLearned: score,
-        totalTokensEarned: 0,
-        totalSpins: 0,
-      },
-      update: {
-        totalGamesPlayed: { increment: 1 },
-        totalQuestionsAnswered: { increment: totalQuestions },
-        totalCorrectAnswers: { increment: score },
-        highestScore: { set: Math.max(score) }, // Will be overridden by the where clause update below
-        longestStreak: { set: Math.max(streak) }, // Will be overridden by the where clause update below
-        bestAccuracy: { set: Math.max(accuracy) }, // Will be overridden by the where clause update below
-        lastPlayedDate: new Date(),
-        wordsLearned: { increment: score },
-        updatedAt: new Date(),
-      },
-    });
+    // Use raw SQL to avoid schema mismatch issues with notification fields
+    await prisma.$executeRaw`
+      INSERT INTO user_stats (
+        userFid, totalGamesPlayed, totalQuestionsAnswered, totalCorrectAnswers,
+        highestScore, longestStreak, bestAccuracy, currentDailyStreak,
+        longestDailyStreak, lastPlayedDate, currentDifficultyLevel, wordsLearned,
+        totalTokensEarned, totalSpins, firstGameAt, updatedAt
+      ) VALUES (
+        ${fid}, 1, ${totalQuestions}, ${score}, ${score}, ${streak}, ${accuracy},
+        1, 1, NOW(), 1, ${score}, 0, 0, NOW(), NOW()
+      )
+      ON CONFLICT (userFid) DO UPDATE SET
+        totalGamesPlayed = user_stats.totalGamesPlayed + 1,
+        totalQuestionsAnswered = user_stats.totalQuestionsAnswered + ${totalQuestions},
+        totalCorrectAnswers = user_stats.totalCorrectAnswers + ${score},
+        lastPlayedDate = NOW(),
+        wordsLearned = user_stats.wordsLearned + ${score},
+        updatedAt = NOW()
+    `;
 
     console.log('✅ User stats upserted successfully');
 
-    // Update max values properly (Prisma doesn't support Math.max in upsert update)
-    const currentStats = await prisma.userStats.findUnique({
-      where: { userFid: fid }
-    });
-
-    if (currentStats) {
-      await prisma.userStats.update({
-        where: { userFid: fid },
-        data: {
-          highestScore: Math.max(currentStats.highestScore, score),
-          longestStreak: Math.max(currentStats.longestStreak, streak),
-          bestAccuracy: Math.max(currentStats.bestAccuracy, accuracy),
-        }
-      });
-    }
+    // Update max values using raw SQL to avoid schema issues
+    await prisma.$executeRaw`
+      UPDATE user_stats SET
+        highestScore = GREATEST(highestScore, ${score}),
+        longestStreak = GREATEST(longestStreak, ${streak}),
+        bestAccuracy = GREATEST(bestAccuracy, ${accuracy})
+      WHERE userFid = ${fid}
+    `;
 
     console.log('✅ User stats update completed successfully');
 

@@ -96,7 +96,7 @@ export default function ScoreShare({
       message += ' Almost perfect! ⭐';
     }
 
-    message += '\n\nPlay Lexipop and test your vocabulary: https://www.lexipop.xyz/miniapp';
+    message += '\n\nPlay Lexipop and test your vocabulary: https://www.www.lexipop.xyz/miniapp';
 
     return message;
   };
