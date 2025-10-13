@@ -533,10 +533,10 @@ export default function LexipopMiniApp() {
                     <div className="mb-3">
                       <MiniAppButton
                         onClick={async () => {
-                          try {
-                            const castText = `I crushed it at Lexipop! 🧠✨ Just learned some amazing vocabulary words and earned $LEXIPOP tokens! 🪙\n\nJoin me to:\n📚 Learn new words\n🎯 Test your vocabulary\n💰 Earn crypto rewards\n🔥 Have fun while learning!\n\nPlay now and show me your score! 👇`;
-                            const miniappUrl = window.location.origin + '/miniapp';
+                          const castText = `I crushed it at Lexipop! 🧠✨ Just learned some amazing vocabulary words and earned $LEXIPOP tokens! 🪙\n\nJoin me to:\n📚 Learn new words\n🎯 Test your vocabulary\n💰 Earn crypto rewards\n🔥 Have fun while learning!\n\nPlay now and show me your score! 👇`;
+                          const miniappUrl = window.location.origin + '/miniapp';
 
+                          try {
                             // Use Farcaster miniapp SDK for native cast creation
                             await sdk.actions.composeCast({
                               text: castText,
