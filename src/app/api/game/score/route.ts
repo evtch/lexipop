@@ -77,11 +77,22 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('❌ Score submission error:', error);
+    console.error('❌ Error details:', {
+      name: error instanceof Error ? error.name : 'Unknown',
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      fid,
+      score,
+      streak,
+      totalQuestions,
+      gameIdFinal
+    });
 
     return NextResponse.json(
       {
         success: false,
-        error: 'Failed to record score'
+        error: 'Failed to record score',
+        details: error instanceof Error ? error.message : String(error)
       },
       { status: 500 }
     );
@@ -274,8 +285,10 @@ export async function GET(request: NextRequest) {
 
 async function updateUserStats(fid: number, score: number, streak: number, totalQuestions: number, accuracy: number) {
   try {
+    console.log('📊 Updating user stats:', { fid, score, streak, totalQuestions, accuracy });
+
     // Upsert user stats (create if doesn't exist, update if exists)
-    await prisma.userStats.upsert({
+    const upsertResult = await prisma.userStats.upsert({
       where: { userFid: fid },
       create: {
         userFid: fid,
@@ -306,6 +319,8 @@ async function updateUserStats(fid: number, score: number, streak: number, total
       },
     });
 
+    console.log('✅ User stats upserted successfully');
+
     // Update max values properly (Prisma doesn't support Math.max in upsert update)
     const currentStats = await prisma.userStats.findUnique({
       where: { userFid: fid }
@@ -322,7 +337,20 @@ async function updateUserStats(fid: number, score: number, streak: number, total
       });
     }
 
+    console.log('✅ User stats update completed successfully');
+
   } catch (error) {
     console.error('❌ Failed to update user stats:', error);
+    console.error('❌ User stats error details:', {
+      name: error instanceof Error ? error.name : 'Unknown',
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      fid,
+      score,
+      streak,
+      totalQuestions,
+      accuracy
+    });
+    throw error; // Re-throw to let the main handler catch it
   }
 }
