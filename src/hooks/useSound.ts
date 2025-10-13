@@ -40,9 +40,19 @@ export function useSound() {
     playSound('/sounds/wrong-answer.mp3', 0.6);
   }, [playSound]);
 
+  const playRewardGeneratingSound = useCallback(() => {
+    playSound('/sounds/reward-generating.mp3', 0.5);
+  }, [playSound]);
+
+  const playRewardClaimSound = useCallback(() => {
+    playSound('/sounds/reward-claim.mp3', 0.7);
+  }, [playSound]);
+
   return {
     playSound,
     playCorrectSound,
-    playWrongSound
+    playWrongSound,
+    playRewardGeneratingSound,
+    playRewardClaimSound
   };
 }

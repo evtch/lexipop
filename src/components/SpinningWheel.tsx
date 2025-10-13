@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { REWARD_TIERS, RewardTier, generateMockRandomness, calculateBonusMultiplier, getPythRandomNumber } from '@/lib/pyth-entropy';
 import { useWalletClient } from 'wagmi';
+import { useSound } from '@/hooks/useSound';
 
 interface SpinningWheelProps {
   isVisible: boolean;
@@ -28,6 +29,9 @@ export default function SpinningWheel({
   const [finalTokens, setFinalTokens] = useState(0);
   const [bonusMultiplier, setBonusMultiplier] = useState(1);
   const [usePythEntropy, setUsePythEntropy] = useState(false);
+
+  // Sound effects
+  const { playRewardGeneratingSound, playRewardClaimSound } = useSound();
   const wheelRef = useRef<HTMLDivElement>(null);
   const { data: walletClient } = useWalletClient();
 
@@ -49,6 +53,9 @@ export default function SpinningWheel({
     if (isSpinning || hasSpun) return;
 
     setIsSpinning(true);
+
+    // Play reward generation sound when spinning starts
+    playRewardGeneratingSound();
 
     try {
       let reward: RewardTier;
@@ -99,6 +106,9 @@ export default function SpinningWheel({
         setFinalTokens(finalAmount);
         setIsSpinning(false);
         setHasSpun(true);
+
+        // Play reward claim sound when final amount is revealed
+        playRewardClaimSound();
 
         onRewardClaimed(finalAmount);
       }, 4000);

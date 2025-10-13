@@ -1009,11 +1009,11 @@ export default function LexipopMiniApp() {
   }
 
   return (
-    <div className="flex flex-col p-4 text-gray-800 overflow-hidden" style={{ height: '90vh', maxHeight: '90vh' }}>
+    <div className="flex flex-col p-4 text-gray-800 min-h-screen">
       {/* Header - Compact for Frame */}
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-xl font-bold">Lexipop</h1>
-        <div className="flex items-center gap-4">
+      <div className="flex justify-between items-center mb-3">
+        <h1 className="text-lg font-bold">Lexipop</h1>
+        <div className="flex items-center gap-3">
           <div className="text-center text-sm">
             <div className="font-medium">Score</div>
             <div className="text-lg font-bold">{gameState.score}/{gameState.totalQuestions}</div>
@@ -1024,17 +1024,17 @@ export default function LexipopMiniApp() {
                 <img
                   src={currentUser.pfpUrl}
                   alt={currentUser.username}
-                  className="w-8 h-8 rounded-full"
+                  className="w-7 h-7 rounded-full"
                 />
               )}
-              <span className="text-sm text-gray-600">@{currentUser.username}</span>
+              <span className="text-xs text-gray-600">@{currentUser.username}</span>
             </div>
           )}
         </div>
       </div>
 
       {/* Word Bubble - Smaller for Frame */}
-      <div className="flex-shrink-0 mb-4 py-5">
+      <div className="flex-shrink-0 mb-3 py-3">
         <AnimatePresence mode="wait">
           {gameState.currentWord && (
             <FrameWordBubble
@@ -1049,7 +1049,7 @@ export default function LexipopMiniApp() {
       </div>
 
       {/* Progress Indicator - More Compact */}
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-2">
         <div className="flex-1 bg-gray-200 rounded-full h-1.5 mr-3">
           <div
             className="bg-blue-500 h-1.5 rounded-full transition-all duration-300"
@@ -1062,12 +1062,12 @@ export default function LexipopMiniApp() {
       </div>
 
       {/* Instructions */}
-      <div className="text-center mb-3">
+      <div className="text-center mb-2">
         <p className="text-sm text-gray-600">Choose the correct definition:</p>
       </div>
 
-      {/* Answer Options - Compact for Frame with proper spacing */}
-      <div className="space-y-2 flex-1 flex flex-col justify-start pb-4">
+      {/* Answer Options - Ensures all 4 options are visible */}
+      <div className="space-y-1.5 flex-1 pb-2">
         {shuffledDefinitions.map((definition, index) => {
           const letters = ['A', 'B', 'C', 'D'] as const;
           return (
