@@ -83,19 +83,19 @@ export default function LexipopMiniApp() {
 
     try {
       // Try Neynar approach first if available
-      if (addMiniApp && isSDKLoaded) {
+      if (addMiniApp && typeof addMiniApp === 'function' && isSDKLoaded) {
         console.log('🔥 Using Neynar SDK for miniapp addition...');
         const result = await addMiniApp();
 
-        if (result.added && result.notificationDetails) {
+        if (result?.added && result?.notificationDetails) {
           console.log('✅ Miniapp added successfully with notifications enabled');
           console.log('🔔 Notification token:', result.notificationDetails.token);
           return;
-        } else if (result.added) {
+        } else if (result?.added) {
           console.log('✅ Miniapp added successfully (notifications not enabled)');
           return;
         } else {
-          console.log('❌ Neynar failed to add miniapp:', result.reason);
+          console.log('❌ Neynar failed to add miniapp:', result?.reason);
           // Fall through to Farcaster SDK approach
         }
       }

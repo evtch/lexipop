@@ -21,6 +21,7 @@ const nextConfig: NextConfig = {
         path: false,
         '@react-native-async-storage/async-storage': false,
         'pino-pretty': false,
+        'pino/lib/tools': false,
       };
     }
 
@@ -43,6 +44,13 @@ const nextConfig: NextConfig = {
       test: /\.(LICENSE|md|txt)$/i,
       use: 'ignore-loader',
     });
+
+    // Ignore pino-pretty imports specifically
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      'pino-pretty': false,
+      'pino/lib/tools': false,
+    };
 
     return config;
   },
