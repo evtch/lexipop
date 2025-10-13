@@ -107,7 +107,7 @@ export default function LexipopMiniApp() {
   const startNewGame = () => {
     console.log('🎮 Starting new game');
 
-    const gameQuestions = getUniqueWords(1); // 1 question per game for testing
+    const gameQuestions = getUniqueWords(5); // 5 questions per game
     const firstWord = gameQuestions[0];
     const allDefinitions = [firstWord.correctDefinition, ...firstWord.incorrectDefinitions];
     const shuffled = shuffleArray(allDefinitions);
@@ -121,7 +121,7 @@ export default function LexipopMiniApp() {
       currentQuestionIndex: 0,
       score: 0,
       streak: 0,
-      totalQuestions: 0,
+      totalQuestions: 5, // Set to 5 questions per game
       isGameActive: true,
       selectedAnswer: null,
       showResult: false,
@@ -790,6 +790,19 @@ export default function LexipopMiniApp() {
             />
           )}
         </AnimatePresence>
+      </div>
+
+      {/* Progress Indicator */}
+      <div className="text-center mb-4">
+        <div className="text-xs text-gray-500 mb-2">
+          Question {gameState.currentQuestionIndex + 1} of {gameState.totalQuestions}
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-2">
+          <div
+            className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+            style={{ width: `${((gameState.currentQuestionIndex + 1) / gameState.totalQuestions) * 100}%` }}
+          />
+        </div>
       </div>
 
       {/* Instructions */}
