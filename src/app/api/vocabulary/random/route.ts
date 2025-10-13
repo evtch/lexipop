@@ -14,7 +14,7 @@ const prisma = new PrismaClient();
 /**
  * Convert database difficulty (number) to game difficulty (string)
  */
-function getDifficultyLevel(difficulty: number): string {
+function getDifficultyLevel(difficulty: number): 'easy' | 'medium' | 'hard' {
   switch (difficulty) {
     case 1: return 'easy';
     case 2: return 'easy';
