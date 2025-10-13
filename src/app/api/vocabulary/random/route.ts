@@ -294,15 +294,6 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * Convert numeric difficulty to string format expected by game
- */
-function getDifficultyLevel(difficulty: number): 'easy' | 'medium' | 'hard' {
-  if (difficulty <= 2) return 'easy';
-  if (difficulty <= 3) return 'medium';
-  return 'hard';
-}
-
-/**
  * GET /api/vocabulary/random/stats - Get statistics about vocabulary selection
  */
 export async function HEAD() {

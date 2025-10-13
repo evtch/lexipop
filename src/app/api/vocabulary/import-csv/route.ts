@@ -59,7 +59,7 @@ function parseCSV(csvText: string): CSVRow[] {
 }
 
 /**
- * Convert CSV row to database format
+ * Convert CSV row to database format with shuffled answers
  */
 function csvRowToWordData(row: CSVRow) {
   const options = [row.option_a, row.option_b, row.option_c, row.option_d];
@@ -67,19 +67,34 @@ function csvRowToWordData(row: CSVRow) {
   const correctDefinition = options[correctIndex];
   const incorrectDefinitions = options.filter((_, index) => index !== correctIndex);
 
+  // Shuffle the incorrect definitions to randomize their positions
+  const shuffledIncorrect = shuffleArray([...incorrectDefinitions]);
+
   // Estimate difficulty based on word length and complexity
   const difficulty = estimateDifficulty(row.word);
 
   return {
     word: row.word,
     correctDefinition,
-    incorrectDefinition1: incorrectDefinitions[0],
-    incorrectDefinition2: incorrectDefinitions[1],
-    incorrectDefinition3: incorrectDefinitions[2],
+    incorrectDefinition1: shuffledIncorrect[0],
+    incorrectDefinition2: shuffledIncorrect[1],
+    incorrectDefinition3: shuffledIncorrect[2],
     difficulty,
     category: 'academic', // Default category
     partOfSpeech: 'unknown' // Could be enhanced with NLP
   };
+}
+
+/**
+ * Shuffle an array using Fisher-Yates algorithm
+ */
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
 }
 
 /**
