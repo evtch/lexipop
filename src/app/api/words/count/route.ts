@@ -18,13 +18,11 @@ export async function GET() {
     // Get words by category
     const wordsByCategory = await prisma.word.groupBy({
       by: ['category'],
-      _count: true,
-      orderBy: {
-        _count: {
-          _all: 'desc'
-        }
-      }
+      _count: true
     });
+
+    // Sort by count manually since orderBy with _count is complex in Prisma
+    wordsByCategory.sort((a, b) => b._count - a._count);
 
     // Sample a few words
     const sampleWords = await prisma.word.findMany({
