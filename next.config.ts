@@ -29,6 +29,15 @@ const nextConfig: NextConfig = {
       config.externals = [...(config.externals || []), '@libsql/client'];
     }
 
+    // Handle LightningCSS native binaries
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      'lightningcss': 'lightningcss',
+    };
+
+    // Ensure native modules are included
+    config.resolve.extensions = [...(config.resolve.extensions || []), '.node'];
+
     // Ignore LICENSE and other non-JS files
     config.module.rules.push({
       test: /\.(LICENSE|md|txt)$/i,
