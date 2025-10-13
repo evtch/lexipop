@@ -705,7 +705,7 @@ export default function LexipopMiniApp() {
       </div>
 
       {/* Word Bubble - Smaller for Frame */}
-      <div className="flex-shrink-0 mb-4">
+      <div className="flex-shrink-0 mb-4 py-5">
         <AnimatePresence mode="wait">
           {gameState.currentWord && (
             <FrameWordBubble
