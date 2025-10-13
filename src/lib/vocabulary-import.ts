@@ -5,8 +5,7 @@
  * Supports categories, difficulty levels, and batch tracking
  */
 
-import { db, words, categories, importBatches, type NewWord, type NewImportBatch } from '@/db';
-import { eq } from 'drizzle-orm';
+import { prisma } from '@/lib/prisma';
 
 export interface VocabularyEntry {
   word: string;
@@ -97,19 +96,23 @@ function validateEntry(entry: unknown, index: number): { valid: boolean; errors:
 async function ensureCategoryExists(categoryName: string): Promise<number> {
   try {
     // Check if category exists
-    const existing = await db.select().from(categories).where(eq(categories.name, categoryName)).limit(1);
+    const existing = await prisma.category.findUnique({
+      where: { name: categoryName }
+    });
 
-    if (existing.length > 0) {
-      return existing[0].id;
+    if (existing) {
+      return existing.id;
     }
 
     // Create new category
-    const result = await db.insert(categories).values({
-      name: categoryName,
-      description: `Auto-created category for ${categoryName} words`,
-    }).returning({ id: categories.id });
+    const result = await prisma.category.create({
+      data: {
+        name: categoryName,
+        description: `Auto-created category for ${categoryName} words`,
+      }
+    });
 
-    return result[0].id;
+    return result.id;
   } catch (error) {
     console.error('Error ensuring category exists:', error);
     throw new Error(`Failed to create/find category: ${categoryName}`);
@@ -142,14 +145,16 @@ export async function importVocabulary(
 
   try {
     // Create import batch record
-    const batchResult = await db.insert(importBatches).values({
-      batchName,
-      description: description || `Import of ${entries.length} vocabulary words`,
-      totalWords: entries.length,
-      status: 'processing',
-    }).returning({ id: importBatches.id });
+    const batchResult = await prisma.importBatch.create({
+      data: {
+        batchName,
+        description: description || `Import of ${entries.length} vocabulary words`,
+        totalWords: entries.length,
+        status: 'processing',
+      }
+    });
 
-    const batchId = batchResult[0].id;
+    const batchId = batchResult.id;
 
     // Validate all entries first
     for (let i = 0; i < entries.length; i++) {
@@ -171,17 +176,17 @@ export async function importVocabulary(
 
       try {
         // Check for existing word
-        const existingWord = await db.select().from(words)
-          .where(eq(words.word, entry.word.toLowerCase().trim()))
-          .limit(1);
+        const existingWord = await prisma.word.findUnique({
+          where: { word: entry.word.toLowerCase().trim() }
+        });
 
-        if (existingWord.length > 0) {
+        if (existingWord) {
           stats.duplicates++;
           continue;
         }
 
         // Prepare word data
-        const wordData: NewWord = {
+        const wordData = {
           word: entry.word.toLowerCase().trim(),
           correctDefinition: entry.correctDefinition.trim(),
           incorrectDefinition1: entry.incorrectDefinition1.trim(),
@@ -194,7 +199,7 @@ export async function importVocabulary(
         };
 
         // Insert word
-        await db.insert(words).values(wordData);
+        await prisma.word.create({ data: wordData });
         stats.imported++;
 
       } catch (error) {
@@ -205,15 +210,16 @@ export async function importVocabulary(
     }
 
     // Update batch status
-    await db.update(importBatches)
-      .set({
+    await prisma.importBatch.update({
+      where: { id: batchId },
+      data: {
         status: errors.length === 0 ? 'completed' : 'completed_with_errors',
         successfulImports: stats.imported,
         failedImports: stats.failed,
         duplicatesSkipped: stats.duplicates,
         completedAt: new Date(),
-      })
-      .where(eq(importBatches.id, batchId));
+      }
+    });
 
     return {
       success: stats.imported > 0,
