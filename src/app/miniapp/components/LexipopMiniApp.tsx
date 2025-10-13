@@ -532,11 +532,31 @@ export default function LexipopMiniApp() {
                     {/* Invite Friends Button */}
                     <div className="mb-3">
                       <MiniAppButton
-                        onClick={() => {
-                          const castText = `I crushed it at Lexipop! 🧠✨ Just learned some amazing vocabulary words and earned $LEXIPOP tokens! 🪙\n\nJoin me to:\n📚 Learn new words\n🎯 Test your vocabulary\n💰 Earn crypto rewards\n🔥 Have fun while learning!\n\nPlay now and show me your score! 👇`;
-                          const miniappUrl = window.location.origin + '/miniapp';
-                          const shareUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(castText)}&embeds[]=${encodeURIComponent(miniappUrl)}`;
-                          window.open(shareUrl, '_blank');
+                        onClick={async () => {
+                          try {
+                            const castText = `I crushed it at Lexipop! 🧠✨ Just learned some amazing vocabulary words and earned $LEXIPOP tokens! 🪙\n\nJoin me to:\n📚 Learn new words\n🎯 Test your vocabulary\n💰 Earn crypto rewards\n🔥 Have fun while learning!\n\nPlay now and show me your score! 👇`;
+                            const miniappUrl = window.location.origin + '/miniapp';
+
+                            // Use Farcaster miniapp SDK for native cast creation
+                            await sdk.actions.requestCast({
+                              text: castText,
+                              embeds: [{
+                                url: miniappUrl
+                              }]
+                            });
+                          } catch (error) {
+                            console.error('Failed to create cast:', error);
+                            // Fallback to web share for non-Farcaster environments
+                            try {
+                              const shareUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(castText)}&embeds[]=${encodeURIComponent(miniappUrl)}`;
+                              window.open(shareUrl, '_blank');
+                            } catch (fallbackError) {
+                              // Final fallback - copy to clipboard
+                              const simpleCastText = `I crushed it at Lexipop! Check it out: ${window.location.origin}/miniapp`;
+                              navigator.clipboard?.writeText(simpleCastText);
+                              alert('Link copied to clipboard!');
+                            }
+                          }
                         }}
                         variant="secondary"
                         size="lg"
