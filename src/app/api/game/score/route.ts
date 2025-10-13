@@ -102,12 +102,12 @@ export async function GET(request: NextRequest) {
       // Get top 100 players with their latest scores
       console.log('🔍 Querying userStats table...');
       const topPlayers = await prisma.userStats.findMany({
-        orderBy: [
-          { highestScore: 'desc' },
-          { bestAccuracy: 'desc' }
-        ],
-        take: 100,
-        include: {
+        select: {
+          userFid: true,
+          totalGamesPlayed: true,
+          highestScore: true,
+          longestStreak: true,
+          bestAccuracy: true,
           gameSessions: {
             orderBy: { createdAt: 'desc' },
             take: 1,
@@ -118,7 +118,12 @@ export async function GET(request: NextRequest) {
               createdAt: true,
             }
           }
-        }
+        },
+        orderBy: [
+          { highestScore: 'desc' },
+          { bestAccuracy: 'desc' }
+        ],
+        take: 100
       });
 
       console.log(`📊 Found ${topPlayers.length} players in userStats table`);
@@ -182,7 +187,14 @@ export async function GET(request: NextRequest) {
     // Get user stats
     const userStats = await prisma.userStats.findUnique({
       where: { userFid: fidNumber },
-      include: {
+      select: {
+        userFid: true,
+        totalGamesPlayed: true,
+        totalQuestionsAnswered: true,
+        totalCorrectAnswers: true,
+        highestScore: true,
+        longestStreak: true,
+        bestAccuracy: true,
         gameSessions: {
           orderBy: { createdAt: 'desc' },
           take: 10,
