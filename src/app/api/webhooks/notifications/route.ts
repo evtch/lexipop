@@ -134,8 +134,9 @@ export async function GET() {
 
 /**
  * Helper function to get notification statistics
+ * Note: This is not exported since Next.js routes can only export HTTP methods
  */
-export async function getNotificationWebhookStats() {
+async function getNotificationWebhookStats() {
   try {
     const stats = await prisma.userStats.aggregate({
       _count: {
