@@ -74,21 +74,12 @@ export default function LeaderboardPage() {
     }
   };
 
-  const getRankColor = (rank: number) => {
+  const getRankDisplay = (rank: number) => {
     switch (rank) {
-      case 1: return 'text-yellow-600';
-      case 2: return 'text-gray-500';
-      case 3: return 'text-orange-600';
-      default: return 'text-blue-600';
-    }
-  };
-
-  const getRankIcon = (rank: number) => {
-    switch (rank) {
-      case 1: return '👑';
+      case 1: return '🥇';
       case 2: return '🥈';
       case 3: return '🥉';
-      default: return `#${rank}`;
+      default: return rank.toString();
     }
   };
 
@@ -178,37 +169,44 @@ export default function LeaderboardPage() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.1 }}
                 className={`
-                  bg-white/60 rounded-lg p-4 border transition-all
+                  bg-white/60 rounded-lg p-3 border transition-all
                   ${isCurrentUser
                     ? 'border-blue-400 bg-blue-50/60'
                     : 'border-blue-200 hover:border-blue-300'
                   }
                 `}
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className={`text-xl font-bold ${getRankColor(rank)}`}>
-                      {getRankIcon(rank)}
+                <div className="flex items-center gap-3">
+                  {/* Rank - Fixed width for consistent spacing */}
+                  <div className="w-8 flex justify-center text-lg font-bold">
+                    {getRankDisplay(rank)}
+                  </div>
+
+                  {/* Avatar */}
+                  <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-sm font-medium">
+                    👤
+                  </div>
+
+                  {/* Name and Username - Flexible width */}
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold text-gray-800 truncate">
+                      {entry.username || `User ${entry.fid}`}
+                      {isCurrentUser && (
+                        <span className="text-xs text-blue-600 ml-1">(You)</span>
+                      )}
                     </div>
-                    <div>
-                      <div className="font-semibold">
-                        {entry.username || `User ${entry.fid}`}
-                        {isCurrentUser && (
-                          <span className="text-sm text-blue-600 ml-2">(You)</span>
-                        )}
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        Latest game
-                      </div>
+                    <div className="text-sm text-gray-600 truncate">
+                      @{entry.username || `user${entry.fid}`}
                     </div>
                   </div>
 
-                  <div className="text-right">
+                  {/* Score - Fixed width */}
+                  <div className="text-right min-w-[60px]">
                     <div className="font-bold text-lg text-blue-600">
-                      {entry.latestScore}/{entry.totalQuestions}
+                      {entry.latestScore}
                     </div>
-                    <div className="text-sm text-gray-600">
-                      {entry.latestScore === entry.totalQuestions ? "Perfect!" : "Good try!"}
+                    <div className="text-xs text-gray-500">
+                      /{entry.totalQuestions}
                     </div>
                   </div>
                 </div>

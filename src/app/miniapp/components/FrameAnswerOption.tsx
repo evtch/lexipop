@@ -75,7 +75,7 @@ export default function FrameAnswerOption({
       </div>
 
       {/* Answer text */}
-      <p className={`flex-1 font-medium text-sm leading-relaxed ${getTextColor()}`}>
+      <p className={`flex-1 font-medium text-xs leading-relaxed ${getTextColor()}`}>
         {text}
       </p>
 

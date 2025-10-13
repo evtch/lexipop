@@ -412,21 +412,20 @@ export default function LexipopMiniApp() {
               <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="bg-gradient-to-r from-green-400 to-blue-500 rounded-xl p-4 text-white shadow-lg mb-4"
+                className="bg-gradient-to-r from-green-400 to-blue-500 rounded-lg p-3 text-white shadow-lg mb-4"
               >
                 <div className="text-center">
-                  <div className="text-2xl mb-2">🎈</div>
-                  <div className="text-xl font-bold mb-3">Game Complete!</div>
+                  <div className="text-lg font-bold mb-2">Game Complete!</div>
 
-                  {/* Large Score Display */}
-                  <div className="bg-white/20 rounded-lg p-3 mb-3">
-                    <div className="text-3xl font-bold">
+                  {/* Compact Score Display */}
+                  <div className="bg-white/20 rounded-lg p-2 mb-2">
+                    <div className="text-2xl font-bold">
                       {gameState.score}/{gameState.totalQuestions}
                     </div>
                   </div>
 
                   {/* Performance Message */}
-                  <div className="text-base font-semibold">
+                  <div className="text-sm font-medium">
                     {gameState.score === gameState.totalQuestions
                       ? "Perfect! 🌟"
                       : gameState.score >= gameState.totalQuestions * 0.8
@@ -725,7 +724,7 @@ export default function LexipopMiniApp() {
       </div>
 
       {/* Answer Options - Compact for Frame */}
-      <div className="flex-1 space-y-2 overflow-y-auto">
+      <div className="space-y-2">
         {shuffledDefinitions.map((definition, index) => {
           const letters = ['A', 'B', 'C', 'D'] as const;
           return (

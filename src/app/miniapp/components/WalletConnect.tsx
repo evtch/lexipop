@@ -10,6 +10,7 @@ import React, { useState } from 'react';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useWallet, useChainValidation } from '@/lib/web3/hooks/useWallet';
 import { Wallet, AlertCircle, CheckCircle2, Coins } from 'lucide-react';
+import Confetti from './Confetti';
 
 interface WalletConnectProps {
   tokensToClaimgame?: number;
@@ -29,6 +30,7 @@ export default function WalletConnect({
   const [isClaimingTokens, setIsClaimingTokens] = useState(false);
   const [claimError, setClaimError] = useState<string | null>(null);
   const [claimSuccess, setClaimSuccess] = useState<string | null>(null);
+  const [showConfetti, setShowConfetti] = useState(false);
 
   // Handle token claiming through API
   const handleClaimTokens = async () => {
@@ -54,11 +56,12 @@ export default function WalletConnect({
 
       const data = await response.json();
 
-      if (data.success && data.transactionHash) {
-        setClaimSuccess(data.transactionHash);
-        onTokensClaimed?.(data.transactionHash);
+      if (data.success && data.signature) {
+        setClaimSuccess(data.signature);
+        setShowConfetti(true);
+        onTokensClaimed?.(data.signature);
         console.log(`🎉 Successfully claimed ${tokensToClaimgame} LEXIPOP tokens!`);
-        console.log(`Transaction: ${data.transactionHash}`);
+        console.log(`Signature: ${data.signature}`);
       } else {
         throw new Error(data.error || 'Claim failed');
       }
@@ -176,6 +179,7 @@ export default function WalletConnect({
 
   return (
     <div className={`wallet-connect ${className}`}>
+      <Confetti trigger={showConfetti} onComplete={() => setShowConfetti(false)} />
       <CustomConnectButton />
 
       {/* Error Display */}
