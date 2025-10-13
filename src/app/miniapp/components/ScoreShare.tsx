@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import MiniAppButton from './MiniAppButton';
 import { FarcasterUser } from '@/lib/hooks/useFarcasterUser';
+import { sdk } from '@farcaster/miniapp-sdk';
 
 interface ScoreShareProps {
   score: number;
@@ -12,6 +13,7 @@ interface ScoreShareProps {
   isVisible: boolean;
   onClose: () => void;
   user?: FarcasterUser;
+  completedWords?: Array<{word: string, correctDefinition: string}>;
 }
 
 export default function ScoreShare({
@@ -20,13 +22,63 @@ export default function ScoreShare({
   totalQuestions,
   isVisible,
   onClose,
-  user
+  user,
+  completedWords = []
 }: ScoreShareProps) {
   const isAuthenticated = !!user?.fid;
   const [isSharing, setIsSharing] = useState(false);
   const [shareSuccess, setShareSuccess] = useState(false);
 
   const accuracy = totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0;
+
+  const generateScoreSVG = () => {
+    const words = completedWords.slice(0, 5).map(w => w.word);
+    const width = 600;
+    const height = 400;
+
+    const svg = `
+      <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+          </linearGradient>
+        </defs>
+
+        <!-- Background -->
+        <rect width="100%" height="100%" fill="url(#bgGrad)"/>
+
+        <!-- Title -->
+        <text x="300" y="60" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="white" text-anchor="middle">
+          Lexipop Score: ${score}/${totalQuestions}
+        </text>
+
+        <!-- Accuracy -->
+        <text x="300" y="100" font-family="Arial, sans-serif" font-size="18" fill="white" text-anchor="middle">
+          ${accuracy}% Accuracy ${streak > 1 ? `• ${streak} Streak` : ''}
+        </text>
+
+        <!-- Words learned -->
+        <text x="300" y="140" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="white" text-anchor="middle">
+          Words I learned:
+        </text>
+
+        ${words.map((word, index) => `
+          <rect x="50" y="${170 + index * 35}" width="500" height="30" fill="rgba(255,255,255,0.2)" rx="15"/>
+          <text x="300" y="${190 + index * 35}" font-family="Arial, sans-serif" font-size="16" fill="white" text-anchor="middle">
+            ${word.toUpperCase()}
+          </text>
+        `).join('')}
+
+        <!-- Footer -->
+        <text x="300" y="370" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle">
+          Play at lexipop.xyz 🎈
+        </text>
+      </svg>
+    `;
+
+    return `data:image/svg+xml;base64,${btoa(svg)}`;
+  };
 
   const generateShareText = () => {
     const emojis = ['🔥', '🎯', '🧠', '⭐', '💯'];
@@ -59,31 +111,60 @@ export default function ScoreShare({
 
     try {
       const shareText = generateShareText();
+      const miniappUrl = window.location.origin + '/miniapp';
 
-      // Create a Farcaster cast
-      const response = await fetch('/api/farcaster/cast', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          text: shareText,
-          fid: user.fid
-        }),
+      // Generate SVG embed if we have words
+      let embeds = [miniappUrl];
+      if (completedWords.length > 0) {
+        // Create a data URL for the SVG and add it as an embed
+        const svgDataUrl = generateScoreSVG();
+        embeds = [svgDataUrl, miniappUrl];
+      }
+
+      // Use Farcaster miniapp SDK for native cast creation
+      const result = await sdk.actions.composeCast({
+        text: shareText,
+        embeds: embeds
       });
 
-      if (response.ok) {
+      if (result?.cast) {
         setShareSuccess(true);
         setTimeout(() => {
           setShareSuccess(false);
           onClose();
         }, 2000);
       } else {
-        throw new Error('Failed to share');
+        throw new Error('Cast creation was cancelled');
       }
     } catch (error) {
       console.error('Share error:', error);
-      alert('Failed to share. Please try again!');
+      // Fallback to server-side cast creation
+      try {
+        const shareText = generateShareText();
+        const response = await fetch('/api/farcaster/cast', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            text: shareText,
+            fid: user.fid
+          }),
+        });
+
+        if (response.ok) {
+          setShareSuccess(true);
+          setTimeout(() => {
+            setShareSuccess(false);
+            onClose();
+          }, 2000);
+        } else {
+          throw new Error('Failed to share via fallback');
+        }
+      } catch (fallbackError) {
+        console.error('Fallback share error:', fallbackError);
+        alert('Failed to share. Please try again!');
+      }
     } finally {
       setIsSharing(false);
     }

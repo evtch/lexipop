@@ -540,9 +540,7 @@ export default function LexipopMiniApp() {
                             // Use Farcaster miniapp SDK for native cast creation
                             await sdk.actions.composeCast({
                               text: castText,
-                              embeds: [
-                                url: miniappUrl
-                              ]
+                              embeds: [miniappUrl]
                             });
                           } catch (error) {
                             console.error('Failed to create cast:', error);
@@ -865,6 +863,7 @@ export default function LexipopMiniApp() {
         isVisible={showShareModal}
         onClose={() => setShowShareModal(false)}
         user={currentUser}
+        completedWords={completedWords}
       />
 
 
