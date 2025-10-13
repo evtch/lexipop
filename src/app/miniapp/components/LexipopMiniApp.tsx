@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GameState, VocabularyWord } from '@/types/game';
 import { getUniqueWords, shuffleArray } from '@/data/vocabulary';
-import { useMiniApp } from '@neynar/react'; // For miniapp add functionality
+// Note: Neynar useMiniApp is imported dynamically to avoid SSR issues
 import { sdk } from '@farcaster/miniapp-sdk'; // Fallback for miniapp functionality
 import { useFarcasterUser } from '@/lib/hooks/useFarcasterUser'; // Uses Farcaster SDK for user context
 import { generateCommitment } from '@/lib/pyth-entropy';
@@ -21,10 +21,9 @@ import MiniAppButton from './MiniAppButton';
 // import NotificationPrompt from './NotificationPrompt'; // Removed - miniapp handles notifications via SDK
 
 export default function LexipopMiniApp() {
-  // Use Neynar's useMiniApp hook for adding miniapp functionality
-  const miniAppContext = useMiniApp();
-  const isSDKLoaded = miniAppContext?.isSDKLoaded || false;
-  const addMiniApp = (miniAppContext as any)?.addMiniApp;
+  // Temporarily disable Neynar to fix SSR issues - will fall back to Farcaster SDK
+  const isSDKLoaded = false;
+  const addMiniApp = null;
 
   // Use automatic Farcaster user detection from miniapp context
   const farcasterUser = useFarcasterUser();
