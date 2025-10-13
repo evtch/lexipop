@@ -116,29 +116,39 @@ export default function LexipopMiniApp() {
     }
   };
 
-  const startNewGame = () => {
+  const startNewGame = async () => {
     console.log('🎮 Starting new game');
 
-    const gameQuestions = getUniqueWords(5); // 5 questions per game
-    const firstWord = gameQuestions[0];
-    const allDefinitions = [firstWord.correctDefinition, ...firstWord.incorrectDefinitions];
-    const shuffled = shuffleArray(allDefinitions);
-    const newGameId = `game_${Date.now()}_${currentUser?.fid || 'anon'}`;
+    try {
+      // Show loading state
+      setGameState(prev => ({ ...prev, isGameActive: false }));
 
-    setShuffledDefinitions(shuffled);
-    setGameId(newGameId);
-    setGameState({
-      currentWord: firstWord,
-      gameQuestions,
-      currentQuestionIndex: 0,
-      score: 0,
-      streak: 0,
-      totalQuestions: 5, // Set to 5 questions per game
-      isGameActive: true,
-      selectedAnswer: null,
-      showResult: false,
-      isCorrect: null
-    });
+      const gameQuestions = await getUniqueWords(5); // 5 questions per game from database
+      const firstWord = gameQuestions[0];
+      const allDefinitions = [firstWord.correctDefinition, ...firstWord.incorrectDefinitions];
+      const shuffled = shuffleArray(allDefinitions);
+      const newGameId = `game_${Date.now()}_${currentUser?.fid || 'anon'}`;
+
+      setShuffledDefinitions(shuffled);
+      setGameId(newGameId);
+      setGameState({
+        currentWord: firstWord,
+        gameQuestions,
+        currentQuestionIndex: 0,
+        score: 0,
+        streak: 0,
+        totalQuestions: 5, // Set to 5 questions per game
+        isGameActive: true,
+        selectedAnswer: null,
+        showResult: false,
+        isCorrect: null
+      });
+
+      console.log(`🎯 Game started with words: ${gameQuestions.map(w => w.word).join(', ')}`);
+    } catch (error) {
+      console.error('❌ Failed to start new game:', error);
+      // Could show an error message to user here
+    }
   };
 
 

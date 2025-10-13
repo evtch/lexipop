@@ -1,100 +1,132 @@
 import { VocabularyWord } from '@/types/game';
 
-export const vocabularyDatabase: VocabularyWord[] = [
-  {
-    word: "Esoteric",
-    correctDefinition: "Intended for or understood by only a small number of people with specialized knowledge",
-    incorrectDefinitions: [
-      "Extremely beautiful or pleasing to look at",
-      "Having a strong unpleasant smell",
-      "Moving very quickly or suddenly"
-    ],
-    difficulty: "hard"
-  },
-  {
-    word: "Copacetic",
-    correctDefinition: "In excellent order; very satisfactory",
-    incorrectDefinitions: [
-      "Showing aggressive or warlike behavior",
-      "Lacking in energy or enthusiasm",
-      "Having multiple contradictory meanings"
-    ],
-    difficulty: "medium"
-  },
-  {
-    word: "Trajectory",
-    correctDefinition: "The path followed by a projectile flying through the air",
-    incorrectDefinitions: [
-      "A type of ancient Greek poetry",
-      "The study of geological formations",
-      "A method of artistic expression using colors"
-    ],
-    difficulty: "medium"
-  },
-  {
-    word: "Compulsory",
-    correctDefinition: "Required by law or a rule; obligatory",
-    incorrectDefinitions: [
-      "Done without thinking or planning",
-      "Extremely generous with money",
-      "Relating to the study of insects"
-    ],
-    difficulty: "easy"
-  },
-  {
-    word: "Ubiquitous",
-    correctDefinition: "Present, appearing, or found everywhere",
-    incorrectDefinitions: [
-      "Extremely difficult to understand",
-      "Having the ability to predict the future",
-      "Relating to underwater exploration"
-    ],
-    difficulty: "hard"
-  },
-  {
-    word: "Ephemeral",
-    correctDefinition: "Lasting for a very short time",
-    incorrectDefinitions: [
-      "Extremely expensive or costly",
-      "Having supernatural powers",
-      "Related to mathematical calculations"
-    ],
-    difficulty: "hard"
-  },
-  {
-    word: "Pragmatic",
-    correctDefinition: "Dealing with things sensibly and realistically",
-    incorrectDefinitions: [
-      "Showing excessive pride in appearance",
-      "Unable to make decisions quickly",
-      "Having a fear of open spaces"
-    ],
-    difficulty: "medium"
-  },
-  {
-    word: "Meticulous",
-    correctDefinition: "Showing great attention to detail; very careful and precise",
-    incorrectDefinitions: [
-      "Extremely lazy or inactive",
-      "Having a loud and unpleasant voice",
-      "Prone to sudden changes in mood"
-    ],
-    difficulty: "easy"
-  }
-];
+/**
+ * 🎯 VOCABULARY API INTEGRATION
+ *
+ * Updated to fetch words from the database API instead of hardcoded array
+ * This enables access to 200+ vocabulary words with proper randomization
+ */
 
-export function getRandomWord(): VocabularyWord {
-  const randomIndex = Math.floor(Math.random() * vocabularyDatabase.length);
-  return vocabularyDatabase[randomIndex];
+/**
+ * Get a random word from the database API
+ */
+export async function getRandomWord(): Promise<VocabularyWord> {
+  const words = await getUniqueWords(1);
+  return words[0];
 }
 
-export function getUniqueWords(count: number = 5): VocabularyWord[] {
-  if (count > vocabularyDatabase.length) {
-    throw new Error(`Cannot get ${count} unique words. Only ${vocabularyDatabase.length} words available in database.`);
-  }
+/**
+ * Get multiple unique words from the database API
+ * @param count Number of words to fetch (default: 5)
+ * @param difficulty Optional difficulty filter ('easy', 'medium', 'hard')
+ * @param category Optional category filter ('academic', 'general')
+ */
+export async function getUniqueWords(
+  count: number = 5,
+  difficulty?: string,
+  category?: string
+): Promise<VocabularyWord[]> {
+  try {
+    // Build query parameters
+    const params = new URLSearchParams();
+    params.append('count', count.toString());
 
-  const shuffled = shuffleArray(vocabularyDatabase);
-  return shuffled.slice(0, count);
+    if (difficulty) {
+      // Convert difficulty string to numeric for API
+      const difficultyMap = { 'easy': '1', 'medium': '3', 'hard': '5' };
+      const numericDifficulty = difficultyMap[difficulty as keyof typeof difficultyMap];
+      if (numericDifficulty) {
+        params.append('difficulty', numericDifficulty);
+      }
+    }
+
+    if (category) {
+      params.append('category', category);
+    }
+
+    const response = await fetch(`/api/vocabulary/random?${params.toString()}`);
+
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to fetch words from API');
+    }
+
+    console.log(`✅ Fetched ${data.words.length} words from database (${data.metadata.totalWordsInDB} total available)`);
+    return data.words;
+
+  } catch (error) {
+    console.error('❌ Failed to fetch words from API, falling back to local words:', error);
+
+    // Fallback to a small set of local words if API fails
+    return getFallbackWords(count);
+  }
+}
+
+/**
+ * Fallback vocabulary for when API is unavailable
+ * Uses the original small set as emergency backup
+ */
+function getFallbackWords(count: number = 5): VocabularyWord[] {
+  const fallbackDatabase: VocabularyWord[] = [
+    {
+      word: "Esoteric",
+      correctDefinition: "Intended for or understood by only a small number of people with specialized knowledge",
+      incorrectDefinitions: [
+        "Extremely beautiful or pleasing to look at",
+        "Having a strong unpleasant smell",
+        "Moving very quickly or suddenly"
+      ],
+      difficulty: "hard"
+    },
+    {
+      word: "Copacetic",
+      correctDefinition: "In excellent order; very satisfactory",
+      incorrectDefinitions: [
+        "Showing aggressive or warlike behavior",
+        "Lacking in energy or enthusiasm",
+        "Having multiple contradictory meanings"
+      ],
+      difficulty: "medium"
+    },
+    {
+      word: "Pragmatic",
+      correctDefinition: "Dealing with things sensibly and realistically",
+      incorrectDefinitions: [
+        "Showing excessive pride in appearance",
+        "Unable to make decisions quickly",
+        "Having a fear of open spaces"
+      ],
+      difficulty: "medium"
+    },
+    {
+      word: "Ubiquitous",
+      correctDefinition: "Present, appearing, or found everywhere",
+      incorrectDefinitions: [
+        "Extremely difficult to understand",
+        "Having the ability to predict the future",
+        "Relating to underwater exploration"
+      ],
+      difficulty: "hard"
+    },
+    {
+      word: "Ephemeral",
+      correctDefinition: "Lasting for a very short time",
+      incorrectDefinitions: [
+        "Extremely expensive or costly",
+        "Having supernatural powers",
+        "Related to mathematical calculations"
+      ],
+      difficulty: "hard"
+    }
+  ];
+
+  const shuffled = shuffleArray(fallbackDatabase);
+  return shuffled.slice(0, Math.min(count, fallbackDatabase.length));
 }
 
 export function shuffleArray<T>(array: T[]): T[] {
