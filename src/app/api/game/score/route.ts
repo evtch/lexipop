@@ -90,12 +90,17 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('🎯 Game score API called');
     const { searchParams } = new URL(request.url);
     const fid = searchParams.get('fid');
     const type = searchParams.get('type') || 'user';
+    console.log('📝 Score API params:', { fid, type });
 
     if (type === 'leaderboard') {
+      console.log('📊 Fetching leaderboard data...');
+
       // Get top 100 players with their latest scores
+      console.log('🔍 Querying userStats table...');
       const topPlayers = await prisma.userStats.findMany({
         orderBy: [
           { highestScore: 'desc' },
@@ -115,6 +120,8 @@ export async function GET(request: NextRequest) {
           }
         }
       });
+
+      console.log(`📊 Found ${topPlayers.length} players in userStats table`);
 
       // Fetch usernames for all players in parallel (only if Neynar API key is available)
       const hasNeynarKey = !!process.env.NEYNAR_API_KEY;
@@ -234,7 +241,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: 'Failed to retrieve scores'
+        error: 'Failed to retrieve scores',
+        details: error instanceof Error ? error.message : 'Unknown error',
+        debug: {
+          type: searchParams.get('type'),
+          fid: searchParams.get('fid'),
+          timestamp: new Date().toISOString()
+        }
       },
       { status: 500 }
     );

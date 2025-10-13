@@ -44,7 +44,7 @@ export default function LexipopMiniApp() {
   const [shuffledDefinitions, setShuffledDefinitions] = useState<string[]>([]);
 
   // Sound effects
-  const { playCorrectSound, playWrongSound } = useSound();
+  const { playCorrectSound, playWrongSound, playRewardGeneratingSound, playRewardClaimSound } = useSound();
   const [gameId, setGameId] = useState<string>('');
   const [showShareModal, setShowShareModal] = useState(false);
   const [completedWords, setCompletedWords] = useState<typeof gameState.gameQuestions>([]);
@@ -242,6 +242,10 @@ export default function LexipopMiniApp() {
   useEffect(() => {
     if (isConfirmed && hash) {
       console.log('🎉 $LEXIPOP withdrawal transaction confirmed:', hash);
+
+      // Play success sound for successful claim
+      playRewardClaimSound();
+
       // Reset the token generation state after successful claim
       setGeneratedTokens(null);
       setCurrentNumber(0);
@@ -255,7 +259,7 @@ export default function LexipopMiniApp() {
         setIsFirstTimeClaim(false);
       }
     }
-  }, [isConfirmed, hash, currentUser?.fid]);
+  }, [isConfirmed, hash, currentUser?.fid, playRewardClaimSound]);
 
   const generateTokens = () => {
     if (isGeneratingTokens) return;
@@ -264,6 +268,9 @@ export default function LexipopMiniApp() {
     setGeneratedTokens(null);
     setClaimError(null);
     setCurrentNumber(0);
+
+    // Play reward generating sound
+    playRewardGeneratingSound();
 
     // Generate final token amount using Pyth entropy
     const generateFinalAmount = () => {
@@ -353,6 +360,8 @@ export default function LexipopMiniApp() {
       setIsGeneratingTokens(false);
       setGeneratedTokens(finalAmount);
       setCurrentNumber(finalAmount);
+      // Play reward claim sound when tokens are revealed
+      playRewardClaimSound();
     }, 3000);
   };
 
@@ -390,6 +399,9 @@ export default function LexipopMiniApp() {
 
     setIsClaimingTokens(true);
     setClaimError(null);
+
+    // Play generating sound when starting claim process
+    playRewardGeneratingSound();
 
     try {
       // Step 1: Get withdrawal signature from server
