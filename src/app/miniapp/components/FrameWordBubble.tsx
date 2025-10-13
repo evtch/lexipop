@@ -47,9 +47,13 @@ export default function FrameWordBubble({ word, isVisible, isCorrect, showResult
             ? {
                 boxShadow: [
                   "0 0 0px rgba(34, 197, 94, 0)",
-                  "0 0 30px rgba(34, 197, 94, 0.6)",
+                  "0 0 20px rgba(34, 197, 94, 0.4)",
+                  "0 0 40px rgba(34, 197, 94, 0.7)",
+                  "0 0 60px rgba(34, 197, 94, 0.9)",
+                  "0 0 40px rgba(34, 197, 94, 0.7)",
+                  "0 0 20px rgba(34, 197, 94, 0.4)",
                   "0 0 50px rgba(34, 197, 94, 0.8)",
-                  "0 0 30px rgba(34, 197, 94, 0.6)",
+                  "0 0 30px rgba(34, 197, 94, 0.5)",
                   "0 0 0px rgba(34, 197, 94, 0)"
                 ]
               }
@@ -58,8 +62,10 @@ export default function FrameWordBubble({ word, isVisible, isCorrect, showResult
         transition={{
           ...floatingAnimation.transition,
           boxShadow: {
-            duration: 1.5,
-            ease: "easeInOut"
+            duration: 0.8,
+            ease: "easeInOut",
+            repeat: 2,
+            repeatType: "loop"
           }
         }}
       >

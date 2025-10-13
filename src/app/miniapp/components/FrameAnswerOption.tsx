@@ -28,9 +28,9 @@ export default function FrameAnswerOption({
         : 'bg-blue-500 border-blue-600 hover:border-blue-700 hover:bg-blue-600';
     }
 
-    if (isSelected && isCorrect) return 'bg-green-500 border-green-600 shadow-green-400/50 shadow-lg';
+    if (isSelected && isCorrect) return 'bg-green-500 border-green-600';
     if (isSelected && !isCorrect) return 'bg-red-500 border-red-600';
-    if (!isSelected && isCorrect) return 'bg-green-100 border-green-500 shadow-green-300/30 shadow-md';
+    if (!isSelected && isCorrect) return 'bg-green-100 border-green-500';
     return 'bg-blue-400 border-blue-500';
   };
 
@@ -119,19 +119,21 @@ export default function FrameAnswerOption({
         {text}
       </p>
 
-      {/* Result indicator */}
-      {showResult && (
-        <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ delay: 0.2, type: "spring", stiffness: 300 }}
-          className="text-lg flex-shrink-0"
-        >
-          {isSelected && isCorrect && '✓'}
-          {isSelected && !isCorrect && '✗'}
-          {!isSelected && isCorrect && '✓'}
-        </motion.div>
-      )}
+      {/* Result indicator - always reserve space to prevent layout shift */}
+      <div className="w-6 flex items-center justify-center flex-shrink-0">
+        {showResult && (
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.2, type: "spring", stiffness: 300 }}
+            className="text-lg"
+          >
+            {isSelected && isCorrect && '✓'}
+            {isSelected && !isCorrect && '✗'}
+            {!isSelected && isCorrect && '✓'}
+          </motion.div>
+        )}
+      </div>
     </motion.button>
   );
 }
