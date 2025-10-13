@@ -41,8 +41,7 @@
     "react-dom": "^18.3.1",
     "tailwind-merge": "^3.3.1",
     "viem": "^2.17.11",
-    "wagmi": "^2.18.0",
-    "pino-pretty": "^11.4.0"
+    "wagmi": "^2.18.0"
   },
   "overrides": {
     "viem": "^2.17.11"
