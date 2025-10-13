@@ -10,16 +10,9 @@ import { prisma } from '@/lib/prisma';
  */
 
 export async function POST(request: NextRequest) {
-  let fid: number | undefined;
-  let score: number | undefined;
-  let streak: number | undefined;
-  let totalQuestions: number | undefined;
-  let gameIdFinal: string | undefined;
-
   try {
     const body = await request.json();
-    ({ fid, score, streak, totalQuestions } = body);
-    const { gameId, frameMessage } = body;
+    const { fid, score, streak, totalQuestions, gameId, frameMessage } = body;
 
     // Validate input
     if (!fid || typeof fid !== 'number' || fid <= 0) {
@@ -50,7 +43,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    gameIdFinal = gameId || `game_${Date.now()}_${fid}`;
+    const gameIdFinal = gameId || `game_${Date.now()}_${fid}`;
     const accuracy = (score / totalQuestions) * 100;
     const now = new Date();
 
@@ -84,22 +77,12 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('❌ Score submission error:', error);
-    console.error('❌ Error details:', {
-      name: error instanceof Error ? error.name : 'Unknown',
-      message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-      fid: fid || 'undefined',
-      score: score || 'undefined',
-      streak: streak || 'undefined',
-      totalQuestions: totalQuestions || 'undefined',
-      gameIdFinal: gameIdFinal || 'undefined'
-    });
 
     return NextResponse.json(
       {
         success: false,
         error: 'Failed to record score',
-        details: error instanceof Error ? error.message : String(error)
+        details: error instanceof Error ? error.message : 'Unknown error'
       },
       { status: 500 }
     );
@@ -348,16 +331,6 @@ async function updateUserStats(fid: number, score: number, streak: number, total
 
   } catch (error) {
     console.error('❌ Failed to update user stats:', error);
-    console.error('❌ User stats error details:', {
-      name: error instanceof Error ? error.name : 'Unknown',
-      message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-      fid: fid,
-      score: score,
-      streak: streak,
-      totalQuestions: totalQuestions,
-      accuracy: accuracy
-    });
     throw error; // Re-throw to let the main handler catch it
   }
 }
