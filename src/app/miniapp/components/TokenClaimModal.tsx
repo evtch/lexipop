@@ -8,7 +8,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { X, Coins, Gift, Sparkles, ExternalLink } from 'lucide-react';
+import { X, Coins, Gift, Sparkles, ExternalLink } from '@/components/icons';
 import WalletConnect from './WalletConnect';
 import { useWallet } from '@/lib/web3/hooks/useWallet';
 

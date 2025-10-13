@@ -27,13 +27,15 @@ const nextConfig: NextConfig = {
 
     // Externalize problematic packages for server builds
     if (isServer) {
-      config.externals = [...(config.externals || []), '@libsql/client'];
+      // No external packages needed currently
     }
 
-    // Handle LightningCSS native binaries
+    // Handle LightningCSS native binaries and ignore problematic imports
     config.resolve.alias = {
       ...config.resolve.alias,
       'lightningcss': 'lightningcss',
+      'pino-pretty': false,
+      'pino/lib/tools': false,
     };
 
     // Ensure native modules are included
@@ -44,13 +46,6 @@ const nextConfig: NextConfig = {
       test: /\.(LICENSE|md|txt)$/i,
       use: 'ignore-loader',
     });
-
-    // Ignore pino-pretty imports specifically
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      'pino-pretty': false,
-      'pino/lib/tools': false,
-    };
 
     return config;
   },

@@ -9,7 +9,7 @@
 import React, { useState } from 'react';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useWallet, useChainValidation } from '@/lib/web3/hooks/useWallet';
-import { Wallet, AlertCircle, CheckCircle2, Coins } from 'lucide-react';
+import { Wallet, AlertCircle, CheckCircle2, Coins } from '@/components/icons';
 import Confetti from './Confetti';
 
 interface WalletConnectProps {
