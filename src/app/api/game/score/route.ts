@@ -47,15 +47,14 @@ export async function POST(request: NextRequest) {
     const accuracy = (score / totalQuestions) * 100;
     const now = new Date();
 
-    // Store game session with raw SQL to avoid all schema issues
+    // Simple: Just store/update the highest score for this user
     await prisma.$executeRaw`
-      INSERT INTO game_sessions (
-        id, gameId, userFid, score, totalQuestions, streak, accuracy,
-        gameStartTime, gameEndTime, totalDuration, tokensEarned, bonusMultiplier, createdAt
-      ) VALUES (
-        gen_random_uuid(), ${gameIdFinal}, ${fid}, ${score}, ${totalQuestions}, ${streak}, ${accuracy},
-        NOW(), NOW(), 0, 0, 1, NOW()
-      )
+      INSERT INTO user_stats (userFid, highestScore, updatedAt)
+      VALUES (${fid}, ${score}, NOW())
+      ON CONFLICT (userFid)
+      DO UPDATE SET
+        highestScore = GREATEST(user_stats.highestScore, ${score}),
+        updatedAt = NOW()
     `;
 
     console.log(`✅ Score recorded: FID ${fid}, Score ${score}, Streak ${streak}`);
@@ -89,37 +88,21 @@ export async function GET(request: NextRequest) {
 
   try {
     if (type === 'leaderboard') {
-      console.log('📊 Fetching leaderboard data from game sessions...');
+      console.log('📊 Fetching simple leaderboard...');
 
-      // Calculate stats from game sessions directly using SQL
+      // Super simple: just get FID and highest score
       const leaderboardData = await prisma.$queryRaw<Array<{
         userFid: number;
-        totalGames: bigint;
         highestScore: number;
-        longestStreak: number;
-        bestAccuracy: number;
-        latestScore: number;
-        latestTotalQuestions: number;
-        latestGameId: string;
-        latestTimestamp: Date;
       }>>`
-        SELECT
-          userFid,
-          COUNT(*) as totalGames,
-          MAX(score) as highestScore,
-          MAX(streak) as longestStreak,
-          MAX(accuracy) as bestAccuracy,
-          (SELECT score FROM game_sessions gs2 WHERE gs2.userFid = game_sessions.userFid ORDER BY createdAt DESC LIMIT 1) as latestScore,
-          (SELECT totalQuestions FROM game_sessions gs3 WHERE gs3.userFid = game_sessions.userFid ORDER BY createdAt DESC LIMIT 1) as latestTotalQuestions,
-          (SELECT gameId FROM game_sessions gs4 WHERE gs4.userFid = game_sessions.userFid ORDER BY createdAt DESC LIMIT 1) as latestGameId,
-          (SELECT createdAt FROM game_sessions gs5 WHERE gs5.userFid = game_sessions.userFid ORDER BY createdAt DESC LIMIT 1) as latestTimestamp
-        FROM game_sessions
-        GROUP BY userFid
-        ORDER BY highestScore DESC, bestAccuracy DESC
+        SELECT userFid, highestScore
+        FROM user_stats
+        WHERE highestScore > 0
+        ORDER BY highestScore DESC
         LIMIT 100
       `;
 
-      console.log(`📊 Found ${leaderboardData.length} players from game sessions`);
+      console.log(`📊 Found ${leaderboardData.length} players`);
 
       // Fetch usernames for all players in parallel (only if Neynar API key is available)
       const hasNeynarKey = !!process.env.NEYNAR_API_KEY;
@@ -142,14 +125,9 @@ export async function GET(request: NextRequest) {
           return {
             fid: player.userFid,
             username: username || `User ${player.userFid}`,
-            latestScore: player.latestScore || 0,
-            totalQuestions: player.latestTotalQuestions || 0,
-            gameId: player.latestGameId || '',
-            timestamp: player.latestTimestamp || '',
             highestScore: player.highestScore,
-            longestStreak: player.longestStreak,
-            totalGames: Number(player.totalGames),
-            bestAccuracy: player.bestAccuracy,
+            bestStreak: 0, // Not tracking for now
+            totalGames: 1, // Not tracking for now
           };
         })
       );
@@ -175,27 +153,22 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get user stats calculated from game sessions
-    const userGames = await prisma.gameSession.findMany({
-      where: { userFid: fidNumber },
-      orderBy: { createdAt: 'desc' },
-      take: 10,
-      select: {
-        score: true,
-        streak: true,
-        totalQuestions: true,
-        createdAt: true,
-        gameId: true,
-        accuracy: true,
-      }
-    });
+    // Get simple user stats
+    const userStats = await prisma.$queryRaw<Array<{
+      userFid: number;
+      highestScore: number;
+    }>>`
+      SELECT userFid, highestScore
+      FROM user_stats
+      WHERE userFid = ${fidNumber}
+    `;
 
-    if (userGames.length === 0) {
+    if (userStats.length === 0) {
       return NextResponse.json({
         success: true,
         stats: {
           latestScore: 0,
-          totalQuestions: 0,
+          totalQuestions: 5,
           accuracy: 0,
           totalGames: 0,
           highestScore: 0,
@@ -207,32 +180,21 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const latestGame = userGames[0];
-    const totalGames = userGames.length;
-    const highestScore = Math.max(...userGames.map(g => g.score));
-    const bestStreak = Math.max(...userGames.map(g => g.streak));
-    const averageScore = userGames.reduce((sum, game) => sum + game.score, 0) / totalGames;
-    const totalQuestionsAnswered = userGames.reduce((sum, game) => sum + game.totalQuestions, 0);
+    const highestScore = userStats[0].highestScore;
 
     return NextResponse.json({
       success: true,
       stats: {
-        latestScore: latestGame.score,
-        totalQuestions: latestGame.totalQuestions,
-        accuracy: latestGame.accuracy,
-        totalGames,
-        highestScore,
-        bestStreak,
-        averageScore: Math.round(averageScore * 10) / 10, // Round to 1 decimal
-        totalQuestionsAnswered
+        latestScore: highestScore, // Use highest as latest for now
+        totalQuestions: 5,
+        accuracy: (highestScore / 5) * 100,
+        totalGames: 1, // Not tracking for now
+        highestScore: highestScore,
+        bestStreak: highestScore, // Use score as streak approximation
+        averageScore: highestScore,
+        totalQuestionsAnswered: 5
       },
-      recentGames: userGames.map(game => ({
-        score: game.score,
-        streak: game.streak,
-        totalQuestions: game.totalQuestions,
-        timestamp: Number(game.createdAt),
-        gameId: game.gameId
-      }))
+      recentGames: []
     });
 
   } catch (error) {
