@@ -540,9 +540,9 @@ export default function LexipopMiniApp() {
                             // Use Farcaster miniapp SDK for native cast creation
                             await sdk.actions.composeCast({
                               text: castText,
-                              embeds: [{
+                              embeds: [
                                 url: miniappUrl
-                              }]
+                              ]
                             });
                           } catch (error) {
                             console.error('Failed to create cast:', error);
