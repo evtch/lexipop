@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate token amount
-    if (tokensToClaimgame <= 0 || tokensToClaimgame > 10000) {
+    if (tokensToClaimgame <= 0 || tokensToClaimgame > 25000) {
       return NextResponse.json(
         { success: false, error: 'Invalid token amount' },
         { status: 400 }
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
     // Validate token amount
     if (!validateTokenAmount(tokensToClaimgame)) {
       return NextResponse.json(
-        { success: false, error: 'Invalid token amount - must be between 1 and 10,000 tokens' },
+        { success: false, error: 'Invalid token amount - must be between 1 and 25,000 tokens' },
         { status: 400 }
       );
     }
@@ -368,7 +368,7 @@ export async function GET() {
       },
       limits: {
         minTokens: 1,
-        maxTokens: 10000,
+        maxTokens: 25000,
         rateLimitMinutes: 5
       }
     },
