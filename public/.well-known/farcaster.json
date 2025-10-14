@@ -14,7 +14,7 @@
     "name": "Lexipop",
     "tagline": "Learn vocabulary the fun way!",
     "iconUrl": "https://www.lexipop.xyz/icon-192.png",
-    "homeUrl": "https://www.lexipop.xyz/",
+    "homeUrl": "https://www.lexipop.xyz",
     "imageUrl": "https://www.lexipop.xyz/farcaster-embed.png",
     "splashImageUrl": "https://www.lexipop.xyz/lexipop-splash.png",
     "buttonTitle": "Play Lexipop",
@@ -30,10 +30,10 @@
       "words"
     ],
     "ogImageUrl": "https://www.lexipop.xyz/og-image.png",
-    "castShareUrl": "https://www.lexipop.xyz/",
+    "castShareUrl": "https://www.lexipop.xyz",
     "webhookUrl": "https://www.lexipop.xyz/api/webhooks/notifications"
   },
   "other": {
-    "fc:miniapp": "{\"version\":\"1\",\"name\":\"Lexipop\",\"imageUrl\":\"https://www.lexipop.xyz/farcaster-embed.png\",\"aspectRatio\":\"3:2\",\"button\":{\"title\":\"Play\",\"action\":{\"type\":\"launch_frame\",\"name\":\"Play\",\"url\":\"https://www.lexipop.xyz/\",\"splashImageUrl\":\"https://www.lexipop.xyz/lexipop-splash.png\",\"splashBackgroundColor\":\"#2563eb\"}}}"
+    "fc:miniapp": "{\"version\":\"1\",\"name\":\"Lexipop\",\"imageUrl\":\"https://www.lexipop.xyz/farcaster-embed.png\",\"aspectRatio\":\"3:2\",\"button\":{\"title\":\"Play\",\"action\":{\"type\":\"launch_frame\",\"name\":\"Play\",\"url\":\"https://www.lexipop.xyz\",\"splashImageUrl\":\"https://www.lexipop.xyz/lexipop-splash.png\",\"splashBackgroundColor\":\"#2563eb\"}}}"
   }
 }

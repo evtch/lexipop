@@ -40,7 +40,7 @@ export const metadata: Metadata = {
   },
   other: {
     // Mini App embed metadata for Farcaster Frames v2
-    'fc:miniapp': '{"version":"1","name":"Lexipop","imageUrl":"https://www.lexipop.xyz/farcaster-embed.png","aspectRatio":"3:2","button":{"title":"Learn and earn!","action":{"type":"launch_frame","name":"Learn and earn!","url":"https://www.lexipop.xyz/","splashImageUrl":"https://www.lexipop.xyz/lexipop-splash.png","splashBackgroundColor":"#222632"}}}'
+    'fc:miniapp': '{"version":"1","name":"Lexipop","imageUrl":"https://www.lexipop.xyz/farcaster-embed.png","aspectRatio":"3:2","button":{"title":"Learn and earn!","action":{"type":"launch_frame","name":"Learn and earn!","url":"https://www.lexipop.xyz","splashImageUrl":"https://www.lexipop.xyz/lexipop-splash.png","splashBackgroundColor":"#222632"}}}'
   }
 };
 

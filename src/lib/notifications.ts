@@ -8,13 +8,18 @@
 import { serverEnv } from './env';
 import { prisma } from './prisma';
 
-// Notification API Types
+// Notification API Types - Updated for correct Neynar format
 interface NotificationPayload {
-  target_fids?: number[];      // Specific users (optional for broadcast, max 100)
   notification: {
     title: string;             // Max 32 characters
     body: string;              // Max 128 characters
     target_url: string;        // Valid URL where users will be directed
+  };
+  target_fids?: number[];      // Specific users (optional for broadcast, max 100)
+  filters?: {
+    exclude_fids?: number[];
+    following_fids?: number[];
+    user_score_threshold?: number;
   };
 }
 
@@ -115,14 +120,14 @@ async function sendNeynarNotification(payload: NotificationPayload): Promise<Not
     console.log('📦 Full payload:', JSON.stringify(payload, null, 2));
 
     // Use the correct Neynar v2 frame notifications endpoint
-    const requestUrl = 'https://api.neynar.com/v2/farcaster/frame/notifications/';
+    const requestUrl = 'https://api.neynar.com/v2/farcaster/frame/notifications';
     console.log('🌐 Request URL:', requestUrl);
 
     const requestHeaders = {
-      'x-api-key': NEYNAR_API_KEY,
+      'api_key': NEYNAR_API_KEY,
       'Content-Type': 'application/json',
     };
-    console.log('📋 Request headers:', { ...requestHeaders, 'x-api-key': requestHeaders['x-api-key'] ? '[PRESENT]' : '[MISSING]' });
+    console.log('📋 Request headers:', { ...requestHeaders, 'api_key': requestHeaders['api_key'] ? '[PRESENT]' : '[MISSING]' });
 
     const response = await fetch(requestUrl, {
       method: 'POST',
@@ -202,7 +207,7 @@ export async function notifyUser(
     notification: {
       title: template.title,
       body: template.body,
-      target_url: 'https://www.lexipop.xyz/miniapp',
+      target_url: 'https://www.lexipop.xyz',
     },
   });
 }
@@ -230,7 +235,7 @@ export async function notifyUserCustom(
     notification: {
       title,
       body,
-      target_url: 'https://www.lexipop.xyz/miniapp',
+      target_url: 'https://www.lexipop.xyz',
     },
   });
 }
@@ -265,7 +270,7 @@ export async function broadcastNotification(
       notification: {
         title: template.title,
         body: template.body,
-        target_url: 'https://www.lexipop.xyz/miniapp',
+        target_url: 'https://www.lexipop.xyz',
       },
     });
   } catch (error) {
@@ -303,7 +308,7 @@ export async function broadcastCustomNotification(
       notification: {
         title,
         body,
-        target_url: 'https://www.lexipop.xyz/miniapp',
+        target_url: 'https://www.lexipop.xyz',
       },
     });
   } catch (error) {
@@ -340,7 +345,7 @@ export async function notifyMultipleUsers(
       notification: {
         title: template.title,
         body: template.body,
-        target_url: 'https://www.lexipop.xyz/miniapp',
+        target_url: 'https://www.lexipop.xyz',
       },
     });
 
