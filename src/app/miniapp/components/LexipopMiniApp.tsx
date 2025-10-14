@@ -12,7 +12,6 @@ import { useSound } from '@/hooks/useSound';
 import { useAccount, useConnect, useDisconnect, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { useFarcasterAccount } from '@/lib/web3/hooks/useFarcasterAccount';
 import { getVersionString } from '@/lib/version';
-import { addMiniAppWithAnalytics } from '@/lib/neynar-miniapp';
 
 // Frame-optimized components
 import FrameWordBubble from './FrameWordBubble';
@@ -89,56 +88,6 @@ export default function LexipopMiniApp() {
     }
   };
 
-  // Enhanced auto-prompt to add miniapp on first visit for new users (using Neynar integration)
-  useEffect(() => {
-    const autoPromptMiniApp = async () => {
-      if (!currentUser?.fid || !isFirstTimeClaim) {
-        return;
-      }
-
-      const hasAutoPromptedKey = `lexipop_auto_add_prompted_${currentUser.fid}`;
-      const hasAutoPrompted = localStorage.getItem(hasAutoPromptedKey) === 'true';
-
-      if (!hasAutoPrompted) {
-        console.log('🎉 Enhanced auto-prompting user to add miniapp...');
-
-        try {
-          // Use enhanced Neynar integration
-          const result = await addMiniAppWithAnalytics(currentUser.fid);
-
-          if (result.success) {
-            console.log('✅ Enhanced miniapp add successful');
-            localStorage.setItem(`lexipop_miniapp_added_${currentUser.fid}`, 'true');
-          } else {
-            console.warn('⚠️ Enhanced miniapp add failed:', result.error);
-            // Fallback to basic SDK method
-            try {
-              await addMiniAppToFarcaster();
-              console.log('✅ Fallback miniapp add successful');
-            } catch (fallbackError) {
-              console.error('❌ Both enhanced and fallback miniapp add failed:', fallbackError);
-            }
-          }
-        } catch (error) {
-          console.error('❌ Auto-add miniapp failed:', error);
-          // Try fallback method
-          try {
-            await addMiniAppToFarcaster();
-          } catch (fallbackError) {
-            console.error('❌ Fallback miniapp add also failed:', fallbackError);
-          }
-        }
-
-        // Mark as auto-prompted regardless of success/failure
-        localStorage.setItem(hasAutoPromptedKey, 'true');
-        localStorage.setItem(`lexipop_add_prompted_${currentUser.fid}`, 'true');
-      }
-    };
-
-    // Add a small delay to ensure proper initialization
-    const timer = setTimeout(autoPromptMiniApp, 1000);
-    return () => clearTimeout(timer);
-  }, [currentUser?.fid, isFirstTimeClaim]);
 
   // Check if user has seen notification prompt and claimed tokens before
   useEffect(() => {
@@ -708,18 +657,8 @@ export default function LexipopMiniApp() {
                         <MiniAppButton
                           onClick={async () => {
                             try {
-                              // Use enhanced Neynar integration for manual add
-                              if (currentUser?.fid) {
-                                const result = await addMiniAppWithAnalytics(currentUser.fid);
-                                if (result.success) {
-                                  console.log('✅ Manual miniapp add successful via Neynar');
-                                } else {
-                                  console.warn('⚠️ Enhanced add failed, trying fallback:', result.error);
-                                  await addMiniAppToFarcaster();
-                                }
-                              } else {
-                                await addMiniAppToFarcaster();
-                              }
+                              await addMiniAppToFarcaster();
+                              console.log('✅ Miniapp add successful');
                             } catch (error) {
                               console.error('❌ Failed to add miniapp:', error);
                               // Show user-friendly error message for failed attempts
