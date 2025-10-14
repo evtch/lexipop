@@ -1,0 +1,38 @@
+# Envio HyperIndex Configuration for Lexipop
+# Tracks $LEXIPOP token claims and balances on-chain
+
+name: lexipop-tracker
+description: "Track $LEXIPOP token claims and user balances for leaderboard"
+
+# Define the networks we're indexing
+networks:
+  - id: 8453  # Base mainnet
+    start_block: 0  # Start from contract deployment
+    contracts:
+      # $LEXIPOP ERC20 Token Contract
+      - name: LexipopToken
+        address: "0xf732f31f73e7dc21299f3ab42bd22e8a7c6b4b07"
+        abi_file_path: "./abis/LexipopToken.json"
+        handler: "./src/TokenHandlers.ts"
+        events:
+          - event: "Transfer(address indexed from, address indexed to, uint256 value)"
+          - event: "Approval(address indexed owner, address indexed spender, uint256 value)"
+
+      # MoneyTree Claim Contract
+      - name: MoneyTree
+        address: "0xe636baaf2c390a591edbffaf748898eb3f6ff9a1"
+        abi_file_path: "./abis/MoneyTree.json"
+        handler: "./src/MoneyTreeHandlers.ts"
+        events:
+          - event: "Deposit(address indexed signer, address indexed token, uint256 amount)"
+          - event: "Withdraw(address indexed signer, address indexed recipient, address indexed token, uint256 amount)"
+
+# Global configuration
+rollback_on_reorg: true
+field_selection:
+  transaction_fields:
+    - "hash"
+    - "from"
+    - "to"
+    - "value"
+    - "input"

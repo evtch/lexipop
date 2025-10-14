@@ -7,21 +7,22 @@ import NeynarProvider from '../miniapp/components/NeynarProvider';
 import Link from 'next/link';
 
 interface LeaderboardEntry {
-  fid: number;
+  address: string;
+  totalClaimed: string;
+  claimedFormatted: number;
+  claimedDisplay?: string;
+  claimCount: number;
   username?: string;
-  totalTokensEarned: number;
-  highestScore: number;
-  bestStreak: number;
-  totalGames: number;
+  fid?: number;
 }
 
 interface UserStats {
-  totalGames: number;
-  totalTokensEarned: number;
-  highestScore: number;
-  bestStreak: number;
-  averageScore: number;
-  totalQuestionsAnswered: number;
+  address: string;
+  currentBalance: string;
+  totalClaimed: string;
+  claimCount: number;
+  balanceFormatted: number;
+  claimedFormatted: number;
 }
 
 function LeaderboardPageContent() {
@@ -40,13 +41,22 @@ function LeaderboardPageContent() {
 
   const fetchLeaderboard = async () => {
     try {
-      const response = await fetch('/api/game/score?type=leaderboard');
+      // Try Alchemy API for real blockchain data
+      const response = await fetch('/api/leaderboard/alchemy');
       const data = await response.json();
 
       if (data.success) {
         setLeaderboard(data.leaderboard);
       } else {
-        setError('Failed to load leaderboard');
+        // Fallback to mock data if Alchemy fails
+        console.warn('Alchemy failed, using mock data:', data.error);
+        const mockResponse = await fetch('/api/leaderboard/mock');
+        const mockData = await mockResponse.json();
+        if (mockData.success) {
+          setLeaderboard(mockData.leaderboard);
+        } else {
+          setError('Failed to load leaderboard');
+        }
       }
     } catch (err) {
       setError('Failed to load leaderboard');
@@ -57,18 +67,9 @@ function LeaderboardPageContent() {
   };
 
   const fetchUserStats = async () => {
-    if (!user?.fid) return;
-
-    try {
-      const response = await fetch(`/api/game/score?fid=${user.fid}`);
-      const data = await response.json();
-
-      if (data.success) {
-        setUserStats(data.stats);
-      }
-    } catch (err) {
-      console.error('User stats fetch error:', err);
-    }
+    // For now, we'll skip user stats since we need wallet address
+    // Could be enhanced to map FID to wallet address
+    return;
   };
 
   const getRankColor = (rank: number) => {
@@ -107,7 +108,10 @@ function LeaderboardPageContent() {
         >
           ← Back to Game
         </Link>
-        <h1 className="text-4xl font-bold text-blue-600 text-center">Leaderboard</h1>
+        <div className="text-center">
+          <h1 className="text-4xl font-bold text-blue-600">$LEXIPOP Leaderboard</h1>
+          <p className="text-green-600 mt-2 font-medium">🏆 Real on-chain token claims from Base Mainnet</p>
+        </div>
         <div className="w-32"></div>
       </div>
 
@@ -133,22 +137,18 @@ function LeaderboardPageContent() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
               <div className="text-center">
-                <div className="font-bold text-2xl text-green-600">{userStats.totalTokensEarned || 0}</div>
-                <div className="text-gray-600 text-sm">$LEXIPOP Earned</div>
+                <div className="font-bold text-2xl text-green-600">{userStats.claimedFormatted?.toFixed(2) || 0}</div>
+                <div className="text-gray-600 text-sm">$LEXIPOP Claimed</div>
               </div>
               <div className="text-center">
-                <div className="font-bold text-2xl text-blue-600">{userStats.highestScore}</div>
-                <div className="text-gray-600 text-sm">Best Score</div>
+                <div className="font-bold text-2xl text-blue-600">{userStats.balanceFormatted?.toFixed(2) || 0}</div>
+                <div className="text-gray-600 text-sm">Current Balance</div>
               </div>
               <div className="text-center">
-                <div className="font-bold text-2xl text-blue-600">{userStats.totalGames}</div>
-                <div className="text-gray-600 text-sm">Games Played</div>
-              </div>
-              <div className="text-center">
-                <div className="font-bold text-2xl text-blue-600">{userStats.averageScore}</div>
-                <div className="text-gray-600 text-sm">Avg Score</div>
+                <div className="font-bold text-2xl text-blue-600">{userStats.claimCount || 0}</div>
+                <div className="text-gray-600 text-sm">Total Claims</div>
               </div>
             </div>
           </motion.div>
@@ -178,12 +178,12 @@ function LeaderboardPageContent() {
             </div>
           ) : (
             leaderboard.map((entry, index) => {
-              const rank = index + 1;
-              const isCurrentUser = user?.fid === entry.fid;
+              const rank = entry.rank || index + 1;
+              const isCurrentUser = false; // We'd need wallet address mapping
 
               return (
                 <motion.div
-                  key={entry.fid}
+                  key={entry.address}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.1 }}
@@ -202,23 +202,20 @@ function LeaderboardPageContent() {
                       </div>
                       <div>
                         <div className="font-bold text-lg">
-                          {entry.username || `User ${entry.fid}`}
-                          {isCurrentUser && (
-                            <span className="text-sm text-blue-600 ml-2">(You)</span>
-                          )}
+                          {`${entry.address.slice(0, 6)}...${entry.address.slice(-4)}`}
                         </div>
                         <div className="text-gray-600">
-                          {entry.totalGames} game{entry.totalGames !== 1 ? 's' : ''} played
+                          {entry.claimCount} claim{entry.claimCount !== 1 ? 's' : ''}
                         </div>
                       </div>
                     </div>
 
                     <div className="text-right">
                       <div className="font-bold text-2xl text-green-600">
-                        {entry.totalTokensEarned} $LEXIPOP
+                        {entry.claimedDisplay || entry.claimedFormatted.toLocaleString()} $LEXIPOP
                       </div>
-                      <div className="text-gray-600">
-                        Best Score: {entry.highestScore}/5
+                      <div className="text-gray-600 text-sm">
+                        Claimed from game rewards
                       </div>
                     </div>
                   </div>

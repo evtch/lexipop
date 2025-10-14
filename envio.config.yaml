@@ -1,0 +1,95 @@
+# Envio HyperIndex Configuration for Lexipop
+# Tracks $LEXIPOP token claims and balances on-chain
+
+name: lexipop-tracker
+description: "Track $LEXIPOP token claims and user balances for leaderboard"
+
+# Network configuration
+networks:
+  - id: 8453  # Base mainnet
+    start_block: 0  # Start from contract deployment
+    contracts:
+      # $LEXIPOP ERC20 Token Contract
+      - name: LexipopToken
+        address: "0xf732f31f73e7dc21299f3ab42bd22e8a7c6b4b07"
+        abi_file_path: "./abis/LexipopToken.json"
+        handler: "./src/TokenHandlers.ts"
+        events:
+          - event: "Transfer(address indexed from, address indexed to, uint256 value)"
+          - event: "Approval(address indexed owner, address indexed spender, uint256 value)"
+
+      # MoneyTree Claim Contract
+      - name: MoneyTree
+        address: "0xe636baaf2c390a591edbffaf748898eb3f6ff9a1"
+        abi_file_path: "./abis/MoneyTree.json"
+        handler: "./src/MoneyTreeHandlers.ts"
+        events:
+          - event: "Deposit(address indexed signer, address indexed token, uint256 amount)"
+          - event: "Withdraw(address indexed signer, address indexed recipient, address indexed token, uint256 amount)"
+
+# Database schema
+entities:
+  # User entity - tracks each player
+  - name: User
+    fields:
+      - field: id
+        type: ID!
+      - field: address
+        type: String!
+      - field: fid
+        type: BigInt
+      - field: totalClaimed
+        type: BigInt!
+      - field: currentBalance
+        type: BigInt!
+      - field: claimCount
+        type: Int!
+      - field: firstClaimDate
+        type: BigInt
+      - field: lastClaimDate
+        type: BigInt
+      - field: createdAt
+        type: BigInt!
+      - field: updatedAt
+        type: BigInt!
+
+  # Individual claim events
+  - name: Claim
+    fields:
+      - field: id
+        type: ID!
+      - field: user
+        type: User!
+      - field: amount
+        type: BigInt!
+      - field: nonce
+        type: BigInt!
+      - field: transactionHash
+        type: String!
+      - field: blockNumber
+        type: BigInt!
+      - field: timestamp
+        type: BigInt!
+
+  # Token transfer events
+  - name: Transfer
+    fields:
+      - field: id
+        type: ID!
+      - field: from
+        type: String!
+      - field: to
+        type: String!
+      - field: amount
+        type: BigInt!
+      - field: transactionHash
+        type: String!
+      - field: blockNumber
+        type: BigInt!
+      - field: timestamp
+        type: BigInt!
+
+# Global configuration
+global:
+  print_compiled_handlers: false
+  use_fuel_client: false

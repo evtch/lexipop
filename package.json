@@ -13,7 +13,12 @@
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
     "db:reset": "prisma migrate reset",
-    "db:seed": "tsx src/scripts/seed-database.ts"
+    "db:seed": "tsx src/scripts/seed-database.ts",
+    "envio:install": "npm install -g envio",
+    "envio:init": "envio init",
+    "envio:codegen": "envio codegen",
+    "envio:dev": "envio dev",
+    "envio:start": "envio start"
   },
   "dependencies": {
     "@farcaster/auth-kit": "^0.8.1",
