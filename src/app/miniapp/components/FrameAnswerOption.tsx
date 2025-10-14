@@ -21,6 +21,10 @@ export default function FrameAnswerOption({
   onClick,
   index
 }: FrameAnswerOptionProps) {
+  // Capitalize first letter of each sentence
+  const capitalizeText = (str: string) => {
+    return str.replace(/(^\w)|(\.\s+\w)/g, (match) => match.toUpperCase());
+  };
   const getBackgroundColor = () => {
     if (!showResult) {
       return isSelected
@@ -116,7 +120,7 @@ export default function FrameAnswerOption({
 
       {/* Answer text */}
       <p className={`flex-1 font-medium text-sm leading-snug ${getTextColor()} break-words pr-2 flex items-center`}>
-        {text}
+        {capitalizeText(text)}
       </p>
 
       {/* Result indicator - always reserve space to prevent layout shift */}

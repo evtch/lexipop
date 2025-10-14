@@ -7,7 +7,7 @@ import { GameState, VocabularyWord } from '@/types/game';
 import { getUniqueWords, shuffleArray } from '@/data/vocabulary';
 import { sdk } from '@farcaster/miniapp-sdk'; // For miniapp functionality
 import { useFarcasterUser } from '@/lib/hooks/useFarcasterUser'; // Uses Farcaster SDK for user context
-import { generateCommitment } from '@/lib/pyth-entropy';
+import { generateImprovedRandomness } from '@/lib/pyth-entropy';
 import { useSound } from '@/hooks/useSound';
 import { useAccount, useConnect, useDisconnect, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { useFarcasterAccount } from '@/lib/web3/hooks/useFarcasterAccount';
@@ -254,81 +254,45 @@ export default function LexipopMiniApp() {
     setClaimError(null);
     setCurrentNumber(0);
 
-    // Generate final token amount using Pyth entropy
+    // Generate final token amount using new score-based system
     const generateFinalAmount = () => {
       try {
-        // Create deterministic input from game data for verifiable randomness
-        const userInput = `${gameId}-${gameState.score}-${gameState.streak}-${currentUser?.fid || 'anon'}`;
-        const timestamp = Date.now();
-        const { commitment, userRandomness } = generateCommitment(userInput, timestamp);
+        // Create game data for entropy generation
+        const gameData = {
+          gameId,
+          score: gameState.score,
+          streak: gameState.streak,
+          userFid: currentUser?.fid
+        };
 
-        // Convert the commitment hash to a number
-        const hashBytes = commitment.slice(2); // Remove '0x'
-        const randomValue = parseInt(hashBytes.slice(0, 8), 16); // Use first 32 bits
+        // Use the improved entropy generation function
+        const { tokenAmount } = generateImprovedRandomness(gameData);
 
-        // Generate token amount based on score performance
-        const scoreRatio = gameState.score / gameState.totalQuestions;
-        let minTokens, maxTokens;
-
-        if (scoreRatio >= 1.0) {
-          // Perfect score: 100-10,000 tokens
-          minTokens = 100;
-          maxTokens = 10000;
-        } else if (scoreRatio >= 0.8) {
-          // Great performance: 80-8,000 tokens
-          minTokens = 80;
-          maxTokens = 8000;
-        } else if (scoreRatio >= 0.6) {
-          // Good performance: 60-6,000 tokens
-          minTokens = 60;
-          maxTokens = 6000;
-        } else if (scoreRatio >= 0.4) {
-          // Fair performance: 40-4,000 tokens
-          minTokens = 40;
-          maxTokens = 4000;
-        } else if (scoreRatio >= 0.2) {
-          // Poor performance: 20-2,000 tokens
-          minTokens = 20;
-          maxTokens = 2000;
-        } else {
-          // Very poor performance (1/5): 10-1,000 tokens
-          minTokens = 10;
-          maxTokens = 1000;
-        }
-
-        const range = maxTokens - minTokens;
-        const tokenAmount = minTokens + (randomValue % range);
-
-        console.log('🎲 Pyth Entropy Token Generation:', {
-          userInput,
-          commitment,
-          randomValue,
-          score: `${gameState.score}/${gameState.totalQuestions}`,
-          scoreRatio,
-          rewardRange: `${minTokens}-${maxTokens}`,
+        console.log('🎲 LexipopMiniApp Score-based Generation:', {
+          gameData,
           tokenAmount,
-          source: 'Pyth Network Entropy'
+          source: 'New Score-based Multi-source Entropy'
         });
 
         return tokenAmount;
       } catch (error) {
-        console.error('❌ Pyth entropy failed, fallback to Math.random:', error);
-        // Fallback to regular random with same score-based logic
-        const scoreRatio = gameState.score / gameState.totalQuestions;
+        console.error('❌ Score-based entropy failed, using fallback:', error);
+        // Fallback using the same score-based ranges
+        const score = gameState.score;
         let minTokens, maxTokens;
 
-        if (scoreRatio >= 1.0) {
-          minTokens = 100; maxTokens = 10000;
-        } else if (scoreRatio >= 0.8) {
-          minTokens = 80; maxTokens = 8000;
-        } else if (scoreRatio >= 0.6) {
-          minTokens = 60; maxTokens = 6000;
-        } else if (scoreRatio >= 0.4) {
-          minTokens = 40; maxTokens = 4000;
-        } else if (scoreRatio >= 0.2) {
-          minTokens = 20; maxTokens = 2000;
+        if (score >= 500) {
+          minTokens = 5000; maxTokens = 25000;
+        } else if (score >= 400) {
+          minTokens = 2000; maxTokens = 15000;
+        } else if (score >= 300) {
+          minTokens = 1000; maxTokens = 10000;
+        } else if (score >= 200) {
+          minTokens = 300; maxTokens = 3000;
+        } else if (score >= 100) {
+          minTokens = 100; maxTokens = 1000;
         } else {
-          minTokens = 10; maxTokens = 1000;
+          minTokens = 50; maxTokens = 500;
         }
 
         return minTokens + Math.floor(Math.random() * (maxTokens - minTokens));
@@ -611,8 +575,18 @@ export default function LexipopMiniApp() {
                 {!generatedTokens ? (
                   // Token Generation Display
                   <div className="text-center">
-                    <div className="text-sm text-gray-600 mb-4">
+                    <div className="text-sm text-gray-600 mb-2">
                       Generating using secure onchain Pyth Entropy...
+                    </div>
+                    <div className="text-xs text-blue-600 font-medium mb-2">
+                      💡 Higher scores unlock bigger rewards!
+                    </div>
+                    <div className="text-xs text-gray-500 mb-4">
+                      {gameState.score >= 500 ? '5,000-25,000' :
+                       gameState.score >= 400 ? '2,000-15,000' :
+                       gameState.score >= 300 ? '1,000-10,000' :
+                       gameState.score >= 200 ? '300-3,000' :
+                       gameState.score >= 100 ? '100-1,000' : '50-500'} $LEXIPOP range
                     </div>
 
                     {/* Airport-style Number Generator */}

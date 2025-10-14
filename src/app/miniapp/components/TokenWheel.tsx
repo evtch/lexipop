@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import MiniAppButton from './MiniAppButton';
-import { generateCommitment, getRewardFromRandomness, calculateBonusMultiplier, REWARD_TIERS, generateImprovedRandomness } from '@/lib/pyth-entropy';
+import { generateImprovedRandomness, SCORE_BASED_RANGES } from '@/lib/pyth-entropy';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { useFarcasterAccount } from '@/lib/web3/hooks/useFarcasterAccount';
 
@@ -57,37 +57,33 @@ export default function TokenWheel({ isVisible, onClaim, onClose, onViewLeaderbo
     setClaimError(null);
     setCurrentNumber(0);
 
-    // Generate final token amount using improved entropy generation
+    // Generate final token amount using score-based ranges
     const generateFinalAmount = () => {
       try {
-        // Use the improved entropy generation function
-        const { rewardTier, bonusMultiplier } = generateImprovedRandomness(gameData);
+        // Use the improved entropy generation function with score-based rewards
+        const { tokenAmount } = generateImprovedRandomness(gameData);
 
-        // Apply bonus multiplier to base reward
-        const finalTokenAmount = Math.floor(rewardTier.tokens * bonusMultiplier);
-
-        console.log('🎲 TokenWheel Entropy Generation:', {
+        console.log('🎲 TokenWheel Score-based Generation:', {
           gameData,
-          baseRewardTier: rewardTier,
-          bonusMultiplier,
-          finalTokenAmount,
-          source: 'Improved Multi-source Entropy'
+          score: gameData?.score || 0,
+          tokenAmount,
+          source: 'Score-based Multi-source Entropy'
         });
 
-        return finalTokenAmount;
+        return tokenAmount;
       } catch (error) {
-        console.error('❌ Improved entropy failed, using fallback:', error);
-        // Fallback to simple tier-based random
-        const randomTierIndex = Math.floor(Math.random() * REWARD_TIERS.length);
-        const fallbackTier = REWARD_TIERS[randomTierIndex];
+        console.error('❌ Score-based entropy failed, using fallback:', error);
+        // Fallback to simple random within score range
+        const score = gameData?.score || 0;
+        let range;
+        if (score >= 500) range = SCORE_BASED_RANGES[500];
+        else if (score >= 400) range = SCORE_BASED_RANGES[400];
+        else if (score >= 300) range = SCORE_BASED_RANGES[300];
+        else if (score >= 200) range = SCORE_BASED_RANGES[200];
+        else if (score >= 100) range = SCORE_BASED_RANGES[100];
+        else range = SCORE_BASED_RANGES[0];
 
-        let bonusMultiplier = 1;
-        if (gameData) {
-          const correctAnswers = gameData.score / 100;
-          bonusMultiplier = calculateBonusMultiplier(correctAnswers, gameData.streak, gameData.totalQuestions);
-        }
-
-        return Math.floor(fallbackTier.tokens * bonusMultiplier);
+        return range.min + Math.floor(Math.random() * (range.max - range.min));
       }
     };
 
@@ -263,8 +259,11 @@ export default function TokenWheel({ isVisible, onClaim, onClose, onViewLeaderbo
         {/* Airport-style Number Generator */}
         <div className="flex-1 flex items-center justify-center mb-8">
           <div className="text-center">
-            <div className="text-sm text-gray-600 mb-4">
+            <div className="text-sm text-gray-600 mb-2">
               Generating $LEXIPOP using Pyth Entropy...
+            </div>
+            <div className="text-xs text-blue-600 font-medium mb-4">
+              💡 Higher scores unlock bigger rewards!
             </div>
 
             {/* Large Number Display */}

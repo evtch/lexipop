@@ -30,7 +30,17 @@ export const publicClient = createPublicClient({
   transport: http(BASE_RPC_URL),
 });
 
-// Token reward tiers for spinning wheel (100-10,000 $LEXIPOP)
+// Token reward ranges based on score points
+export const SCORE_BASED_RANGES = {
+  100: { min: 100, max: 1000, label: '100-1,000 $LEXIPOP' },
+  200: { min: 300, max: 3000, label: '300-3,000 $LEXIPOP' },
+  300: { min: 1000, max: 10000, label: '1,000-10,000 $LEXIPOP' },
+  400: { min: 2000, max: 15000, label: '2,000-15,000 $LEXIPOP' },
+  500: { min: 5000, max: 25000, label: '5,000-25,000 $LEXIPOP' },
+  0: { min: 50, max: 500, label: '50-500 $LEXIPOP' }, // Fallback for 0 points
+} as const;
+
+// Legacy token reward tiers (kept for backward compatibility)
 export const REWARD_TIERS = [
   { min: 0, max: 40, tokens: 100, label: '100 $LEXIPOP', color: '#3B82F6', probability: 0.41 },
   { min: 41, max: 70, tokens: 250, label: '250 $LEXIPOP', color: '#10B981', probability: 0.3 },
@@ -304,6 +314,41 @@ export function generateMockRandomness(): number {
 }
 
 /**
+ * Generate reward based on score using new point-based ranges
+ */
+export function getScoreBasedReward(score: number, randomNumber: bigint): number {
+  // Get the appropriate range based on score
+  let range;
+  if (score >= 500) {
+    range = SCORE_BASED_RANGES[500];
+  } else if (score >= 400) {
+    range = SCORE_BASED_RANGES[400];
+  } else if (score >= 300) {
+    range = SCORE_BASED_RANGES[300];
+  } else if (score >= 200) {
+    range = SCORE_BASED_RANGES[200];
+  } else if (score >= 100) {
+    range = SCORE_BASED_RANGES[100];
+  } else {
+    range = SCORE_BASED_RANGES[0]; // Fallback for 0 points
+  }
+
+  // Convert random number to a value within the range
+  const rangeSize = BigInt(range.max - range.min);
+  const normalizedRandom = randomNumber % rangeSize;
+  const tokenAmount = range.min + Number(normalizedRandom);
+
+  console.log('📊 Score-based Reward Calculation:', {
+    score,
+    range,
+    tokenAmount,
+    randomValue: randomNumber.toString().slice(0, 16) + '...'
+  });
+
+  return tokenAmount;
+}
+
+/**
  * Improved client-side entropy generation for production use
  * Combines multiple entropy sources for better randomness
  */
@@ -312,7 +357,7 @@ export function generateImprovedRandomness(gameData?: {
   score: number;
   streak: number;
   userFid?: number;
-}): { randomNumber: bigint; rewardTier: RewardTier; bonusMultiplier: number } {
+}): { randomNumber: bigint; tokenAmount: number } {
   try {
     // Create deterministic but unpredictable input
     const userInput = gameData
@@ -341,45 +386,39 @@ export function generateImprovedRandomness(gameData?: {
     const entropyHash = keccak256(combinedEntropy);
     const randomNumber = BigInt(entropyHash);
 
-    // Get base reward tier
-    const rewardTier = getRewardFromRandomness(randomNumber);
-
-    // Calculate performance bonus
-    let bonusMultiplier = 1;
-    if (gameData) {
-      const correctAnswers = gameData.score / 100;
-      bonusMultiplier = calculateBonusMultiplier(correctAnswers, gameData.streak, 5);
-    }
+    // Calculate token amount based on score
+    const score = gameData?.score || 0;
+    const tokenAmount = getScoreBasedReward(score, randomNumber);
 
     console.log('🎲 Improved Entropy Generation:', {
       userInput,
       timestamp,
       performanceNow,
       entropyHash,
-      baseReward: rewardTier,
-      bonusMultiplier,
-      finalAmount: Math.floor(rewardTier.tokens * bonusMultiplier),
-      source: 'Multi-source Client Entropy'
+      score,
+      tokenAmount,
+      source: 'Multi-source Client Entropy with Score-based Rewards'
     });
 
-    return { randomNumber, rewardTier, bonusMultiplier };
+    return { randomNumber, tokenAmount };
 
   } catch (error) {
     console.error('❌ Improved entropy generation failed:', error);
-    // Fallback to simple random with tier system
-    const fallbackTierIndex = Math.floor(Math.random() * REWARD_TIERS.length);
-    const fallbackTier = REWARD_TIERS[fallbackTierIndex];
+    // Fallback to simple random within score range
+    const score = gameData?.score || 0;
+    let range;
+    if (score >= 500) range = SCORE_BASED_RANGES[500];
+    else if (score >= 400) range = SCORE_BASED_RANGES[400];
+    else if (score >= 300) range = SCORE_BASED_RANGES[300];
+    else if (score >= 200) range = SCORE_BASED_RANGES[200];
+    else if (score >= 100) range = SCORE_BASED_RANGES[100];
+    else range = SCORE_BASED_RANGES[0];
 
-    let bonusMultiplier = 1;
-    if (gameData) {
-      const correctAnswers = gameData.score / 100;
-      bonusMultiplier = calculateBonusMultiplier(correctAnswers, gameData.streak, 5);
-    }
+    const tokenAmount = range.min + Math.floor(Math.random() * (range.max - range.min));
 
     return {
-      randomNumber: BigInt(Math.floor(Math.random() * 100)),
-      rewardTier: fallbackTier,
-      bonusMultiplier
+      randomNumber: BigInt(Math.floor(Math.random() * 100000)),
+      tokenAmount
     };
   }
 }
