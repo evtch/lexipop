@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Get token transfers for leaderboard
+    // Get token transfers FROM MoneyTree contract (game claims only)
     const transfersResponse = await fetch(
       `https://base-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}`,
       {
@@ -62,9 +62,10 @@ export async function GET(request: NextRequest) {
           params: [{
             fromBlock: '0x0',
             toBlock: 'latest',
+            fromAddress: MONEY_TREE, // Only transfers FROM MoneyTree (game claims)
             contractAddresses: [LEXIPOP_TOKEN],
             category: ['erc20'],
-            maxCount: '0x64', // 100 transfers
+            maxCount: '0x3E8', // 1000 transfers to get more historical data
             order: 'desc'
           }],
           id: 1
@@ -108,9 +109,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       leaderboard,
-      totalTransfers: transfers.length,
-      message: 'Powered by Alchemy API - instant blockchain data',
-      provider: 'Alchemy'
+      totalGameClaims: transfers.length,
+      message: '🎮 Game claims tracked from MoneyTree contract via Alchemy API',
+      provider: 'Alchemy',
+      dataSource: 'MoneyTree Contract Claims',
+      contractAddress: MONEY_TREE
     });
 
   } catch (error) {

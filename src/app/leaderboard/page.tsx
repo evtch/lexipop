@@ -111,7 +111,7 @@ function LeaderboardPageContent() {
         </Link>
         <div className="text-center">
           <h1 className="text-4xl font-bold text-blue-600">$LEXIPOP Leaderboard</h1>
-          <p className="text-green-600 mt-2 font-medium">🏆 Real on-chain token claims from Base Mainnet</p>
+          <p className="text-green-600 mt-2 font-medium">🎮 Players ranked by total game rewards claimed</p>
         </div>
         <div className="w-32"></div>
       </div>
@@ -206,7 +206,7 @@ function LeaderboardPageContent() {
                           {`${entry.address.slice(0, 6)}...${entry.address.slice(-4)}`}
                         </div>
                         <div className="text-gray-600">
-                          {entry.claimCount} claim{entry.claimCount !== 1 ? 's' : ''}
+                          {entry.claimCount} game reward{entry.claimCount !== 1 ? 's' : ''} claimed
                         </div>
                       </div>
                     </div>
@@ -216,7 +216,7 @@ function LeaderboardPageContent() {
                         {entry.claimedDisplay || entry.claimedFormatted.toLocaleString()} $LEXIPOP
                       </div>
                       <div className="text-gray-600 text-sm">
-                        Claimed from game rewards
+                        Total game rewards earned
                       </div>
                     </div>
                   </div>
