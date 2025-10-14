@@ -58,3 +58,12 @@ credentials/
 next-env.d.ts
 
 /src/generated/prisma
+
+# Envio generated files (causing build issues)
+generated/
+config.yaml
+envio.config.yaml
+schema.graphql
+src/TokenHandlers.ts
+src/MoneyTreeHandlers.ts
+src/lib/leaderboardCache.ts
