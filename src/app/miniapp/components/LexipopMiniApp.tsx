@@ -880,7 +880,7 @@ export default function LexipopMiniApp() {
                 </MiniAppButton>
 
                 <MiniAppButton
-                  href="/miniapp/leaderboard"
+                  href="/leaderboard"
                   variant="secondary"
                   size="lg"
                   icon="🏆"
@@ -970,7 +970,7 @@ export default function LexipopMiniApp() {
                 </div>
 
                 <MiniAppButton
-                  href="/miniapp/leaderboard"
+                  href="/leaderboard"
                   variant="secondary"
                   size="lg"
                   icon="🏆"

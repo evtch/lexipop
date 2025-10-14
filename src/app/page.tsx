@@ -1,10 +1,5 @@
-import LexipopGame from '@/components/LexipopGame';
-import NeynarProvider from './miniapp/components/NeynarProvider';
+import LexipopMiniApp from './miniapp/components/LexipopMiniApp';
 
 export default function Home() {
-  return (
-    <NeynarProvider>
-      <LexipopGame />
-    </NeynarProvider>
-  );
+  return <LexipopMiniApp />;
 }

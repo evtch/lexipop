@@ -203,7 +203,7 @@ export default function LeaderboardPage() {
           <div className="text-center py-8">
             <p className="text-gray-600 mb-4">No scores yet!</p>
             <MiniAppButton
-              href="/miniapp"
+              href="/"
               variant="primary"
               size="md"
               icon="🎮"
@@ -278,7 +278,7 @@ export default function LeaderboardPage() {
             Sign in with Farcaster to track your scores and compete!
           </p>
           <MiniAppButton
-            href="/miniapp"
+            href="/"
             variant="primary"
             size="lg"
             icon="🎮"
@@ -291,7 +291,7 @@ export default function LeaderboardPage() {
       {/* Bottom Navigation */}
       <div className="mt-4">
         <MiniAppButton
-          href="/miniapp"
+          href="/"
           variant="primary"
           size="lg"
           icon="🏠"
