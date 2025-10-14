@@ -200,16 +200,12 @@ export default function LeaderboardPage() {
             </MiniAppButton>
           </div>
         ) : leaderboard.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-gray-600 mb-4">No scores yet!</p>
-            <MiniAppButton
-              href="/"
-              variant="primary"
-              size="md"
-              icon="🎮"
-            >
-              Play First Game
-            </MiniAppButton>
+          <div className="text-center py-12">
+            <div className="text-6xl mb-4">🎯</div>
+            <h3 className="text-lg font-semibold text-gray-700 mb-2">Be the First Champion!</h3>
+            <p className="text-gray-600 mb-6 text-sm">
+              Start playing to claim your spot on the leaderboard and earn $LEXIPOP tokens
+            </p>
           </div>
         ) : (
           leaderboard.map((entry, index) => {
@@ -271,34 +267,35 @@ export default function LeaderboardPage() {
         )}
       </div>
 
-      {/* Call to Action */}
-      {!isAuthenticated && (
-        <div className="bg-white/60 rounded-lg p-4 mt-4 border border-blue-200 text-center">
-          <p className="text-gray-700 mb-3 text-sm">
-            Sign in with Farcaster to track your scores and compete!
-          </p>
+      {/* Bottom Navigation */}
+      <div className="mt-6 space-y-3">
+        {!isAuthenticated ? (
+          <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg p-4 text-center">
+            <p className="font-medium mb-2">🎮 Ready to compete?</p>
+            <p className="text-blue-100 text-sm mb-3">
+              Sign in with Farcaster to track scores and earn tokens!
+            </p>
+            <MiniAppButton
+              href="/"
+              variant="secondary"
+              size="lg"
+              icon="🚀"
+              className="w-full bg-white text-blue-600 hover:bg-gray-50"
+            >
+              Start Your Journey
+            </MiniAppButton>
+          </div>
+        ) : (
           <MiniAppButton
             href="/"
             variant="primary"
             size="lg"
-            icon="🎮"
+            icon="🎯"
+            className="w-full"
           >
-            Start Playing
+            Play Again
           </MiniAppButton>
-        </div>
-      )}
-
-      {/* Bottom Navigation */}
-      <div className="mt-4">
-        <MiniAppButton
-          href="/"
-          variant="primary"
-          size="lg"
-          icon="🏠"
-          className="w-full"
-        >
-          Back to Game
-        </MiniAppButton>
+        )}
       </div>
     </div>
   );

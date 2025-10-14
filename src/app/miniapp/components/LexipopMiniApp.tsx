@@ -922,6 +922,7 @@ export default function LexipopMiniApp() {
                       ease: "easeInOut"
                     }}
                     className="text-4xl md:text-5xl font-bold text-gray-800 leading-tight"
+                    style={{ letterSpacing: '-3px' }}
                   >
                     Learn vocabulary<br />
                     the fun way!
@@ -931,11 +932,12 @@ export default function LexipopMiniApp() {
 
               {/* Error message for unauthenticated users */}
               {currentUser.error && (
-                <div className="mb-6 bg-red-50 rounded-lg p-4 border border-red-200">
-                  <p className="text-base text-red-700 font-semibold">
-                    ⚠️ This app works best when opened in Farcaster
+                <div className="mb-6 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg p-4 border border-purple-300 shadow-lg">
+                  <p className="text-base font-semibold flex items-center gap-2">
+                    <span className="text-lg">🚀</span>
+                    Made for Farcaster. Open in Farcaster to play
                   </p>
-                  <p className="text-sm text-red-600 mt-2">
+                  <p className="text-sm text-purple-100 mt-2">
                     {currentUser.error}
                   </p>
                 </div>
