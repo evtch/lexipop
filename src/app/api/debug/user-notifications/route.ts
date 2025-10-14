@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
           notificationsEnabled: true,
           notificationToken: true,
           notificationUrl: true,
-          createdAt: true,
+          firstGameAt: true,
           updatedAt: true
         }
       });
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
         notificationsEnabled: true,
         notificationToken: true,
         notificationUrl: true,
-        createdAt: true,
+        firstGameAt: true,
         updatedAt: true
       },
       orderBy: {
