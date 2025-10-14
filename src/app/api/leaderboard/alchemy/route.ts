@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
             fromBlock: '0x0',
             toBlock: 'latest',
             fromAddress: MONEY_TREE, // Only transfers FROM MoneyTree (game claims)
-            contractAddresses: [LEXIPOP_TOKEN],
+            contractAddresses: [LEXIPOP_TOKEN], // ESSENTIAL: Filter only LEXIPOP tokens
             category: ['erc20'],
             maxCount: '0x3E8', // 1000 transfers to get more historical data
             order: 'desc'
