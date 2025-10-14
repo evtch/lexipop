@@ -45,32 +45,64 @@ export async function POST(request: NextRequest) {
 
     console.log(`📊 Submitting score: FID ${userFid} (${username}) - ${score} pts for week ${weekStarting.toISOString()}`);
 
-    // Upsert score - only update if new score is better
-    const result = await prisma.leaderboardScore.upsert({
+    // Check if user already has a score for this week
+    const existingScore = await prisma.leaderboardScore.findUnique({
       where: {
         userFid_weekStarting: {
           userFid,
           weekStarting
         }
-      },
-      update: {
-        // Only update if new score is better
-        score: {
-          max: score // This will take the maximum of current score and new score
-        },
-        username, // Update username in case it changed
-        updatedAt: new Date()
-      },
-      create: {
-        userFid,
-        username,
-        score,
-        weekStarting
       }
     });
 
-    // Check if this was a new best score
-    const isNewBest = result.score === score;
+    let result;
+    let isNewBest = false;
+
+    if (existingScore) {
+      // Only update if new score is better
+      if (score > existingScore.score) {
+        result = await prisma.leaderboardScore.update({
+          where: {
+            userFid_weekStarting: {
+              userFid,
+              weekStarting
+            }
+          },
+          data: {
+            score,
+            username, // Update username in case it changed
+            updatedAt: new Date()
+          }
+        });
+        isNewBest = true;
+      } else {
+        // Keep existing score, just update username
+        result = await prisma.leaderboardScore.update({
+          where: {
+            userFid_weekStarting: {
+              userFid,
+              weekStarting
+            }
+          },
+          data: {
+            username, // Update username in case it changed
+            updatedAt: new Date()
+          }
+        });
+        isNewBest = false;
+      }
+    } else {
+      // Create new score record
+      result = await prisma.leaderboardScore.create({
+        data: {
+          userFid,
+          username,
+          score,
+          weekStarting
+        }
+      });
+      isNewBest = true;
+    }
 
     // Get user's current rank
     const betterScores = await prisma.leaderboardScore.count({
