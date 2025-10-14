@@ -7,16 +7,14 @@ import Link from 'next/link';
 import MiniAppButton from '../components/MiniAppButton';
 
 interface LeaderboardEntry {
-  fid: number;
+  rank: number;
+  address: string;
+  addressDisplay: string;
+  fid?: number;
   username?: string;
-  latestScore: number;
-  totalQuestions: number;
-  gameId: string;
-  timestamp: string;
-  highestScore: number;
-  longestStreak: number;
-  totalGames: number;
-  bestAccuracy: number;
+  totalClaimed: number;
+  claimCount: number;
+  verified: boolean;
 }
 
 interface UserStats {
@@ -25,12 +23,18 @@ interface UserStats {
   accuracy: number;
 }
 
+interface LeaderboardStats {
+  totalPlayers: number;
+  totalTokensClaimed: number;
+}
+
 export default function LeaderboardPage() {
   const farcasterUser = useFarcasterUser();
   const user = farcasterUser;
   const isAuthenticated = !!farcasterUser.fid;
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [userStats, setUserStats] = useState<UserStats | null>(null);
+  const [leaderboardStats, setLeaderboardStats] = useState<LeaderboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,22 +47,52 @@ export default function LeaderboardPage() {
 
   const fetchLeaderboard = async () => {
     try {
-      console.log('🔍 Fetching leaderboard...');
-      const response = await fetch('/api/game/score?type=leaderboard');
+      console.log('🔍 Fetching onchain leaderboard...');
+      // Try onchain API first
+      const response = await fetch('/api/leaderboard/onchain?limit=20');
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
       const data = await response.json();
-      console.log('📊 Leaderboard response:', data);
+      console.log('📊 Onchain leaderboard response:', data);
 
       if (data.success) {
         setLeaderboard(data.leaderboard || []);
-        console.log(`✅ Loaded ${data.leaderboard?.length || 0} leaderboard entries`);
+
+        // Set stats if available
+        if (data.stats) {
+          setLeaderboardStats({
+            totalPlayers: data.stats.totalPlayers || 0,
+            totalTokensClaimed: data.stats.totalTokensClaimed || 0
+          });
+        }
+
+        console.log(`✅ Loaded ${data.leaderboard?.length || 0} onchain leaderboard entries`);
       } else {
-        console.error('❌ API returned success: false', data);
-        setError(data.error || 'Failed to load leaderboard');
+        console.error('❌ Onchain API returned success: false, trying fallback', data);
+
+        // Fallback to game score API if onchain fails
+        const fallbackResponse = await fetch('/api/game/score?type=leaderboard');
+        const fallbackData = await fallbackResponse.json();
+
+        if (fallbackData.success) {
+          // Transform game score data to leaderboard format
+          const transformedData = fallbackData.leaderboard.map((entry: any, index: number) => ({
+            rank: index + 1,
+            address: `user_${entry.fid}`,
+            addressDisplay: entry.username || `User ${entry.fid}`,
+            fid: entry.fid,
+            username: entry.username,
+            totalClaimed: entry.totalTokensEarned || 0,
+            claimCount: entry.totalGames || 0,
+            verified: false
+          }));
+          setLeaderboard(transformedData);
+        } else {
+          setError('Failed to load leaderboard');
+        }
       }
     } catch (err) {
       console.error('❌ Leaderboard fetch error:', err);
@@ -103,8 +137,27 @@ export default function LeaderboardPage() {
   return (
     <div className="min-h-screen p-4 text-gray-800">
       {/* Header */}
-      <div className="text-center mb-6">
+      <div className="text-center mb-4">
         <h1 className="text-2xl font-bold">🏆 Leaderboard</h1>
+      </div>
+
+      {/* Total Stats Banner */}
+      <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg p-4 mb-4 text-center">
+        {leaderboardStats ? (
+          <>
+            <div className="text-xl font-bold mb-1">
+              {leaderboardStats.totalTokensClaimed.toLocaleString('en-US', { maximumFractionDigits: 0 })} $LEXIPOP
+            </div>
+            <div className="text-green-100 text-sm">
+              Claimed by {leaderboardStats.totalPlayers} players
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="text-lg font-bold mb-1">Loading...</div>
+            <div className="text-green-100 text-sm">Fetching onchain data</div>
+          </>
+        )}
       </div>
 
       {/* User Stats Card */}
@@ -160,12 +213,11 @@ export default function LeaderboardPage() {
           </div>
         ) : (
           leaderboard.map((entry, index) => {
-            const rank = index + 1;
             const isCurrentUser = user?.fid === entry.fid;
 
             return (
               <div
-                key={entry.fid}
+                key={entry.address}
                 className={`
                   bg-white/60 rounded-lg p-2 border
                   ${isCurrentUser
@@ -177,7 +229,7 @@ export default function LeaderboardPage() {
                 <div className="flex items-center gap-2">
                   {/* Rank - Fixed width for consistent spacing */}
                   <div className="w-6 flex justify-center text-sm font-bold">
-                    {getRankDisplay(rank)}
+                    {getRankDisplay(entry.rank)}
                   </div>
 
                   {/* Avatar */}
@@ -185,17 +237,30 @@ export default function LeaderboardPage() {
                     👤
                   </div>
 
-                  {/* Name and Score - Flexible width */}
+                  {/* Name and tokens - Flexible width */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
-                      <div className="font-medium text-gray-800 truncate text-sm">
-                        {entry.username || `User ${entry.fid}`}
-                        {isCurrentUser && (
-                          <span className="text-xs text-blue-600 ml-1">(You)</span>
-                        )}
+                      <div className="flex flex-col">
+                        <div className="font-medium text-gray-800 truncate text-sm flex items-center gap-1">
+                          {entry.username || entry.addressDisplay}
+                          {entry.verified && (
+                            <span className="text-xs bg-green-100 text-green-700 px-1 py-0.5 rounded">
+                              ✓
+                            </span>
+                          )}
+                          {isCurrentUser && (
+                            <span className="text-xs text-blue-600">(You)</span>
+                          )}
+                        </div>
+                        <div className="text-xs text-gray-600">
+                          {entry.claimCount} claim{entry.claimCount !== 1 ? 's' : ''}
+                        </div>
                       </div>
-                      <div className="font-bold text-blue-600 text-sm ml-2">
-                        {entry.latestScore}/{entry.totalQuestions}
+                      <div className="text-right">
+                        <div className="font-bold text-green-600 text-sm">
+                          {entry.totalClaimed.toLocaleString()}
+                        </div>
+                        <div className="text-xs text-gray-600">$LEXIPOP</div>
                       </div>
                     </div>
                   </div>
