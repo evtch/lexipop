@@ -18,11 +18,15 @@ const MONEY_TREE = '0xe636baaf2c390a591edbffaf748898eb3f6ff9a1' as const;
 const WITHDRAW_EVENT = parseAbiItem('event Withdraw(address indexed signer, address indexed recipient, address indexed token, uint256 amount)');
 
 export async function GET(request: NextRequest) {
-  // Optional auth check for cron job
+  // Auth check for cron job - allow internal calls and manual triggers
   const authHeader = request.headers.get('authorization');
   const cronSecret = process.env.CRON_SECRET;
+  const userAgent = request.headers.get('user-agent');
+  const isInternalCall = userAgent?.includes('node') || request.headers.get('x-internal-call');
+  const isManualTrigger = request.nextUrl.searchParams.get('manual') === 'true';
 
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+  // Allow if no cron secret set, has valid auth, is internal call, or manual trigger
+  if (cronSecret && authHeader !== `Bearer ${cronSecret}` && !isInternalCall && !isManualTrigger) {
     return NextResponse.json(
       { error: 'Unauthorized' },
       { status: 401 }

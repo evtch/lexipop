@@ -69,6 +69,25 @@ export default function LeaderboardPage() {
           });
         }
 
+        // If no onchain data found, try to trigger a sync
+        if ((data.leaderboard?.length || 0) === 0 && (data.stats?.totalTokensClaimed || 0) === 0) {
+          console.log('⚡ No onchain data found, attempting to sync...');
+          try {
+            const syncResponse = await fetch('/api/leaderboard/sync?manual=true', {
+              method: 'GET',
+              headers: { 'Content-Type': 'application/json' }
+            });
+            if (syncResponse.ok) {
+              console.log('✅ Sync triggered successfully, refreshing in 5 seconds...');
+              setTimeout(() => fetchLeaderboard(), 5000);
+            } else {
+              console.log('⚠️ Sync request failed:', syncResponse.status);
+            }
+          } catch (syncError) {
+            console.log('⚠️ Could not trigger sync:', syncError);
+          }
+        }
+
         console.log(`✅ Loaded ${data.leaderboard?.length || 0} onchain leaderboard entries`);
       } else {
         console.error('❌ Onchain API returned success: false, trying fallback', data);

@@ -61,6 +61,26 @@ export async function GET(request: NextRequest) {
       LIMIT ${limit}
     `;
 
+    // If no data found, attempt a quick bootstrap sync
+    if (leaderboardData.length === 0) {
+      console.log('🔄 No leaderboard data found, attempting quick bootstrap sync...');
+      try {
+        // Try to trigger sync internally for bootstrap
+        const initResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'https://www.lexipop.xyz'}/api/leaderboard/init`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (initResponse.ok) {
+          console.log('✅ Bootstrap sync triggered');
+        } else {
+          console.log('⚠️ Bootstrap sync failed, proceeding with empty data');
+        }
+      } catch (error) {
+        console.log('⚠️ Could not trigger bootstrap sync:', error);
+      }
+    }
+
     // Fetch usernames for players with FIDs
     const hasNeynarKey = !!process.env.NEYNAR_API_KEY;
     const leaderboard = await Promise.all(
