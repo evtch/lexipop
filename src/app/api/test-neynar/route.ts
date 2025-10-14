@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
 
     // Test payload - broadcast to all users
     const payload = {
-      target_fids: [], // Empty array = broadcast to all
+      targetFids: [], // Empty array = broadcast to all
       notification: {
         title: "🧪 Test from Lexipop",
         body: "Testing Neynar notifications API directly",
