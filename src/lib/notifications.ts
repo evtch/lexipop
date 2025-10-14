@@ -15,11 +15,11 @@ interface NotificationPayload {
     body: string;              // Max 128 characters
     target_url: string;        // Valid URL where users will be directed
   };
-  target_fids?: number[];      // Specific users (optional for broadcast, max 100)
+  targetFids?: number[];       // Specific users (optional for broadcast, max 100)
   filters?: {
     exclude_fids?: number[];
-    following_fids?: number[];
-    user_score_threshold?: number;
+    following_fid?: number;
+    minimum_user_score?: number;
   };
 }
 
@@ -93,11 +93,16 @@ export const NOTIFICATION_TEMPLATES = {
  * Core function to send notifications via Neynar API
  */
 async function sendNeynarNotification(payload: NotificationPayload): Promise<NotificationResponse> {
-  const { NEYNAR_API_KEY } = serverEnv;
+  const { NEYNAR_API_KEY, NEYNAR_CLIENT_ID } = serverEnv;
 
   if (!NEYNAR_API_KEY) {
     console.error('❌ NEYNAR_API_KEY not configured');
     return { success: false, error: 'API key not configured' };
+  }
+
+  if (!NEYNAR_CLIENT_ID) {
+    console.error('❌ NEYNAR_CLIENT_ID not configured');
+    return { success: false, error: 'Client ID not configured' };
   }
 
   // Validate payload constraints
@@ -113,10 +118,11 @@ async function sendNeynarNotification(payload: NotificationPayload): Promise<Not
 
   try {
     console.log('📤 Sending notification to Neynar API:');
-    console.log('🎯 Target:', payload.target_fids ? `${payload.target_fids.length} users` : 'broadcast');
+    console.log('🎯 Target:', payload.targetFids ? `${payload.targetFids.length} users` : 'broadcast');
     console.log('📝 Title:', payload.notification.title);
     console.log('📝 Body:', payload.notification.body);
     console.log('🔑 API Key present:', !!NEYNAR_API_KEY);
+    console.log('🆔 Client ID present:', !!NEYNAR_CLIENT_ID);
     console.log('📦 Full payload:', JSON.stringify(payload, null, 2));
 
     // Use the correct Neynar v2 frame notifications endpoint
@@ -126,8 +132,13 @@ async function sendNeynarNotification(payload: NotificationPayload): Promise<Not
     const requestHeaders = {
       'api_key': NEYNAR_API_KEY,
       'Content-Type': 'application/json',
+      'client_id': NEYNAR_CLIENT_ID,
     };
-    console.log('📋 Request headers:', { ...requestHeaders, 'api_key': requestHeaders['api_key'] ? '[PRESENT]' : '[MISSING]' });
+    console.log('📋 Request headers:', {
+      ...requestHeaders,
+      'api_key': requestHeaders['api_key'] ? '[PRESENT]' : '[MISSING]',
+      'client_id': requestHeaders['client_id'] ? '[PRESENT]' : '[MISSING]'
+    });
 
     const response = await fetch(requestUrl, {
       method: 'POST',
@@ -203,7 +214,7 @@ export async function notifyUser(
   }
 
   return sendNeynarNotification({
-    target_fids: [userFid],
+    targetFids: [userFid],
     notification: {
       title: template.title,
       body: template.body,
@@ -231,7 +242,7 @@ export async function notifyUserCustom(
   }
 
   return sendNeynarNotification({
-    target_fids: [userFid],
+    targetFids: [userFid],
     notification: {
       title,
       body,
@@ -266,7 +277,7 @@ export async function broadcastNotification(
     console.log(`📢 Broadcasting to ${userFids.length} users with notifications enabled`);
 
     return sendNeynarNotification({
-      target_fids: userFids,
+      targetFids: userFids,
       notification: {
         title: template.title,
         body: template.body,
@@ -304,7 +315,7 @@ export async function broadcastCustomNotification(
     console.log(`📢 Broadcasting custom notification to ${userFids.length} users with notifications enabled`);
 
     return sendNeynarNotification({
-      target_fids: userFids,
+      targetFids: userFids,
       notification: {
         title,
         body,
@@ -341,7 +352,7 @@ export async function notifyMultipleUsers(
 
   for (const batch of batches) {
     const result = await sendNeynarNotification({
-      target_fids: batch,
+      targetFids: batch,
       notification: {
         title: template.title,
         body: template.body,
