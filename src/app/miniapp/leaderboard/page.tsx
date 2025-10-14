@@ -98,7 +98,7 @@ export default function LeaderboardPage() {
               Weekly Leaderboard
             </div>
             <div className="text-blue-100 text-sm">
-              {leaderboardStats.totalPlayers} players competing • Max: {leaderboardStats.maxScore} pts
+              {leaderboardStats.totalPlayers} players competing
             </div>
             <div className="text-xs text-blue-200 mt-1">
               Week of {new Date(leaderboardStats.weekStarting).toLocaleDateString()}

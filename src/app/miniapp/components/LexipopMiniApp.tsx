@@ -578,15 +578,8 @@ export default function LexipopMiniApp() {
                     <div className="text-sm text-gray-600 mb-2">
                       Generating using secure onchain Pyth Entropy...
                     </div>
-                    <div className="text-xs text-blue-600 font-medium mb-2">
+                    <div className="text-xs text-blue-600 font-medium mb-4">
                       💡 Higher scores unlock bigger rewards!
-                    </div>
-                    <div className="text-xs text-gray-500 mb-4">
-                      {gameState.score >= 500 ? '5,000-25,000' :
-                       gameState.score >= 400 ? '2,000-15,000' :
-                       gameState.score >= 300 ? '1,000-10,000' :
-                       gameState.score >= 200 ? '300-3,000' :
-                       gameState.score >= 100 ? '100-1,000' : '50-500'} $LEXIPOP range
                     </div>
 
                     {/* Airport-style Number Generator */}
@@ -938,9 +931,8 @@ export default function LexipopMiniApp() {
       <div className="flex justify-between items-center mb-3">
         <h1 className="text-lg font-bold">Lexipop</h1>
         <div className="flex items-center gap-3">
-          <div className="text-center text-sm">
-            <div className="font-medium">Score</div>
-            <div className="text-lg font-bold">{gameState.score}</div>
+          <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold">
+            {gameState.score} pts
           </div>
           {currentUser && (
             <div className="flex items-center gap-2">
