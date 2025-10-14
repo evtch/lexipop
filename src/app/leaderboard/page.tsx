@@ -36,6 +36,7 @@ function LeaderboardPageContent() {
   const { user, isAuthenticated } = useNeynar();
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [userStats, setUserStats] = useState<UserStats | null>(null);
+  const [leaderboardStats, setLeaderboardStats] = useState<LeaderboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -64,6 +65,14 @@ function LeaderboardPageContent() {
           fid: entry.fid,
           verified: entry.verified
         })));
+
+        // Set stats if available
+        if (data.stats) {
+          setLeaderboardStats({
+            totalPlayers: data.stats.totalPlayers || 0,
+            totalTokensClaimed: data.stats.totalTokensClaimed || 0
+          });
+        }
       } else {
         // Fallback to Alchemy API if onchain fails
         console.warn('Onchain API failed, trying Alchemy:', data.error);
@@ -133,6 +142,35 @@ function LeaderboardPageContent() {
       </div>
 
       <div className="max-w-4xl mx-auto">
+        {/* Total Stats Banner */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl p-6 mb-8 shadow-lg"
+        >
+          <div className="text-center">
+            {leaderboardStats ? (
+              <>
+                <h2 className="text-3xl font-bold mb-2">
+                  {leaderboardStats.totalTokensClaimed.toLocaleString('en-US', { maximumFractionDigits: 0 })} $LEXIPOP
+                </h2>
+                <p className="text-green-100">
+                  Total claimed from MoneyTree by {leaderboardStats.totalPlayers} players
+                </p>
+              </>
+            ) : (
+              <>
+                <h2 className="text-2xl font-bold mb-2">
+                  Loading total $LEXIPOP claimed...
+                </h2>
+                <p className="text-green-100">
+                  Fetching data from MoneyTree contract
+                </p>
+              </>
+            )}
+          </div>
+        </motion.div>
+
         {/* User Stats Card */}
         {isAuthenticated && user && userStats && (
           <motion.div
