@@ -201,7 +201,7 @@ export default function LeaderboardPage() {
             <MiniAppButton
               href="/"
               variant="secondary"
-              size="lg"
+              size="md"
               icon="🚀"
               className="w-full bg-white text-blue-600 hover:bg-gray-50"
             >
@@ -212,7 +212,7 @@ export default function LeaderboardPage() {
           <MiniAppButton
             href="/"
             variant="primary"
-            size="lg"
+            size="md"
             icon="🎯"
             className="w-full"
           >

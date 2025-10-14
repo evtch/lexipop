@@ -580,14 +580,14 @@ export default function LexipopMiniApp() {
               <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="bg-gradient-to-r from-green-400 to-blue-500 rounded-lg p-3 text-white shadow-lg mb-4"
+                className="bg-gradient-to-r from-green-400 to-blue-500 rounded-lg p-2 text-white shadow-lg mb-3"
               >
                 <div className="text-center">
-                  <div className="text-lg font-bold mb-2">Game Complete!</div>
+                  <div className="text-base font-bold mb-1">Game Complete!</div>
 
                   {/* Compact Score Display */}
-                  <div className="bg-white/20 rounded-lg p-2 mb-2">
-                    <div className="text-2xl font-bold">
+                  <div className="bg-white/20 rounded-lg p-1.5 mb-1.5">
+                    <div className="text-xl font-bold">
                       {gameState.score} pts
                     </div>
                   </div>
@@ -607,7 +607,7 @@ export default function LexipopMiniApp() {
 
 
               {/* Token Generation Section */}
-              <div className="mb-6">
+              <div className="mb-4">
                 {!generatedTokens ? (
                   // Token Generation Display
                   <div className="text-center">
@@ -617,7 +617,7 @@ export default function LexipopMiniApp() {
 
                     {/* Airport-style Number Generator */}
                     <motion.div
-                      className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl p-6 mb-4 shadow-xl"
+                      className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl p-4 mb-4 shadow-xl"
                       animate={isGeneratingTokens ? {
                         scale: [1, 1.05, 1]
                       } : {}}
@@ -639,7 +639,7 @@ export default function LexipopMiniApp() {
                     <MiniAppButton
                       onClick={generateTokens}
                       variant="primary"
-                      size="lg"
+                      size="md"
                       icon="🎰"
                       disabled={isGeneratingTokens}
                       className="w-full mb-3"
@@ -668,7 +668,7 @@ export default function LexipopMiniApp() {
                             }
                           }}
                           variant="primary"
-                          size="lg"
+                          size="md"
                           icon="⭐"
                           className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
                         >
@@ -717,7 +717,7 @@ export default function LexipopMiniApp() {
                           }
                         }}
                         variant="secondary"
-                        size="lg"
+                        size="md"
                         icon="👥"
                         className="w-full whitespace-nowrap"
                       >
@@ -735,7 +735,7 @@ export default function LexipopMiniApp() {
                     <motion.div
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
-                      className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl p-6 mb-4 shadow-xl"
+                      className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl p-4 mb-4 shadow-xl"
                     >
                       <div className="text-4xl font-bold text-white mb-2 text-center">
                         {generatedTokens}
@@ -754,7 +754,7 @@ export default function LexipopMiniApp() {
                         <MiniAppButton
                           onClick={handleFarcasterWalletConnect}
                           variant="primary"
-                          size="lg"
+                          size="md"
                           icon="🎯"
                           className="w-full mb-3"
                         >
@@ -790,7 +790,7 @@ export default function LexipopMiniApp() {
                         <MiniAppButton
                           onClick={handleTokenClaim}
                           variant="primary"
-                          size="lg"
+                          size="md"
                           icon="💰"
                           disabled={isClaimingTokens || isWritePending || isConfirming || (isFirstTimeClaim && !hasSharedCast)}
                           className="w-full mb-3"
@@ -838,11 +838,11 @@ export default function LexipopMiniApp() {
               </div>
 
               {/* Action Buttons */}
-              <div className="space-y-3 mt-auto">
+              <div className="space-y-2 mt-auto">
                 <MiniAppButton
                   onClick={startNewGame}
                   variant="secondary"
-                  size="lg"
+                  size="md"
                   icon="🔄"
                   className="w-full"
                 >
@@ -852,7 +852,7 @@ export default function LexipopMiniApp() {
                 <MiniAppButton
                   href="/leaderboard"
                   variant="secondary"
-                  size="lg"
+                  size="md"
                   icon="🏆"
                   className="w-full"
                 >
@@ -933,7 +933,7 @@ export default function LexipopMiniApp() {
                   <MiniAppButton
                     onClick={startNewGame}
                     variant="primary"
-                    size="lg"
+                    size="md"
                     icon="🎮"
                     className="w-full"
                   >
@@ -944,7 +944,7 @@ export default function LexipopMiniApp() {
                 <MiniAppButton
                   href="/leaderboard"
                   variant="secondary"
-                  size="lg"
+                  size="md"
                   icon="🏆"
                   className="w-full"
                 >

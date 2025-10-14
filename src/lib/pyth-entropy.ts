@@ -302,3 +302,84 @@ export async function getPythRandomNumber(
 export function generateMockRandomness(): number {
   return Math.floor(Math.random() * 100);
 }
+
+/**
+ * Improved client-side entropy generation for production use
+ * Combines multiple entropy sources for better randomness
+ */
+export function generateImprovedRandomness(gameData?: {
+  gameId: string;
+  score: number;
+  streak: number;
+  userFid?: number;
+}): { randomNumber: bigint; rewardTier: RewardTier; bonusMultiplier: number } {
+  try {
+    // Create deterministic but unpredictable input
+    const userInput = gameData
+      ? `${gameData.gameId}-${gameData.score}-${gameData.streak}-${gameData.userFid || 'anon'}`
+      : `entropy-${Date.now()}`;
+
+    const timestamp = Date.now();
+
+    // Add browser entropy sources
+    const performanceNow = performance.now();
+    const randomValues = new Uint8Array(32);
+    crypto.getRandomValues(randomValues);
+
+    // Combine multiple entropy sources
+    const combinedEntropy = encodePacked(
+      ['string', 'uint256', 'uint256', 'bytes32'],
+      [
+        userInput,
+        BigInt(Math.floor(timestamp)),
+        BigInt(Math.floor(performanceNow * 1000000)), // Microsecond precision
+        `0x${Array.from(randomValues).map(b => b.toString(16).padStart(2, '0')).join('')}`
+      ]
+    );
+
+    // Generate secure hash
+    const entropyHash = keccak256(combinedEntropy);
+    const randomNumber = BigInt(entropyHash);
+
+    // Get base reward tier
+    const rewardTier = getRewardFromRandomness(randomNumber);
+
+    // Calculate performance bonus
+    let bonusMultiplier = 1;
+    if (gameData) {
+      const correctAnswers = gameData.score / 100;
+      bonusMultiplier = calculateBonusMultiplier(correctAnswers, gameData.streak, 5);
+    }
+
+    console.log('🎲 Improved Entropy Generation:', {
+      userInput,
+      timestamp,
+      performanceNow,
+      entropyHash,
+      baseReward: rewardTier,
+      bonusMultiplier,
+      finalAmount: Math.floor(rewardTier.tokens * bonusMultiplier),
+      source: 'Multi-source Client Entropy'
+    });
+
+    return { randomNumber, rewardTier, bonusMultiplier };
+
+  } catch (error) {
+    console.error('❌ Improved entropy generation failed:', error);
+    // Fallback to simple random with tier system
+    const fallbackTierIndex = Math.floor(Math.random() * REWARD_TIERS.length);
+    const fallbackTier = REWARD_TIERS[fallbackTierIndex];
+
+    let bonusMultiplier = 1;
+    if (gameData) {
+      const correctAnswers = gameData.score / 100;
+      bonusMultiplier = calculateBonusMultiplier(correctAnswers, gameData.streak, 5);
+    }
+
+    return {
+      randomNumber: BigInt(Math.floor(Math.random() * 100)),
+      rewardTier: fallbackTier,
+      bonusMultiplier
+    };
+  }
+}

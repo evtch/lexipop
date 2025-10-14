@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import MiniAppButton from './MiniAppButton';
-import { generateCommitment } from '@/lib/pyth-entropy';
+import { generateCommitment, getRewardFromRandomness, calculateBonusMultiplier, REWARD_TIERS, generateImprovedRandomness } from '@/lib/pyth-entropy';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { useFarcasterAccount } from '@/lib/web3/hooks/useFarcasterAccount';
 
@@ -57,37 +57,37 @@ export default function TokenWheel({ isVisible, onClaim, onClose, onViewLeaderbo
     setClaimError(null);
     setCurrentNumber(0);
 
-    // Generate final token amount using Pyth entropy
+    // Generate final token amount using improved entropy generation
     const generateFinalAmount = () => {
       try {
-        // Create deterministic input from game data for verifiable randomness
-        const userInput = gameData
-          ? `${gameData.gameId}-${gameData.score}-${gameData.streak}-${gameData.userFid || 'anon'}`
-          : `wheel-${Date.now()}`;
+        // Use the improved entropy generation function
+        const { rewardTier, bonusMultiplier } = generateImprovedRandomness(gameData);
 
-        const timestamp = Date.now();
-        const { commitment, userRandomness } = generateCommitment(userInput, timestamp);
+        // Apply bonus multiplier to base reward
+        const finalTokenAmount = Math.floor(rewardTier.tokens * bonusMultiplier);
 
-        // Convert the commitment hash to a number
-        const hashBytes = commitment.slice(2); // Remove '0x'
-        const randomValue = parseInt(hashBytes.slice(0, 8), 16); // Use first 32 bits
-
-        // Generate token amount between 1-100 using Pyth entropy
-        const tokenAmount = 1 + (randomValue % 100);
-
-        console.log('🎲 Pyth Entropy Token Generation:', {
-          userInput,
-          commitment,
-          randomValue,
-          tokenAmount,
-          source: 'Pyth Network Entropy'
+        console.log('🎲 TokenWheel Entropy Generation:', {
+          gameData,
+          baseRewardTier: rewardTier,
+          bonusMultiplier,
+          finalTokenAmount,
+          source: 'Improved Multi-source Entropy'
         });
 
-        return tokenAmount;
+        return finalTokenAmount;
       } catch (error) {
-        console.error('❌ Pyth entropy failed, fallback to Math.random:', error);
-        // Fallback to regular random if Pyth fails
-        return 1 + Math.floor(Math.random() * 100);
+        console.error('❌ Improved entropy failed, using fallback:', error);
+        // Fallback to simple tier-based random
+        const randomTierIndex = Math.floor(Math.random() * REWARD_TIERS.length);
+        const fallbackTier = REWARD_TIERS[randomTierIndex];
+
+        let bonusMultiplier = 1;
+        if (gameData) {
+          const correctAnswers = gameData.score / 100;
+          bonusMultiplier = calculateBonusMultiplier(correctAnswers, gameData.streak, gameData.totalQuestions);
+        }
+
+        return Math.floor(fallbackTier.tokens * bonusMultiplier);
       }
     };
 
