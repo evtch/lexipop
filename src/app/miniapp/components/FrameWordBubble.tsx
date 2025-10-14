@@ -70,7 +70,7 @@ export default function FrameWordBubble({ word, isVisible, isCorrect, showResult
         }}
       >
         {/* Word text */}
-        <h2 className="vocabulary-word text-white font-bold text-2xl text-center px-4 drop-shadow-lg">
+        <h2 className="vocabulary-word text-white font-bold text-2xl text-center px-4 drop-shadow-lg capitalize">
           {word}
         </h2>
       </motion.div>
