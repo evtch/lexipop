@@ -113,33 +113,29 @@ export default function LexipopMiniApp() {
   const submitScore = async (score: number, streak: number, totalQuestions: number) => {
     if (!currentUser) return;
 
-    console.log('🎯 Submitting score:', {
+    console.log('🎯 Submitting score to weekly leaderboard:', {
       fid: currentUser.fid,
-      score,
-      streak,
-      totalQuestions,
-      gameId
+      username: currentUser.username,
+      score
     });
 
     try {
-      const response = await fetch('/api/game/score', {
+      const response = await fetch('/api/leaderboard/submit', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          fid: currentUser.fid,
-          score,
-          streak,
-          totalQuestions,
-          gameId
+          userFid: currentUser.fid,
+          username: currentUser.username,
+          score
         }),
       });
 
       const data = await response.json();
-      console.log('📊 Score submission response:', data);
+      console.log('📊 Leaderboard submission response:', data);
       if (data.success) {
-        console.log('✅ Score submitted successfully');
+        console.log(`✅ Score submitted successfully - Rank ${data.rank} ${data.isNewBest ? '(NEW BEST!)' : ''}`);
       } else {
         console.error('❌ Score submission failed:', data.error);
       }
@@ -525,7 +521,7 @@ export default function LexipopMiniApp() {
       selectedAnswer: selectedDefinition,
       showResult: true,
       isCorrect,
-      score: isCorrect ? prev.score + 1 : prev.score,
+      score: isCorrect ? prev.score + 100 : prev.score,
       streak: isCorrect ? prev.streak + 1 : 0
       // totalQuestions should stay constant at 5, not increment
     }));
@@ -592,17 +588,20 @@ export default function LexipopMiniApp() {
                   {/* Compact Score Display */}
                   <div className="bg-white/20 rounded-lg p-2 mb-2">
                     <div className="text-2xl font-bold">
-                      {gameState.score}/{gameState.totalQuestions}
+                      {gameState.score} pts
+                    </div>
+                    <div className="text-sm opacity-75">
+                      {gameState.score / 100}/{gameState.totalQuestions} correct
                     </div>
                   </div>
 
                   {/* Performance Message */}
                   <div className="text-sm font-medium">
-                    {gameState.score === gameState.totalQuestions
+                    {gameState.score === 500
                       ? "Perfect! 🌟"
-                      : gameState.score >= gameState.totalQuestions * 0.8
+                      : gameState.score >= 400
                       ? "Great job! 👏"
-                      : gameState.score >= gameState.totalQuestions * 0.6
+                      : gameState.score >= 300
                       ? "Well done! 👍"
                       : "Keep practicing! 📚"}
                   </div>
@@ -970,7 +969,7 @@ export default function LexipopMiniApp() {
         <div className="flex items-center gap-3">
           <div className="text-center text-sm">
             <div className="font-medium">Score</div>
-            <div className="text-lg font-bold">{gameState.score}/{gameState.totalQuestions}</div>
+            <div className="text-lg font-bold">{gameState.score}</div>
           </div>
           {currentUser && (
             <div className="flex items-center gap-2">

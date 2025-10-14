@@ -8,24 +8,16 @@ import MiniAppButton from '../components/MiniAppButton';
 
 interface LeaderboardEntry {
   rank: number;
-  address: string;
-  addressDisplay: string;
-  fid?: number;
-  username?: string;
-  totalClaimed: number;
-  claimCount: number;
-  verified: boolean;
-}
-
-interface UserStats {
-  latestScore: number;
-  totalQuestions: number;
-  accuracy: number;
+  userFid: number;
+  username: string;
+  score: number;
+  submittedAt: string;
 }
 
 interface LeaderboardStats {
   totalPlayers: number;
-  totalTokensClaimed: number;
+  maxScore: number;
+  weekStarting: string;
 }
 
 export default function LeaderboardPage() {
@@ -33,85 +25,36 @@ export default function LeaderboardPage() {
   const user = farcasterUser;
   const isAuthenticated = !!farcasterUser.fid;
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
-  const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [leaderboardStats, setLeaderboardStats] = useState<LeaderboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchLeaderboard();
-    if (isAuthenticated && user) {
-      fetchUserStats();
-    }
-  }, [isAuthenticated, user]);
+  }, []);
 
   const fetchLeaderboard = async () => {
     try {
-      console.log('🔍 Fetching onchain leaderboard...');
-      // Try onchain API first
-      const response = await fetch('/api/leaderboard/onchain?limit=20');
+      console.log('🔍 Fetching weekly leaderboard...');
+      const response = await fetch('/api/leaderboard/weekly?limit=50');
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
       const data = await response.json();
-      console.log('📊 Onchain leaderboard response:', data);
+      console.log('📊 Weekly leaderboard response:', data);
 
       if (data.success) {
         setLeaderboard(data.leaderboard || []);
-
-        // Set stats if available
-        if (data.stats) {
-          setLeaderboardStats({
-            totalPlayers: data.stats.totalPlayers || 0,
-            totalTokensClaimed: data.stats.totalTokensClaimed || 0
-          });
-        }
-
-        // If no onchain data found, try to trigger a sync
-        if ((data.leaderboard?.length || 0) === 0 && (data.stats?.totalTokensClaimed || 0) === 0) {
-          console.log('⚡ No onchain data found, attempting to sync...');
-          try {
-            const syncResponse = await fetch('/api/leaderboard/sync?manual=true', {
-              method: 'GET',
-              headers: { 'Content-Type': 'application/json' }
-            });
-            if (syncResponse.ok) {
-              console.log('✅ Sync triggered successfully, refreshing in 5 seconds...');
-              setTimeout(() => fetchLeaderboard(), 5000);
-            } else {
-              console.log('⚠️ Sync request failed:', syncResponse.status);
-            }
-          } catch (syncError) {
-            console.log('⚠️ Could not trigger sync:', syncError);
-          }
-        }
-
-        console.log(`✅ Loaded ${data.leaderboard?.length || 0} onchain leaderboard entries`);
+        setLeaderboardStats({
+          totalPlayers: data.totalPlayers || 0,
+          maxScore: data.maxScore || 500,
+          weekStarting: data.weekStarting || ''
+        });
+        console.log(`✅ Loaded ${data.leaderboard?.length || 0} weekly leaderboard entries`);
       } else {
-        console.error('❌ Onchain API returned success: false, trying fallback', data);
-
-        // Fallback to game score API if onchain fails
-        const fallbackResponse = await fetch('/api/game/score?type=leaderboard');
-        const fallbackData = await fallbackResponse.json();
-
-        if (fallbackData.success) {
-          // Transform game score data to leaderboard format
-          const transformedData = fallbackData.leaderboard.map((entry: any, index: number) => ({
-            rank: index + 1,
-            address: `user_${entry.fid}`,
-            addressDisplay: entry.username || `User ${entry.fid}`,
-            fid: entry.fid,
-            username: entry.username,
-            totalClaimed: entry.totalTokensEarned || 0,
-            claimCount: entry.totalGames || 0,
-            verified: false
-          }));
-          setLeaderboard(transformedData);
-        } else {
-          setError('Failed to load leaderboard');
-        }
+        setError('Failed to load leaderboard');
       }
     } catch (err) {
       console.error('❌ Leaderboard fetch error:', err);
@@ -121,20 +64,6 @@ export default function LeaderboardPage() {
     }
   };
 
-  const fetchUserStats = async () => {
-    if (!user?.fid) return;
-
-    try {
-      const response = await fetch(`/api/game/score?fid=${user.fid}`);
-      const data = await response.json();
-
-      if (data.success) {
-        setUserStats(data.stats);
-      }
-    } catch (err) {
-      console.error('User stats fetch error:', err);
-    }
-  };
 
   const getRankDisplay = (rank: number) => {
     switch (rank) {
@@ -160,49 +89,28 @@ export default function LeaderboardPage() {
         <h1 className="text-2xl font-bold">🏆 Leaderboard</h1>
       </div>
 
-      {/* Total Stats Banner */}
-      <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg p-4 mb-4 text-center">
+      {/* Weekly Stats Banner */}
+      <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg p-4 mb-4 text-center">
         {leaderboardStats ? (
           <>
             <div className="text-xl font-bold mb-1">
-              {leaderboardStats.totalTokensClaimed.toLocaleString('en-US', { maximumFractionDigits: 0 })} $LEXIPOP
+              Weekly Leaderboard
             </div>
-            <div className="text-green-100 text-sm">
-              Claimed by {leaderboardStats.totalPlayers} players
+            <div className="text-blue-100 text-sm">
+              {leaderboardStats.totalPlayers} players competing • Max: {leaderboardStats.maxScore} pts
+            </div>
+            <div className="text-xs text-blue-200 mt-1">
+              Week of {new Date(leaderboardStats.weekStarting).toLocaleDateString()}
             </div>
           </>
         ) : (
           <>
             <div className="text-lg font-bold mb-1">Loading...</div>
-            <div className="text-green-100 text-sm">Fetching onchain data</div>
+            <div className="text-blue-100 text-sm">Fetching weekly scores</div>
           </>
         )}
       </div>
 
-      {/* User Stats Card */}
-      {isAuthenticated && user && userStats && (
-        <div className="bg-white/60 rounded-lg p-3 mb-4 border border-blue-200">
-          <div className="flex items-center gap-2 mb-2">
-            {user.pfpUrl && (
-              <img
-                src={user.pfpUrl}
-                alt={user.username}
-                className="w-8 h-8 rounded-full"
-              />
-            )}
-            <div className="flex-1">
-              <div className="font-medium text-gray-800 text-sm">{user.displayName}</div>
-              <div className="text-xs text-gray-600">@{user.username}</div>
-            </div>
-            <div className="text-right">
-              <div className="text-lg font-bold text-blue-600">
-                {userStats.latestScore}/{userStats.totalQuestions}
-              </div>
-              <div className="text-xs text-gray-600">Latest Score</div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Leaderboard */}
       <div className="space-y-1">
@@ -223,16 +131,16 @@ export default function LeaderboardPage() {
             <div className="text-6xl mb-4">🎯</div>
             <h3 className="text-lg font-semibold text-gray-700 mb-2">Be the First Champion!</h3>
             <p className="text-gray-600 mb-6 text-sm">
-              Start playing to claim your spot on the leaderboard and earn $LEXIPOP tokens
+              Start playing to claim your spot on this week's leaderboard
             </p>
           </div>
         ) : (
           leaderboard.map((entry, index) => {
-            const isCurrentUser = user?.fid === entry.fid;
+            const isCurrentUser = user?.fid === entry.userFid;
 
             return (
               <div
-                key={entry.address}
+                key={entry.userFid}
                 className={`
                   bg-white/60 rounded-lg p-2 border
                   ${isCurrentUser
@@ -252,30 +160,25 @@ export default function LeaderboardPage() {
                     👤
                   </div>
 
-                  {/* Name and tokens - Flexible width */}
+                  {/* Name and score - Flexible width */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
                       <div className="flex flex-col">
                         <div className="font-medium text-gray-800 truncate text-sm flex items-center gap-1">
-                          {entry.username || entry.addressDisplay}
-                          {entry.verified && (
-                            <span className="text-xs bg-green-100 text-green-700 px-1 py-0.5 rounded">
-                              ✓
-                            </span>
-                          )}
+                          {entry.username}
                           {isCurrentUser && (
                             <span className="text-xs text-blue-600">(You)</span>
                           )}
                         </div>
                         <div className="text-xs text-gray-600">
-                          {entry.claimCount} claim{entry.claimCount !== 1 ? 's' : ''}
+                          {new Date(entry.submittedAt).toLocaleDateString()}
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="font-bold text-green-600 text-sm">
-                          {entry.totalClaimed.toLocaleString()}
+                        <div className="font-bold text-blue-600 text-sm">
+                          {entry.score}
                         </div>
-                        <div className="text-xs text-gray-600">$LEXIPOP</div>
+                        <div className="text-xs text-gray-600">points</div>
                       </div>
                     </div>
                   </div>

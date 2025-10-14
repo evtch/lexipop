@@ -225,3 +225,18 @@ model ImportBatch {
 
   @@map("import_batches")
 }
+
+// Simple weekly leaderboard scores
+model LeaderboardScore {
+  id           Int      @id @default(autoincrement())
+  userFid      Int      // Farcaster user ID
+  username     String   // Farcaster username
+  score        Int      // 0-500 points (100 per correct answer)
+  weekStarting DateTime // Monday of the week at 00:00:00
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Only one score per user per week (upsert if better)
+  @@unique([userFid, weekStarting])
+  @@map("leaderboard_scores")
+}
