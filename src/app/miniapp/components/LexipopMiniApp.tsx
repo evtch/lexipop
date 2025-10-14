@@ -12,6 +12,7 @@ import { useSound } from '@/hooks/useSound';
 import { useAccount, useConnect, useDisconnect, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { useFarcasterAccount } from '@/lib/web3/hooks/useFarcasterAccount';
 import { getVersionString } from '@/lib/version';
+import { addMiniAppWithAnalytics } from '@/lib/neynar-miniapp';
 
 // Frame-optimized components
 import FrameWordBubble from './FrameWordBubble';
@@ -88,7 +89,7 @@ export default function LexipopMiniApp() {
     }
   };
 
-  // Auto-prompt to add miniapp on first visit for new users (using Farcaster SDK)
+  // Enhanced auto-prompt to add miniapp on first visit for new users (using Neynar integration)
   useEffect(() => {
     const autoPromptMiniApp = async () => {
       if (!currentUser?.fid || !isFirstTimeClaim) {
@@ -99,12 +100,33 @@ export default function LexipopMiniApp() {
       const hasAutoPrompted = localStorage.getItem(hasAutoPromptedKey) === 'true';
 
       if (!hasAutoPrompted) {
-        console.log('🎉 Auto-prompting user to add miniapp...');
+        console.log('🎉 Enhanced auto-prompting user to add miniapp...');
 
         try {
-          await addMiniAppToFarcaster();
+          // Use enhanced Neynar integration
+          const result = await addMiniAppWithAnalytics(currentUser.fid);
+
+          if (result.success) {
+            console.log('✅ Enhanced miniapp add successful');
+            localStorage.setItem(`lexipop_miniapp_added_${currentUser.fid}`, 'true');
+          } else {
+            console.warn('⚠️ Enhanced miniapp add failed:', result.error);
+            // Fallback to basic SDK method
+            try {
+              await addMiniAppToFarcaster();
+              console.log('✅ Fallback miniapp add successful');
+            } catch (fallbackError) {
+              console.error('❌ Both enhanced and fallback miniapp add failed:', fallbackError);
+            }
+          }
         } catch (error) {
-          console.log('⚠️ Auto-add miniapp failed:', error);
+          console.error('❌ Auto-add miniapp failed:', error);
+          // Try fallback method
+          try {
+            await addMiniAppToFarcaster();
+          } catch (fallbackError) {
+            console.error('❌ Fallback miniapp add also failed:', fallbackError);
+          }
         }
 
         // Mark as auto-prompted regardless of success/failure
@@ -113,7 +135,9 @@ export default function LexipopMiniApp() {
       }
     };
 
-    autoPromptMiniApp();
+    // Add a small delay to ensure proper initialization
+    const timer = setTimeout(autoPromptMiniApp, 1000);
+    return () => clearTimeout(timer);
   }, [currentUser?.fid, isFirstTimeClaim]);
 
   // Check if user has seen notification prompt and claimed tokens before
@@ -684,8 +708,18 @@ export default function LexipopMiniApp() {
                         <MiniAppButton
                           onClick={async () => {
                             try {
-                              await addMiniAppToFarcaster();
-                              // Neynar automatically handles webhook notifications
+                              // Use enhanced Neynar integration for manual add
+                              if (currentUser?.fid) {
+                                const result = await addMiniAppWithAnalytics(currentUser.fid);
+                                if (result.success) {
+                                  console.log('✅ Manual miniapp add successful via Neynar');
+                                } else {
+                                  console.warn('⚠️ Enhanced add failed, trying fallback:', result.error);
+                                  await addMiniAppToFarcaster();
+                                }
+                              } else {
+                                await addMiniAppToFarcaster();
+                              }
                             } catch (error) {
                               console.error('❌ Failed to add miniapp:', error);
                               // Show user-friendly error message for failed attempts
