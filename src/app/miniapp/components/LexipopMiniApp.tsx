@@ -590,9 +590,6 @@ export default function LexipopMiniApp() {
                     <div className="text-2xl font-bold">
                       {gameState.score} pts
                     </div>
-                    <div className="text-sm opacity-75">
-                      {gameState.score / 100}/{gameState.totalQuestions} correct
-                    </div>
                   </div>
 
                   {/* Performance Message */}

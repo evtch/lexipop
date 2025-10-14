@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { useFarcasterUser } from '@/lib/hooks/useFarcasterUser';
 import Link from 'next/link';
 import MiniAppButton from '../components/MiniAppButton';
+import { getVersionString } from '@/lib/version';
 
 interface LeaderboardEntry {
   rank: number;
@@ -218,6 +219,13 @@ export default function LeaderboardPage() {
             Play Again
           </MiniAppButton>
         )}
+      </div>
+
+      {/* Version Display */}
+      <div className="mt-4 text-center">
+        <div className="text-xs text-gray-400">
+          {getVersionString()}
+        </div>
       </div>
     </div>
   );

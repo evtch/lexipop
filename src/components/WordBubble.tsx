@@ -55,7 +55,7 @@ export default function WordBubble({ word, isVisible, isCorrect, showResult }: W
 
         {/* Word text */}
         <h2 className="text-white font-bold text-4xl text-center px-8 drop-shadow-lg">
-          {word}
+          {word.toUpperCase()}
         </h2>
       </motion.div>
     </motion.div>
