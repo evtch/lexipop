@@ -12,6 +12,7 @@ interface LeaderboardEntry {
   claimedFormatted: number;
   claimedDisplay?: string;
   claimCount: number;
+  rank?: number;
   username?: string;
   fid?: number;
 }
