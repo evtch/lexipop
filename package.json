@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "prisma generate && next build",
+    "build": "export NEXT_PUBLIC_GIT_HASH=$(git rev-parse --short HEAD 2>/dev/null || echo 'dev') && prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
     "postinstall": "prisma generate",

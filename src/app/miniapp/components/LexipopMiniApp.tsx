@@ -11,6 +11,7 @@ import { generateCommitment } from '@/lib/pyth-entropy';
 import { useSound } from '@/hooks/useSound';
 import { useAccount, useConnect, useDisconnect, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { useFarcasterAccount } from '@/lib/web3/hooks/useFarcasterAccount';
+import { getVersionString } from '@/lib/version';
 
 // Frame-optimized components
 import FrameWordBubble from './FrameWordBubble';
@@ -922,7 +923,7 @@ export default function LexipopMiniApp() {
                       ease: "easeInOut"
                     }}
                     className="text-4xl md:text-5xl font-bold text-gray-800 leading-tight"
-                    style={{ letterSpacing: '-3px' }}
+                    style={{ letterSpacing: '-2px' }}
                   >
                     Learn vocabulary<br />
                     the fun way!
@@ -1113,6 +1114,13 @@ export default function LexipopMiniApp() {
           autoShow={true}
         />
       )} */}
+
+      {/* Version Display */}
+      <div className="mt-4 text-center">
+        <div className="text-xs text-gray-400">
+          {getVersionString()}
+        </div>
+      </div>
 
     </div>
   );

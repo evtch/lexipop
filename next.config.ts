@@ -53,6 +53,7 @@ const nextConfig: NextConfig = {
   // Environment variables to expose to the client
   env: {
     DATABASE_URL: process.env.DATABASE_URL,
+    NEXT_PUBLIC_GIT_HASH: process.env.NEXT_PUBLIC_GIT_HASH || process.env.VERCEL_GIT_COMMIT_SHA || 'dev',
   },
 
   // Output configuration for better compatibility
