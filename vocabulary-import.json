@@ -1,0 +1,102 @@
+[
+  {
+    "word": "esoteric",
+    "correctDefinition": "Intended for or understood by a small group with specialized knowledge",
+    "incorrectDefinition1": "Easily understood by everyone",
+    "incorrectDefinition2": "Having a pleasant sound",
+    "incorrectDefinition3": "Showing exaggerated emotion",
+    "difficulty": 4,
+    "category": "academic",
+    "partOfSpeech": "adjective"
+  },
+  {
+    "word": "copacetic",
+    "correctDefinition": "In excellent order; satisfactory",
+    "incorrectDefinition1": "Lacking in energy or enthusiasm",
+    "incorrectDefinition2": "Showing aggressive or warlike behavior",
+    "incorrectDefinition3": "Full of contradictions",
+    "difficulty": 3,
+    "category": "general",
+    "partOfSpeech": "adjective"
+  },
+  {
+    "word": "pernicious",
+    "correctDefinition": "Highly destructive or harmful",
+    "incorrectDefinition1": "Helpful and kind",
+    "incorrectDefinition2": "Temporary or fleeting",
+    "incorrectDefinition3": "Excessively talkative",
+    "difficulty": 4,
+    "category": "academic",
+    "partOfSpeech": "adjective"
+  },
+  {
+    "word": "obfuscate",
+    "correctDefinition": "To deliberately make something obscure or confusing",
+    "incorrectDefinition1": "To make something clear",
+    "incorrectDefinition2": "To simplify drastically",
+    "incorrectDefinition3": "To criticize harshly",
+    "difficulty": 4,
+    "category": "academic",
+    "partOfSpeech": "verb"
+  },
+  {
+    "word": "ubiquitous",
+    "correctDefinition": "Existing everywhere at the same time",
+    "incorrectDefinition1": "Extremely rare",
+    "incorrectDefinition2": "Limited to one location",
+    "incorrectDefinition3": "Obsolete or outdated",
+    "difficulty": 3,
+    "category": "academic",
+    "partOfSpeech": "adjective"
+  },
+  {
+    "word": "ephemeral",
+    "correctDefinition": "Short-lived or transitory",
+    "incorrectDefinition1": "Long-lasting and enduring",
+    "incorrectDefinition2": "Intensely meaningful",
+    "incorrectDefinition3": "Highly controversial",
+    "difficulty": 4,
+    "category": "academic",
+    "partOfSpeech": "adjective"
+  },
+  {
+    "word": "quixotic",
+    "correctDefinition": "Overly idealistic or impractical",
+    "incorrectDefinition1": "Practical and realistic",
+    "incorrectDefinition2": "Dangerous or reckless",
+    "incorrectDefinition3": "Methodical and precise",
+    "difficulty": 4,
+    "category": "academic",
+    "partOfSpeech": "adjective"
+  },
+  {
+    "word": "sycophant",
+    "correctDefinition": "A flattering and servile follower",
+    "incorrectDefinition1": "A bold and fearless leader",
+    "incorrectDefinition2": "An experienced teacher",
+    "incorrectDefinition3": "A stubborn opponent",
+    "difficulty": 4,
+    "category": "academic",
+    "partOfSpeech": "noun"
+  },
+  {
+    "word": "obsequious",
+    "correctDefinition": "Submissively attentive",
+    "incorrectDefinition1": "Wildly independent",
+    "incorrectDefinition2": "Full of humor",
+    "incorrectDefinition3": "Critically analytical",
+    "difficulty": 4,
+    "category": "academic",
+    "partOfSpeech": "adjective"
+  },
+  {
+    "word": "lugubrious",
+    "correctDefinition": "Excessively mournful or gloomy",
+    "incorrectDefinition1": "Joyful and lighthearted",
+    "incorrectDefinition2": "Quick-witted and clever",
+    "incorrectDefinition3": "Calm and indifferent",
+    "difficulty": 4,
+    "category": "academic",
+    "partOfSpeech": "adjective"
+  }
+]
