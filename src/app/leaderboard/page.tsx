@@ -15,6 +15,12 @@ interface LeaderboardEntry {
   rank?: number;
   username?: string;
   fid?: number;
+  verified?: boolean;
+}
+
+interface LeaderboardStats {
+  totalPlayers: number;
+  totalTokensClaimed: number;
 }
 
 interface UserStats {
@@ -42,19 +48,29 @@ function LeaderboardPageContent() {
 
   const fetchLeaderboard = async () => {
     try {
-      // Try Alchemy API for real blockchain data
-      const response = await fetch('/api/leaderboard/alchemy');
+      // Try onchain API for verified blockchain data
+      const response = await fetch('/api/leaderboard/onchain');
       const data = await response.json();
 
       if (data.success) {
-        setLeaderboard(data.leaderboard);
+        setLeaderboard(data.leaderboard.map((entry: any) => ({
+          address: entry.address,
+          totalClaimed: entry.totalClaimed.toString(),
+          claimedFormatted: entry.totalClaimed,
+          claimedDisplay: entry.totalClaimed.toLocaleString('en-US', { maximumFractionDigits: 0 }),
+          claimCount: entry.claimCount,
+          rank: entry.rank,
+          username: entry.username,
+          fid: entry.fid,
+          verified: entry.verified
+        })));
       } else {
-        // Fallback to mock data if Alchemy fails
-        console.warn('Alchemy failed, using mock data:', data.error);
-        const mockResponse = await fetch('/api/leaderboard/mock');
-        const mockData = await mockResponse.json();
-        if (mockData.success) {
-          setLeaderboard(mockData.leaderboard);
+        // Fallback to Alchemy API if onchain fails
+        console.warn('Onchain API failed, trying Alchemy:', data.error);
+        const alchemyResponse = await fetch('/api/leaderboard/alchemy');
+        const alchemyData = await alchemyResponse.json();
+        if (alchemyData.success) {
+          setLeaderboard(alchemyData.leaderboard);
         } else {
           setError('Failed to load leaderboard');
         }
@@ -202,8 +218,13 @@ function LeaderboardPageContent() {
                         {getRankIcon(rank)}
                       </div>
                       <div>
-                        <div className="font-bold text-lg">
-                          {`${entry.address.slice(0, 6)}...${entry.address.slice(-4)}`}
+                        <div className="font-bold text-lg flex items-center gap-2">
+                          {entry.username || `${entry.address.slice(0, 6)}...${entry.address.slice(-4)}`}
+                          {entry.verified && (
+                            <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                              ✓ Onchain
+                            </span>
+                          )}
                         </div>
                         <div className="text-gray-600">
                           {entry.claimCount} game reward{entry.claimCount !== 1 ? 's' : ''} claimed

@@ -10,6 +10,7 @@ import { headers } from 'next/headers';
 import { createPublicClient, http, encodePacked, keccak256, hashMessage, type Hex } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { base, baseSepolia } from 'viem/chains';
+import { prisma } from '@/lib/prisma';
 // Server-side token contract addresses (configurable via environment variables)
 const getContractAddresses = () => {
   const lexipopToken = (process.env.LEXIPOP_TOKEN_ADDRESS || '0xf732f31f73e7DC21299f3ab42BD22E8a7C6b4B07') as `0x${string}`;
@@ -58,6 +59,7 @@ interface ClaimRequest {
   userAddress: string;
   tokensToClaimgame: number;
   signature?: string; // For claim validation
+  fid?: number; // Farcaster ID if authenticated
 }
 
 interface ClaimResponse {
@@ -76,7 +78,7 @@ const CLAIM_COOLDOWN = 5 * 60 * 1000; // 5 minutes
 export async function POST(request: NextRequest) {
   try {
     const body: ClaimRequest = await request.json();
-    const { gameId, userAddress, tokensToClaimgame, signature } = body;
+    const { gameId, userAddress, tokensToClaimgame, signature, fid } = body;
 
     // Validate required fields
     if (!gameId || !userAddress || !tokensToClaimgame) {
@@ -274,6 +276,48 @@ export async function POST(request: NextRequest) {
 
       // Update rate limiting
       recentClaims.set(rateLimitKey, Date.now());
+
+      // Record the claim in database
+      try {
+        // Create token claim record
+        const tokenClaim = await prisma.tokenClaim.create({
+          data: {
+            gameSessionId: gameId,
+            nonce: nonce.toString(),
+            userFid: fid || null,
+            walletAddress: userAddress.toLowerCase(),
+            tokenAmount: tokenAmountWei,
+            tokenAmountFormatted: tokensToClaimgame,
+            status: 'signature_generated',
+            signatureGenerated: new Date()
+          }
+        });
+
+        // Update user stats if FID provided
+        if (fid) {
+          // Update or create user stats with wallet address
+          await prisma.userStats.upsert({
+            where: { userFid: fid },
+            update: {
+              walletAddress: userAddress.toLowerCase(),
+              totalTokensEarned: {
+                increment: tokensToClaimgame
+              },
+              updatedAt: new Date()
+            },
+            create: {
+              userFid: fid,
+              walletAddress: userAddress.toLowerCase(),
+              totalTokensEarned: tokensToClaimgame
+            }
+          });
+        }
+
+        console.log(`📝 Claim recorded in database - ID: ${tokenClaim.id}`);
+      } catch (dbError) {
+        console.error('⚠️ Database recording failed (non-critical):', dbError);
+        // Don't fail the claim if database recording fails
+      }
 
       const response: ClaimResponse = {
         success: true,

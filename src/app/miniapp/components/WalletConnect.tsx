@@ -10,6 +10,7 @@ import React, { useState } from 'react';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useWallet, useChainValidation } from '@/lib/web3/hooks/useWallet';
 import { Wallet, AlertCircle, CheckCircle2, Coins } from '@/components/icons';
+import { useNeynar } from './NeynarProvider';
 import Confetti from './Confetti';
 
 interface WalletConnectProps {
@@ -27,6 +28,7 @@ export default function WalletConnect({
 }: WalletConnectProps) {
   const { isConnected, address, formattedBalance, isLoadingBalance, error } = useWallet();
   const { isSupported } = useChainValidation();
+  const { user } = useNeynar(); // Get Neynar user for FID
   const [isClaimingTokens, setIsClaimingTokens] = useState(false);
   const [claimError, setClaimError] = useState<string | null>(null);
   const [claimSuccess, setClaimSuccess] = useState<string | null>(null);
@@ -50,7 +52,8 @@ export default function WalletConnect({
         body: JSON.stringify({
           gameId: gameId || `claim_${Date.now()}`,
           userAddress: address,
-          tokensToClaimgame: tokensToClaimgame
+          tokensToClaimgame: tokensToClaimgame,
+          fid: user?.fid || undefined // Include FID if user is authenticated with Neynar
         }),
       });
 

@@ -117,6 +117,9 @@ model UserStats {
   totalTokensEarned Int @default(0)
   totalSpins        Int @default(0)
 
+  // Wallet connection
+  walletAddress String? @unique // Primary wallet address for this user
+
   // Streaks and achievements
   currentDailyStreak Int @default(0)
   longestDailyStreak Int @default(0)
@@ -137,6 +140,7 @@ model UserStats {
 
   // Relations
   gameSessions GameSession[]
+  tokenClaims  TokenClaim[]
 
   @@map("user_stats")
 }
@@ -153,6 +157,49 @@ model Category {
   createdAt DateTime @default(now())
 
   @@map("categories")
+}
+
+// Token claims tracking for onchain data
+model TokenClaim {
+  id              Int      @id @default(autoincrement())
+
+  // Claim identifiers
+  transactionHash String?  @unique // Onchain transaction hash
+  gameSessionId   String?  // Link to game that earned these tokens
+  nonce          String?   // Unique nonce used for claim
+
+  // User & wallet info
+  userFid        Int?
+  walletAddress  String   // Recipient wallet address
+
+  // Token details
+  tokenAmount    BigInt   // Amount in wei (18 decimals)
+  tokenAmountFormatted Float // Human readable amount
+
+  // Claim status
+  status         String   @default("pending") // pending, signature_generated, claimed, failed
+  signatureGenerated DateTime? // When signature was created
+  claimedAt      DateTime?     // When actually claimed onchain
+
+  // Onchain data (populated after sync)
+  blockNumber    Int?
+  gasUsed        BigInt?
+
+  // Error tracking
+  errorMessage   String?
+
+  // Timestamps
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  userStats      UserStats? @relation(fields: [userFid], references: [userFid])
+
+  @@index([walletAddress])
+  @@index([transactionHash])
+  @@index([status])
+  @@index([claimedAt])
+  @@map("token_claims")
 }
 
 // Import batches for tracking bulk vocabulary uploads
