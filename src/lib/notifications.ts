@@ -15,7 +15,7 @@ interface NotificationPayload {
     body: string;              // Max 128 characters
     target_url: string;        // Valid URL where users will be directed
   };
-  targetFids?: number[];       // Specific users (optional for broadcast, max 100)
+  target_fids?: number[];      // Specific users (optional for broadcast, max 100)
   filters?: {
     exclude_fids?: number[];
     following_fid?: number;
@@ -214,7 +214,7 @@ export async function notifyUser(
   }
 
   return sendNeynarNotification({
-    targetFids: [userFid],
+    target_fids: [userFid],
     notification: {
       title: template.title,
       body: template.body,
@@ -242,7 +242,7 @@ export async function notifyUserCustom(
   }
 
   return sendNeynarNotification({
-    targetFids: [userFid],
+    target_fids: [userFid],
     notification: {
       title,
       body,
@@ -277,7 +277,7 @@ export async function broadcastNotification(
     console.log(`📢 Broadcasting to ${userFids.length} users with notifications enabled`);
 
     return sendNeynarNotification({
-      targetFids: userFids,
+      target_fids: userFids,
       notification: {
         title: template.title,
         body: template.body,
@@ -315,7 +315,7 @@ export async function broadcastCustomNotification(
     console.log(`📢 Broadcasting custom notification to ${userFids.length} users with notifications enabled`);
 
     return sendNeynarNotification({
-      targetFids: userFids,
+      target_fids: userFids,
       notification: {
         title,
         body,
@@ -352,7 +352,7 @@ export async function notifyMultipleUsers(
 
   for (const batch of batches) {
     const result = await sendNeynarNotification({
-      targetFids: batch,
+      target_fids: batch,
       notification: {
         title: template.title,
         body: template.body,
