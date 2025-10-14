@@ -280,40 +280,33 @@ export async function POST(request: NextRequest) {
       // Record the claim in database
       try {
         // Create token claim record
-        const tokenClaim = await prisma.tokenClaim.create({
-          data: {
-            gameSessionId: gameId,
-            nonce: nonce.toString(),
-            userFid: fid || null,
-            walletAddress: userAddress.toLowerCase(),
-            tokenAmount: tokenAmountWei,
-            tokenAmountFormatted: tokensToClaimgame,
-            status: 'signature_generated',
-            signatureGenerated: new Date()
-          }
-        });
+        await prisma.$executeRaw`
+          INSERT INTO token_claims (
+            "gameSessionId", nonce, "userFid", "walletAddress",
+            "tokenAmount", "tokenAmountFormatted", status,
+            "signatureGenerated", "createdAt", "updatedAt"
+          ) VALUES (
+            ${gameId}, ${nonce.toString()}, ${fid || null}, ${userAddress.toLowerCase()},
+            ${tokenAmountWei.toString()}, ${tokensToClaimgame}, 'signature_generated',
+            NOW(), NOW(), NOW()
+          )
+        `;
 
         // Update user stats if FID provided
         if (fid) {
           // Update or create user stats with wallet address
-          await prisma.userStats.upsert({
-            where: { userFid: fid },
-            update: {
-              walletAddress: userAddress.toLowerCase(),
-              totalTokensEarned: {
-                increment: tokensToClaimgame
-              },
-              updatedAt: new Date()
-            },
-            create: {
-              userFid: fid,
-              walletAddress: userAddress.toLowerCase(),
-              totalTokensEarned: tokensToClaimgame
-            }
-          });
+          await prisma.$executeRaw`
+            INSERT INTO user_stats ("userFid", "walletAddress", "totalTokensEarned", "createdAt", "updatedAt")
+            VALUES (${fid}, ${userAddress.toLowerCase()}, ${tokensToClaimgame}, NOW(), NOW())
+            ON CONFLICT ("userFid")
+            DO UPDATE SET
+              "walletAddress" = ${userAddress.toLowerCase()},
+              "totalTokensEarned" = user_stats."totalTokensEarned" + ${tokensToClaimgame},
+              "updatedAt" = NOW()
+          `;
         }
 
-        console.log(`📝 Claim recorded in database - ID: ${tokenClaim.id}`);
+        console.log(`📝 Claim recorded in database`);
       } catch (dbError) {
         console.error('⚠️ Database recording failed (non-critical):', dbError);
         // Don't fail the claim if database recording fails

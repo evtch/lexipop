@@ -16,29 +16,25 @@ export async function GET(request: NextRequest) {
 
     // Get specific user stats if address provided
     if (address) {
-      const userClaims = await prisma.tokenClaim.aggregate({
-        where: {
-          walletAddress: address.toLowerCase(),
-          status: 'claimed'
-        },
-        _sum: {
-          tokenAmountFormatted: true
-        },
-        _count: true
-      });
+      const userClaims = await prisma.$queryRaw<Array<{total: number, count: number}>>`
+        SELECT
+          SUM("tokenAmountFormatted")::float as total,
+          COUNT(*)::int as count
+        FROM token_claims
+        WHERE "walletAddress" = ${address.toLowerCase()}
+          AND status = 'claimed'
+      `;
 
-      const userStats = await prisma.userStats.findFirst({
-        where: {
-          walletAddress: address.toLowerCase()
-        }
-      });
+      const userStats = await prisma.$queryRaw<Array<{userFid: number}>>`
+        SELECT "userFid" FROM user_stats WHERE "walletAddress" = ${address.toLowerCase()}
+      `;
 
       return NextResponse.json({
         success: true,
         address: address.toLowerCase(),
-        totalClaimed: userClaims._sum.tokenAmountFormatted || 0,
-        claimCount: userClaims._count,
-        fid: userStats?.userFid || null,
+        totalClaimed: userClaims[0]?.total || 0,
+        claimCount: userClaims[0]?.count || 0,
+        fid: userStats[0]?.userFid || null,
         message: 'User stats from onchain data'
       });
     }
@@ -100,33 +96,33 @@ export async function GET(request: NextRequest) {
     );
 
     // Get sync status
-    const lastSync = await prisma.tokenClaim.findFirst({
-      where: {
-        blockNumber: { not: null },
-        status: 'claimed'
-      },
-      orderBy: {
-        blockNumber: 'desc'
-      }
-    });
+    const lastSync = await prisma.$queryRaw<Array<{blockNumber: number}>>`
+      SELECT "blockNumber"
+      FROM token_claims
+      WHERE "blockNumber" IS NOT NULL AND status = 'claimed'
+      ORDER BY "blockNumber" DESC
+      LIMIT 1
+    `;
 
-    const totalClaimedAmount = await prisma.tokenClaim.aggregate({
-      where: { status: 'claimed' },
-      _sum: { tokenAmountFormatted: true }
-    });
+    const totalClaimedAmount = await prisma.$queryRaw<Array<{total: number}>>`
+      SELECT SUM("tokenAmountFormatted")::float as total
+      FROM token_claims
+      WHERE status = 'claimed'
+    `;
 
-    const uniquePlayers = await prisma.tokenClaim.groupBy({
-      by: ['walletAddress'],
-      where: { status: 'claimed' }
-    });
+    const uniquePlayers = await prisma.$queryRaw<Array<{count: number}>>`
+      SELECT COUNT(DISTINCT "walletAddress")::int as count
+      FROM token_claims
+      WHERE status = 'claimed'
+    `;
 
     return NextResponse.json({
       success: true,
       leaderboard,
       stats: {
-        totalPlayers: uniquePlayers.length,
-        totalTokensClaimed: totalClaimedAmount._sum.tokenAmountFormatted || 0,
-        lastSyncBlock: lastSync?.blockNumber || 0,
+        totalPlayers: uniquePlayers[0]?.count || 0,
+        totalTokensClaimed: totalClaimedAmount[0]?.total || 0,
+        lastSyncBlock: lastSync[0]?.blockNumber || 0,
         dataSource: 'onchain',
         contractAddress: '0xe636baaf2c390a591edbffaf748898eb3f6ff9a1'
       },
