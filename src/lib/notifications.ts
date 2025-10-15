@@ -392,7 +392,12 @@ export async function testNeynarEndpoints(
     return { success: false, error: 'Missing Neynar API credentials' };
   }
 
-  const endpoints = [
+  const endpoints: Array<{
+    name: string;
+    url: string;
+    headers: Record<string, string>;
+    payload: any;
+  }> = [
     {
       name: 'correct-2025-format',
       url: 'https://api.neynar.com/v2/farcaster/frame/notifications',
