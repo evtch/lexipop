@@ -76,18 +76,29 @@ export default function LexipopMiniApp() {
     hash,
   });
 
-  // Helper function to add miniapp to Farcaster using Farcaster SDK
-  const addMiniAppToFarcaster = async (): Promise<void> => {
-    console.log('🎯 Adding miniapp to Farcaster...');
 
-    try {
-      await sdk.actions.addMiniApp();
-      console.log('✅ Miniapp added to Farcaster successfully');
-    } catch (error) {
-      console.error('❌ Error adding miniapp:', error);
+
+  // Trigger native Farcaster "Add to Farcaster" popup on app load
+  useEffect(() => {
+    const showNativeFarcasterPopup = async () => {
+      try {
+        // Wait for SDK to be ready (should already be ready from useFarcasterUser)
+        await sdk.actions.ready();
+
+        // Trigger native Farcaster popup with app info and notification consent
+        await sdk.actions.addMiniApp();
+        console.log('✅ Native Farcaster popup shown successfully');
+      } catch (error) {
+        console.log('ℹ️ Native popup dismissed or already added:', error);
+        // This is expected behavior - user might dismiss or already have it added
+      }
+    };
+
+    // Only show popup if user is authenticated
+    if (currentUser?.fid && !currentUser.error) {
+      showNativeFarcasterPopup();
     }
-  };
-
+  }, [currentUser?.fid, currentUser?.error]);
 
   // Check if user has seen notification prompt and claimed tokens before
   useEffect(() => {
@@ -614,38 +625,6 @@ export default function LexipopMiniApp() {
                       {isGeneratingTokens ? 'Generating...' : 'Generate my reward'}
                     </MiniAppButton>
 
-                    {/* Enable Notifications Button (only for first-time claim) */}
-                    {isFirstTimeClaim && (
-                      <div className="mb-3">
-                        <MiniAppButton
-                          onClick={async () => {
-                            try {
-                              await addMiniAppToFarcaster();
-                              console.log('✅ Notifications enabled successfully');
-                            } catch (error) {
-                              console.error('❌ Failed to enable notifications:', error);
-                              // Show user-friendly error message for failed attempts
-                              alert('Unable to enable notifications. This may require using the app within Farcaster for full functionality.');
-                            }
-
-                            // Mark as attempted regardless of success
-                            setIsFirstTimeClaim(false);
-                            if (currentUser?.fid) {
-                              localStorage.setItem(`lexipop_add_prompted_${currentUser.fid}`, 'true');
-                            }
-                          }}
-                          variant="primary"
-                          size="md"
-                          icon="🔔"
-                          className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
-                        >
-                          Enable Notifications
-                        </MiniAppButton>
-                        <div className="text-xs text-gray-500 text-center mt-1">
-                          Get notified about daily challenges and new features!
-                        </div>
-                      </div>
-                    )}
 
                     {/* Invite Friends Button */}
                     <div className="mb-3">

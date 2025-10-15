@@ -12,7 +12,7 @@ const prisma = new PrismaClient();
 
 // Farcaster miniapp webhook event types
 interface NotificationWebhookEvent {
-  event: 'miniapp_added' | 'notifications_enabled' | 'notifications_disabled';
+  event: 'miniapp_added' | 'miniapp_removed' | 'notifications_enabled' | 'notifications_disabled';
   notificationDetails?: {
     url: string;
     token: string;
@@ -22,7 +22,7 @@ interface NotificationWebhookEvent {
     notification_token?: string;
     notification_url?: string;
   };
-  userFid?: number; // For miniapp_added events
+  userFid?: number; // For miniapp_added and miniapp_removed events
 }
 
 /**
@@ -103,6 +103,42 @@ export async function POST(request: NextRequest) {
         success: true,
         message: `Processed miniapp_added for user ${userFid}`,
         notificationsEnabled: !!notificationDetails,
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Handle miniapp_removed event
+    if (event === 'miniapp_removed') {
+      if (!userFid) {
+        return NextResponse.json(
+          { success: false, error: 'userFid required for miniapp_removed event' },
+          { status: 400 }
+        );
+      }
+
+      console.log(`🗑️ User ${userFid} removed miniapp from Farcaster`);
+
+      // Disable notifications and clear tokens for this user
+      const userStats = await prisma.userStats.findUnique({
+        where: { userFid }
+      });
+
+      if (userStats) {
+        await prisma.userStats.update({
+          where: { userFid },
+          data: {
+            notificationsEnabled: false,
+            notificationToken: null,
+            notificationUrl: null,
+            updatedAt: new Date()
+          }
+        });
+        console.log(`🔕 Notifications disabled for removed miniapp - user ${userFid}`);
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: `Processed miniapp_removed for user ${userFid}`,
         timestamp: new Date().toISOString()
       });
     }
@@ -206,7 +242,7 @@ export async function GET() {
     success: true,
     message: 'Notification webhook endpoint is active',
     endpoint: '/api/webhooks/notifications',
-    supportedEvents: ['notifications_enabled', 'notifications_disabled'],
+    supportedEvents: ['miniapp_added', 'miniapp_removed', 'notifications_enabled', 'notifications_disabled'],
     timestamp: new Date().toISOString()
   });
 }
