@@ -31,7 +31,7 @@
     ],
     "ogImageUrl": "https://www.lexipop.xyz/og-image.png",
     "castShareUrl": "https://www.lexipop.xyz",
-    "webhookUrl": "https://www.lexipop.xyz/api/webhooks/notifications"
+    "webhookUrl": "https://api.neynar.com/f/app/257f73a8-be43-4d35-a4e3-c6ec9ff97672/event"
   },
   "other": {
     "fc:miniapp": "{\"version\":\"1\",\"name\":\"Lexipop\",\"imageUrl\":\"https://www.lexipop.xyz/farcaster-embed.png\",\"aspectRatio\":\"3:2\",\"button\":{\"title\":\"Play\",\"action\":{\"type\":\"launch_frame\",\"name\":\"Play\",\"url\":\"https://www.lexipop.xyz\",\"splashImageUrl\":\"https://www.lexipop.xyz/lexipop-splash.png\",\"splashBackgroundColor\":\"#2563eb\"}}}"
