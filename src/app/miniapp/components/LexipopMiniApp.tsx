@@ -46,6 +46,7 @@ export default function LexipopMiniApp() {
   });
 
   const [shuffledDefinitions, setShuffledDefinitions] = useState<string[]>([]);
+  const [hasSubmittedScore, setHasSubmittedScore] = useState(false);
 
   // Sound effects
   const { playCorrectSound, playWrongSound, playRewardGeneratingSound, playRewardClaimSound } = useSound();
@@ -121,13 +122,35 @@ export default function LexipopMiniApp() {
     }
   }, [currentUser?.fid]);
 
+  // Watch for game completion and submit score with correct state
+  useEffect(() => {
+    // Only submit when game becomes inactive (completed), we have a score, and haven't submitted yet
+    if (!gameState.isGameActive && gameState.score > 0 && isUserAuthenticated && currentUser && !hasSubmittedScore) {
+      console.log('🎮 Game completion detected! Submitting final score with updated state:', {
+        score: gameState.score,
+        streak: gameState.streak,
+        totalQuestions: gameState.totalQuestions,
+        user: currentUser.fid,
+        expectedScore: gameState.gameQuestions.length * 100,
+        gameQuestions: gameState.gameQuestions.length,
+        DEBUG_gameState: gameState
+      });
+      setHasSubmittedScore(true); // Mark as submitted to prevent duplicates
+      submitScore(gameState.score, gameState.streak, gameState.totalQuestions);
+    }
+  }, [gameState.isGameActive, gameState.score, isUserAuthenticated, currentUser, hasSubmittedScore]);
+
   const submitScore = async (score: number, streak: number, totalQuestions: number) => {
     if (!currentUser) return;
 
     console.log('🎯 Submitting score to weekly leaderboard:', {
       fid: currentUser.fid,
       username: currentUser.username,
-      score
+      score,
+      streak,
+      totalQuestions,
+      expectedMaxScore: totalQuestions * 100,
+      DEBUG_currentGameState: gameState
     });
 
     try {
@@ -184,6 +207,7 @@ export default function LexipopMiniApp() {
         showResult: false,
         isCorrect: null
       });
+      setHasSubmittedScore(false); // Reset submission flag for new game
 
       console.log(`🎯 Game started with words: ${gameQuestions.map(w => w.word).join(', ')}`);
     } catch (error) {
@@ -440,24 +464,8 @@ export default function LexipopMiniApp() {
         currentWord: null
       }));
 
-      // Submit final score when game is complete
-      if (isUserAuthenticated && currentUser) {
-        console.log('🎮 Game complete! Submitting final score:', {
-          score: gameState.score,
-          streak: gameState.streak,
-          totalQuestions: gameState.totalQuestions,
-          user: currentUser.fid,
-          expectedScore: gameState.gameQuestions.length * 100,
-          gameQuestions: gameState.gameQuestions.length,
-          DEBUG_gameState: gameState
-        });
-        submitScore(gameState.score, gameState.streak, gameState.totalQuestions);
-      } else {
-        console.log('⚠️ Not submitting score - user not authenticated or missing:', {
-          isUserAuthenticated,
-          currentUser: currentUser?.fid
-        });
-      }
+      // Score submission will be handled by useEffect watching for game completion
+      console.log('🎮 Game complete! Setting game as inactive, score submission will follow...');
 
       // Show notification prompt after first game completion (if not seen before) - Disabled for miniapp
       // if (currentUser?.fid && !hasSeenNotificationPrompt) {

@@ -43,7 +43,15 @@ export async function POST(request: NextRequest) {
     weekStarting.setDate(now.getDate() - daysToMonday);
     weekStarting.setHours(0, 0, 0, 0);
 
-    console.log(`📊 Submitting score: FID ${userFid} (${username}) - ${score} pts for week ${weekStarting.toISOString()}`);
+    console.log(`📊 Submitting score: FID ${userFid} (${username}) - ${score} pts for week ${weekStarting.toISOString()}`, {
+      userFid,
+      username,
+      displayName,
+      pfpUrl: pfpUrl ? 'present' : 'missing',
+      score,
+      weekStarting: weekStarting.toISOString(),
+      DEBUG_fullBody: body
+    });
 
     // Check if user already has a score for this week
     const existingScore = await prisma.leaderboardScore.findUnique({
@@ -76,6 +84,7 @@ export async function POST(request: NextRequest) {
             updatedAt: new Date()
           }
         });
+        console.log(`💾 STORED NEW BEST SCORE: ${score} (was ${existingScore.score})`);
         isNewBest = true;
       } else {
         // Keep existing score, just update username
@@ -93,6 +102,7 @@ export async function POST(request: NextRequest) {
             updatedAt: new Date()
           }
         });
+        console.log(`💾 KEPT EXISTING SCORE: ${existingScore.score} (new was ${score})`);
         isNewBest = false;
       }
     } else {
@@ -107,6 +117,7 @@ export async function POST(request: NextRequest) {
           weekStarting
         }
       });
+      console.log(`💾 CREATED NEW SCORE RECORD: ${score}`);
       isNewBest = true;
     }
 
