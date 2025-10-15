@@ -444,7 +444,10 @@ export default function LexipopMiniApp() {
           score: gameState.score,
           streak: gameState.streak,
           totalQuestions: gameState.totalQuestions,
-          user: currentUser.fid
+          user: currentUser.fid,
+          expectedScore: gameState.gameQuestions.length * 100,
+          gameQuestions: gameState.gameQuestions.length,
+          DEBUG_gameState: gameState
         });
         submitScore(gameState.score, gameState.streak, gameState.totalQuestions);
       } else {
@@ -491,15 +494,20 @@ export default function LexipopMiniApp() {
       playWrongSound();
     }
 
-    setGameState(prev => ({
-      ...prev,
-      selectedAnswer: selectedDefinition,
-      showResult: true,
-      isCorrect,
-      score: isCorrect ? prev.score + 100 : prev.score,
-      streak: isCorrect ? prev.streak + 1 : 0
-      // totalQuestions should stay constant at 5, not increment
-    }));
+    setGameState(prev => {
+      const newScore = isCorrect ? prev.score + 100 : prev.score;
+      console.log(`🎯 Answer ${prev.currentQuestionIndex + 1}/5: ${isCorrect ? 'CORRECT' : 'WRONG'} - Score: ${prev.score} → ${newScore}`);
+
+      return {
+        ...prev,
+        selectedAnswer: selectedDefinition,
+        showResult: true,
+        isCorrect,
+        score: newScore,
+        streak: isCorrect ? prev.streak + 1 : 0
+        // totalQuestions should stay constant at 5, not increment
+      };
+    });
 
     // Don't submit score here - wait until game is complete
 
