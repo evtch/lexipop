@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getUserByFid } from '@/lib/neynar';
 
 /**
  * SIMPLE WEEKLY LEADERBOARD
@@ -41,26 +42,14 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    // Fetch Farcaster user data for all users in parallel
+    // Fetch Farcaster user data for all users in parallel using existing function
     const leaderboardWithUserData = await Promise.all(
       leaderboardData.map(async (entry, index) => {
         let farcasterUser = null;
 
         try {
-          // Fetch user data from Neynar API
-          const response = await fetch(`https://api.neynar.com/v2/farcaster/user/bulk?fids=${entry.userFid}`, {
-            headers: {
-              'accept': 'application/json',
-              'api_key': process.env.NEYNAR_API_KEY || ''
-            }
-          });
-
-          if (response.ok) {
-            const userData = await response.json();
-            if (userData.users && userData.users.length > 0) {
-              farcasterUser = userData.users[0];
-            }
-          }
+          // Use existing working getUserByFid function
+          farcasterUser = await getUserByFid(entry.userFid);
         } catch (error) {
           console.warn(`Failed to fetch Farcaster data for FID ${entry.userFid}:`, error);
         }
@@ -69,8 +58,8 @@ export async function GET(request: NextRequest) {
           rank: index + 1,
           userFid: entry.userFid,
           username: farcasterUser?.username || entry.username,
-          displayName: farcasterUser?.display_name || entry.username,
-          pfpUrl: farcasterUser?.pfp_url || null,
+          displayName: farcasterUser?.displayName || entry.username,
+          pfpUrl: farcasterUser?.pfpUrl || null,
           score: entry.score,
           submittedAt: entry.createdAt
         };
