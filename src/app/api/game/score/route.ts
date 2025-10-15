@@ -22,23 +22,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (typeof score !== 'number' || score < 0 || score > 100) {
+    if (typeof score !== 'number' || score < 0 || score > 500) {
       return NextResponse.json(
-        { error: 'Invalid score range' },
+        { error: 'Invalid score range (must be 0-500)' },
         { status: 400 }
       );
     }
 
-    if (typeof streak !== 'number' || streak < 0 || streak > 100) {
+    if (typeof streak !== 'number' || streak < 0 || streak > 5) {
       return NextResponse.json(
-        { error: 'Invalid streak range' },
+        { error: 'Invalid streak range (must be 0-5)' },
         { status: 400 }
       );
     }
 
-    if (typeof totalQuestions !== 'number' || totalQuestions <= 0 || totalQuestions > 100) {
+    if (typeof totalQuestions !== 'number' || totalQuestions <= 0 || totalQuestions > 5) {
       return NextResponse.json(
-        { error: 'Invalid total questions' },
+        { error: 'Invalid total questions (must be 1-5)' },
         { status: 400 }
       );
     }
