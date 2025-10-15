@@ -139,6 +139,8 @@ export default function LexipopMiniApp() {
         body: JSON.stringify({
           userFid: currentUser.fid,
           username: currentUser.username,
+          displayName: currentUser.displayName,
+          pfpUrl: currentUser.pfpUrl,
           score
         }),
       });

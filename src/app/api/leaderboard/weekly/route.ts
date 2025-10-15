@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getUserByFid } from '@/lib/neynar';
 
 /**
  * SIMPLE WEEKLY LEADERBOARD
@@ -37,45 +36,34 @@ export async function GET(request: NextRequest) {
       select: {
         userFid: true,
         username: true,
+        displayName: true,
+        pfpUrl: true,
         score: true,
         createdAt: true
       }
     });
 
-    // Fetch Farcaster user data for all users in parallel using existing function
-    const leaderboardWithUserData = await Promise.all(
-      leaderboardData.map(async (entry, index) => {
-        let farcasterUser = null;
-
-        try {
-          // Use existing working getUserByFid function
-          farcasterUser = await getUserByFid(entry.userFid);
-        } catch (error) {
-          console.warn(`Failed to fetch Farcaster data for FID ${entry.userFid}:`, error);
-        }
-
-        return {
-          rank: index + 1,
-          userFid: entry.userFid,
-          username: farcasterUser?.username || entry.username,
-          displayName: farcasterUser?.displayName || entry.username,
-          pfpUrl: farcasterUser?.pfpUrl || null,
-          score: entry.score,
-          submittedAt: entry.createdAt
-        };
-      })
-    );
+    // Simple mapping of stored data (no external API calls needed!)
+    const leaderboard = leaderboardData.map((entry, index) => ({
+      rank: index + 1,
+      userFid: entry.userFid,
+      username: entry.username,
+      displayName: entry.displayName,
+      pfpUrl: entry.pfpUrl,
+      score: entry.score,
+      submittedAt: entry.createdAt
+    }));
 
     // Get total stats
     const totalPlayers = await prisma.leaderboardScore.count({
       where: { weekStarting }
     });
 
-    console.log(`✅ Fetched ${leaderboardWithUserData.length} leaderboard entries (${totalPlayers} total players)`);
+    console.log(`✅ Fetched ${leaderboard.length} leaderboard entries (${totalPlayers} total players) - Using stored avatar data`);
 
     return NextResponse.json({
       success: true,
-      leaderboard: leaderboardWithUserData,
+      leaderboard,
       weekStarting: weekStarting.toISOString(),
       totalPlayers,
       maxScore: 500,

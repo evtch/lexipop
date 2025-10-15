@@ -11,7 +11,7 @@ import { prisma } from '@/lib/prisma';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { userFid, username, score } = body;
+    const { userFid, username, displayName, pfpUrl, score } = body;
 
     // Validate input
     if (!userFid || typeof userFid !== 'number') {
@@ -71,6 +71,8 @@ export async function POST(request: NextRequest) {
           data: {
             score,
             username, // Update username in case it changed
+            displayName, // Update display name
+            pfpUrl, // Update avatar URL
             updatedAt: new Date()
           }
         });
@@ -86,6 +88,8 @@ export async function POST(request: NextRequest) {
           },
           data: {
             username, // Update username in case it changed
+            displayName, // Update display name
+            pfpUrl, // Update avatar URL
             updatedAt: new Date()
           }
         });
@@ -97,6 +101,8 @@ export async function POST(request: NextRequest) {
         data: {
           userFid,
           username,
+          displayName,
+          pfpUrl,
           score,
           weekStarting
         }
