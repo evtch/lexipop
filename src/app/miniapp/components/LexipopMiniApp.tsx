@@ -614,18 +614,18 @@ export default function LexipopMiniApp() {
                       {isGeneratingTokens ? 'Generating...' : 'Generate my reward'}
                     </MiniAppButton>
 
-                    {/* Add to Farcaster Button (only for first-time claim) */}
+                    {/* Enable Notifications Button (only for first-time claim) */}
                     {isFirstTimeClaim && (
                       <div className="mb-3">
                         <MiniAppButton
                           onClick={async () => {
                             try {
                               await addMiniAppToFarcaster();
-                              console.log('✅ Miniapp add successful');
+                              console.log('✅ Notifications enabled successfully');
                             } catch (error) {
-                              console.error('❌ Failed to add miniapp:', error);
+                              console.error('❌ Failed to enable notifications:', error);
                               // Show user-friendly error message for failed attempts
-                              alert('Unable to add to Farcaster. Please make sure you\'re using the app within Farcaster for full functionality.');
+                              alert('Unable to enable notifications. This may require using the app within Farcaster for full functionality.');
                             }
 
                             // Mark as attempted regardless of success
@@ -636,10 +636,10 @@ export default function LexipopMiniApp() {
                           }}
                           variant="primary"
                           size="md"
-                          icon="⭐"
+                          icon="🔔"
                           className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
                         >
-                          Add to Farcaster for Notifications
+                          Enable Notifications
                         </MiniAppButton>
                         <div className="text-xs text-gray-500 text-center mt-1">
                           Get notified about daily challenges and new features!

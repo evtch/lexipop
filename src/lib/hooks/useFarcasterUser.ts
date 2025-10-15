@@ -30,6 +30,15 @@ export function useFarcasterUser(): FarcasterUser {
         // Wait for SDK to be ready
         await sdk.actions.ready();
 
+        // Add mini app to Farcaster on every load (for basic registration)
+        try {
+          await sdk.actions.addMiniApp();
+          console.log('✅ Mini app registered with Farcaster automatically');
+        } catch (addError) {
+          console.warn('⚠️ Auto mini app registration failed (may already be added):', addError);
+          // Continue anyway - this is not critical for basic functionality
+        }
+
         // Get user context from Farcaster miniapp
         const context = await sdk.context;
 
