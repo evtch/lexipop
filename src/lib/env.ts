@@ -46,7 +46,7 @@ export const serverEnv = {
   NEYNAR_SIGNER_UUID: getEnvVar('NEYNAR_SIGNER_UUID', false),
 
   // Farcaster developer credentials (optional)
-  FARCASTER_DEVELOPER_FID: getEnvVar('FARCASTER_DEVELOPER_FID', true),
+  FARCASTER_DEVELOPER_FID: getEnvVar('FARCASTER_DEVELOPER_FID', false),
   FARCASTER_DEVELOPER_MNEMONIC: getEnvVar('FARCASTER_DEVELOPER_MNEMONIC', false),
 
   // Database

@@ -8,18 +8,18 @@
 import { serverEnv } from './env';
 import { prisma } from './prisma';
 
-// Notification API Types - Updated for correct Neynar format
+// Notification API Types - Using bitworld's proven format
 interface NotificationPayload {
+  client_id: string;
   notification: {
     title: string;             // Max 32 characters
     body: string;              // Max 128 characters
-    target_url: string;        // Valid URL where users will be directed
+    target_url?: string;       // Valid URL where users will be directed
   };
-  targetFids?: number[];       // Specific users (optional for broadcast, max 100)
+  target_fids?: number[];      // Specific users (optional for broadcast, max 100)
   filters?: {
-    exclude_fids?: number[];
-    following_fid?: number;
-    minimum_user_score?: number;
+    has_added_app?: boolean;
+    min_score?: number;
   };
 }
 
@@ -90,90 +90,64 @@ export const NOTIFICATION_TEMPLATES = {
 } as const;
 
 /**
- * Core function to send notifications via Neynar API
+ * Core function to send notifications via Neynar API - Using bitworld's proven implementation
  */
-async function sendNeynarNotification(payload: NotificationPayload): Promise<NotificationResponse> {
+async function sendNeynarNotification(
+  notification: { title: string; body: string; target_url?: string },
+  targetFids?: number[]
+): Promise<NotificationResponse> {
   const { NEYNAR_API_KEY, NEYNAR_CLIENT_ID } = serverEnv;
 
-  if (!NEYNAR_API_KEY) {
-    console.error('❌ NEYNAR_API_KEY not configured');
-    return { success: false, error: 'API key not configured' };
-  }
-
-  if (!NEYNAR_CLIENT_ID) {
-    console.error('❌ NEYNAR_CLIENT_ID not configured');
-    return { success: false, error: 'Client ID not configured' };
-  }
-
-  // Validate payload constraints
-  if (payload.notification.title.length > 32) {
-    console.warn('⚠️ Notification title truncated to 32 characters');
-    payload.notification.title = payload.notification.title.substring(0, 32);
-  }
-
-  if (payload.notification.body.length > 128) {
-    console.warn('⚠️ Notification body truncated to 128 characters');
-    payload.notification.body = payload.notification.body.substring(0, 128);
+  if (!NEYNAR_API_KEY || !NEYNAR_CLIENT_ID) {
+    console.error('❌ Missing Neynar API credentials');
+    return { success: false, error: 'Missing Neynar API credentials' };
   }
 
   try {
-    console.log('📤 Sending notification to Neynar API:');
-    console.log('🎯 Target:', payload.targetFids ? `${payload.targetFids.length} users` : 'broadcast');
-    console.log('📝 Title:', payload.notification.title);
-    console.log('📝 Body:', payload.notification.body);
-    console.log('🔑 API Key present:', !!NEYNAR_API_KEY);
-    console.log('🆔 Client ID present:', !!NEYNAR_CLIENT_ID);
-    console.log('📦 Full payload:', JSON.stringify(payload, null, 2));
+    console.log('📬 Sending notification via Neynar:', notification);
 
-    // Use the correct Neynar v2 frame notifications endpoint
-    const requestUrl = 'https://api.neynar.com/v2/farcaster/frame/notifications';
-    console.log('🌐 Request URL:', requestUrl);
-
-    const requestHeaders = {
-      'api_key': NEYNAR_API_KEY,
-      'Content-Type': 'application/json',
-      'client_id': NEYNAR_CLIENT_ID,
-    };
-    console.log('📋 Request headers:', {
-      ...requestHeaders,
-      'api_key': requestHeaders['api_key'] ? '[PRESENT]' : '[MISSING]',
-      'client_id': requestHeaders['client_id'] ? '[PRESENT]' : '[MISSING]'
-    });
-
-    const response = await fetch(requestUrl, {
-      method: 'POST',
-      headers: requestHeaders,
-      body: JSON.stringify(payload),
-    });
-
-    console.log('📡 Response status:', response.status, response.statusText);
-    console.log('📊 Response headers:', Object.fromEntries(response.headers.entries()));
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ Neynar API error details:');
-      console.error('   Status:', response.status, response.statusText);
-      console.error('   Response body:', errorText);
-      console.error('   Request payload was:', JSON.stringify(payload, null, 2));
-
-      return {
-        success: false,
-        error: `Neynar API error: ${response.status} ${response.statusText} - ${errorText}`
-      };
+    // Validate notification constraints
+    if (notification.title.length > 32) {
+      console.warn('⚠️ Title truncated to 32 characters');
+      notification.title = notification.title.substring(0, 32);
+    }
+    if (notification.body.length > 128) {
+      console.warn('⚠️ Body truncated to 128 characters');
+      notification.body = notification.body.substring(0, 128);
     }
 
-    const result = await response.json();
-    console.log('✅ Notification sent successfully!');
-    console.log('📊 Neynar response:', JSON.stringify(result, null, 2));
-
-    return { success: true, message: 'Notification sent successfully', neynarResponse: result };
-
-  } catch (error) {
-    console.error('❌ Network error sending notification:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown network error'
+    const payload = {
+      notification: {
+        title: notification.title,
+        body: notification.body,
+        target_url: notification.target_url || 'https://www.lexipop.xyz'
+      },
+      ...(targetFids && { target_fids: targetFids })
     };
+
+    console.log('📡 Neynar payload:', JSON.stringify(payload, null, 2));
+
+    const response = await fetch('https://api.neynar.com/v2/farcaster/frame/notifications', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': NEYNAR_API_KEY
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const responseData = await response.json();
+
+    if (!response.ok) {
+      console.error('❌ Neynar notification failed:', response.status, responseData);
+      return { success: false, error: responseData.message || 'Failed to send notification' };
+    }
+
+    console.log('✅ Notification sent successfully via Neynar:', responseData);
+    return { success: true, message: 'Notification sent successfully', neynarResponse: responseData };
+  } catch (error) {
+    console.error('❌ Error sending Neynar notification:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
 
@@ -214,13 +188,10 @@ export async function notifyUser(
   }
 
   return sendNeynarNotification({
-    targetFids: [userFid],
-    notification: {
-      title: template.title,
-      body: template.body,
-      target_url: 'https://www.lexipop.xyz',
-    },
-  });
+    title: template.title,
+    body: template.body,
+    target_url: 'https://www.lexipop.xyz'
+  }, [userFid]);
 }
 
 /**
@@ -242,13 +213,10 @@ export async function notifyUserCustom(
   }
 
   return sendNeynarNotification({
-    targetFids: [userFid],
-    notification: {
-      title,
-      body,
-      target_url: 'https://www.lexipop.xyz',
-    },
-  });
+    title,
+    body,
+    target_url: 'https://www.lexipop.xyz'
+  }, [userFid]);
 }
 
 /**
@@ -277,13 +245,10 @@ export async function broadcastNotification(
     console.log(`📢 Broadcasting to ${userFids.length} users with notifications enabled`);
 
     return sendNeynarNotification({
-      targetFids: userFids,
-      notification: {
-        title: template.title,
-        body: template.body,
-        target_url: 'https://www.lexipop.xyz',
-      },
-    });
+      title: template.title,
+      body: template.body,
+      target_url: 'https://www.lexipop.xyz'
+    }, userFids);
   } catch (error) {
     console.error('❌ Error fetching users for broadcast:', error);
     return { success: false, error: 'Failed to fetch users for broadcast' };
@@ -315,13 +280,10 @@ export async function broadcastCustomNotification(
     console.log(`📢 Broadcasting custom notification to ${userFids.length} users with notifications enabled`);
 
     return sendNeynarNotification({
-      targetFids: userFids,
-      notification: {
-        title,
-        body,
-        target_url: 'https://www.lexipop.xyz',
-      },
-    });
+      title,
+      body,
+      target_url: 'https://www.lexipop.xyz'
+    }, userFids);
   } catch (error) {
     console.error('❌ Error fetching users for custom broadcast:', error);
     return { success: false, error: 'Failed to fetch users for broadcast' };
@@ -352,13 +314,10 @@ export async function notifyMultipleUsers(
 
   for (const batch of batches) {
     const result = await sendNeynarNotification({
-      targetFids: batch,
-      notification: {
-        title: template.title,
-        body: template.body,
-        target_url: 'https://www.lexipop.xyz',
-      },
-    });
+      title: template.title,
+      body: template.body,
+      target_url: 'https://www.lexipop.xyz'
+    }, batch);
 
     if (result.success) {
       successCount += batch.length;
@@ -402,6 +361,102 @@ export async function scheduleDailyReminders(): Promise<NotificationResponse> {
   console.log(`📅 Sending daily reminder: ${randomTemplate}`);
 
   return broadcastNotification(randomTemplate);
+}
+
+/**
+ * Helper function to send notification to specific user (bitworld style)
+ */
+export async function notifyUserDirect(fid: number, notification: { title: string; body: string; target_url?: string }): Promise<boolean> {
+  const result = await sendNeynarNotification(notification, [fid]);
+  return result.success;
+}
+
+/**
+ * Helper function to broadcast notification to all users (bitworld style)
+ */
+export async function broadcastNotificationDirect(notification: { title: string; body: string; target_url?: string }): Promise<boolean> {
+  const result = await sendNeynarNotification(notification);
+  return result.success;
+}
+
+/**
+ * Test function to try different Neynar API configurations
+ */
+export async function testNeynarEndpoints(
+  notification: { title: string; body: string; target_url?: string },
+  targetFids?: number[]
+): Promise<NotificationResponse> {
+  const { NEYNAR_API_KEY, NEYNAR_CLIENT_ID } = serverEnv;
+
+  if (!NEYNAR_API_KEY || !NEYNAR_CLIENT_ID) {
+    return { success: false, error: 'Missing Neynar API credentials' };
+  }
+
+  const endpoints = [
+    {
+      name: 'correct-2025-format',
+      url: 'https://api.neynar.com/v2/farcaster/frame/notifications',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': NEYNAR_API_KEY
+      },
+      payload: {
+        notification: {
+          title: notification.title,
+          body: notification.body,
+          target_url: notification.target_url || 'https://www.lexipop.xyz'
+        },
+        ...(targetFids && { target_fids: targetFids })
+      }
+    },
+    {
+      name: 'bitworld-legacy-style',
+      url: 'https://api.neynar.com/v2/farcaster-frame/notifications',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${NEYNAR_API_KEY}`
+      },
+      payload: {
+        client_id: NEYNAR_CLIENT_ID,
+        notification: {
+          title: notification.title,
+          body: notification.body,
+          target_url: notification.target_url || 'https://www.lexipop.xyz'
+        },
+        ...(targetFids && { target_fids: targetFids })
+      }
+    }
+  ];
+
+  for (const config of endpoints) {
+    try {
+      console.log(`🧪 Testing ${config.name}:`);
+      console.log(`   URL: ${config.url}`);
+      console.log(`   Headers: ${JSON.stringify(Object.keys(config.headers))}`);
+      console.log(`   Payload: ${JSON.stringify(config.payload, null, 2)}`);
+
+      const response = await fetch(config.url, {
+        method: 'POST',
+        headers: config.headers,
+        body: JSON.stringify(config.payload)
+      });
+
+      const responseData = await response.json();
+
+      console.log(`📡 ${config.name} response:`, response.status, responseData);
+
+      if (response.ok) {
+        console.log(`✅ SUCCESS with ${config.name}!`);
+        return { success: true, message: `Success with ${config.name}`, neynarResponse: responseData };
+      } else {
+        console.log(`❌ ${config.name} failed:`, response.status, responseData);
+      }
+    } catch (error) {
+      console.error(`❌ ${config.name} error:`, error);
+    }
+  }
+
+  return { success: false, error: 'All endpoint configurations failed' };
 }
 
 /**

@@ -14,6 +14,9 @@ import {
   notifyMultipleUsers,
   scheduleDailyReminders,
   getNotificationStats,
+  notifyUserDirect,
+  broadcastNotificationDirect,
+  testNeynarEndpoints,
   NOTIFICATION_TEMPLATES
 } from '@/lib/notifications';
 
@@ -213,6 +216,36 @@ export async function PUT(request: NextRequest) {
         console.log('🎨 Testing custom notification...');
         result = await broadcastCustomNotification('🧪 Test from Lexipop', 'This is a test notification to verify Neynar integration is working!');
         break;
+      case 'direct':
+        const directFid = fid || 1482;
+        console.log(`🚀 Testing direct notification to FID ${directFid} (bypassing user preferences)...`);
+        result = await notifyUserDirect(directFid, {
+          title: '🧪 Direct Test',
+          body: 'Testing direct notification from Lexipop!',
+          target_url: 'https://www.lexipop.xyz'
+        });
+        // Convert boolean result to full response format
+        result = { success: result, message: result ? 'Direct notification sent successfully' : 'Direct notification failed' };
+        break;
+      case 'direct_broadcast':
+        console.log('📢 Testing direct broadcast (bypassing user preferences)...');
+        result = await broadcastNotificationDirect({
+          title: '🧪 Direct Broadcast',
+          body: 'Testing direct broadcast from Lexipop!',
+          target_url: 'https://www.lexipop.xyz'
+        });
+        // Convert boolean result to full response format
+        result = { success: result, message: result ? 'Direct broadcast sent successfully' : 'Direct broadcast failed' };
+        break;
+      case 'endpoints':
+        const endpointFid = fid || 1482;
+        console.log(`🔍 Testing all endpoint configurations for FID ${endpointFid}...`);
+        result = await testNeynarEndpoints({
+          title: '🧪 Endpoint Test',
+          body: 'Testing all Neynar endpoint configurations!',
+          target_url: 'https://www.lexipop.xyz'
+        }, [endpointFid]);
+        break;
       case 'environment':
         console.log('🔍 Testing environment configuration...');
         const { serverEnv } = await import('@/lib/env');
@@ -228,7 +261,7 @@ export async function PUT(request: NextRequest) {
         break;
       default:
         return NextResponse.json(
-          { success: false, error: 'Invalid test type. Use: broadcast, individual, custom, environment' },
+          { success: false, error: 'Invalid test type. Use: broadcast, individual, custom, direct, direct_broadcast, endpoints, environment' },
           { status: 400 }
         );
     }
