@@ -11,6 +11,8 @@ interface LeaderboardEntry {
   rank: number;
   userFid: number;
   username: string;
+  displayName?: string;
+  pfpUrl?: string;
   score: number;
   submittedAt: string;
 }
@@ -156,31 +158,41 @@ export default function LeaderboardPage() {
                     {getRankDisplay(entry.rank)}
                   </div>
 
-                  {/* Avatar */}
-                  <div className="w-7 h-7 bg-gray-200 rounded-full flex items-center justify-center text-xs">
-                    👤
+                  {/* Farcaster Avatar */}
+                  <div className="w-7 h-7 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center text-xs">
+                    {entry.pfpUrl ? (
+                      <img
+                        src={entry.pfpUrl}
+                        alt={entry.displayName || entry.username}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          // Fallback to emoji if image fails to load
+                          e.currentTarget.style.display = 'none';
+                          e.currentTarget.parentElement!.innerHTML = '👤';
+                        }}
+                      />
+                    ) : (
+                      '👤'
+                    )}
                   </div>
 
-                  {/* Name and score - Flexible width */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <div className="flex flex-col">
-                        <div className="font-medium text-gray-800 truncate text-sm flex items-center gap-1">
-                          {entry.username}
-                          {isCurrentUser && (
-                            <span className="text-xs text-blue-600">(You)</span>
-                          )}
-                        </div>
-                        <div className="text-xs text-gray-600">
-                          {new Date(entry.submittedAt).toLocaleDateString()}
-                        </div>
+                  {/* Name and score - Simplified single line */}
+                  <div className="flex-1 min-w-0 flex items-center justify-between">
+                    <div className="flex flex-col min-w-0">
+                      <div className="font-medium text-gray-800 truncate text-sm flex items-center gap-1">
+                        {entry.displayName || entry.username}
+                        {isCurrentUser && (
+                          <span className="text-xs text-blue-600">(You)</span>
+                        )}
                       </div>
-                      <div className="text-right">
-                        <div className="font-bold text-blue-600 text-sm">
-                          {entry.score}
+                      {entry.displayName && entry.displayName !== entry.username && (
+                        <div className="text-xs text-gray-500 truncate">
+                          @{entry.username}
                         </div>
-                        <div className="text-xs text-gray-600">points</div>
-                      </div>
+                      )}
+                    </div>
+                    <div className="font-bold text-blue-600 text-sm ml-2">
+                      {entry.score} pts
                     </div>
                   </div>
                 </div>

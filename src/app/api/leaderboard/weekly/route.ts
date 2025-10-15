@@ -41,25 +41,52 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    // Add ranks and format response
-    const leaderboard = leaderboardData.map((entry, index) => ({
-      rank: index + 1,
-      userFid: entry.userFid,
-      username: entry.username,
-      score: entry.score,
-      submittedAt: entry.createdAt
-    }));
+    // Fetch Farcaster user data for all users in parallel
+    const leaderboardWithUserData = await Promise.all(
+      leaderboardData.map(async (entry, index) => {
+        let farcasterUser = null;
+
+        try {
+          // Fetch user data from Neynar API
+          const response = await fetch(`https://api.neynar.com/v2/farcaster/user/bulk?fids=${entry.userFid}`, {
+            headers: {
+              'accept': 'application/json',
+              'api_key': process.env.NEYNAR_API_KEY || ''
+            }
+          });
+
+          if (response.ok) {
+            const userData = await response.json();
+            if (userData.users && userData.users.length > 0) {
+              farcasterUser = userData.users[0];
+            }
+          }
+        } catch (error) {
+          console.warn(`Failed to fetch Farcaster data for FID ${entry.userFid}:`, error);
+        }
+
+        return {
+          rank: index + 1,
+          userFid: entry.userFid,
+          username: farcasterUser?.username || entry.username,
+          displayName: farcasterUser?.display_name || entry.username,
+          pfpUrl: farcasterUser?.pfp_url || null,
+          score: entry.score,
+          submittedAt: entry.createdAt
+        };
+      })
+    );
 
     // Get total stats
     const totalPlayers = await prisma.leaderboardScore.count({
       where: { weekStarting }
     });
 
-    console.log(`✅ Fetched ${leaderboard.length} leaderboard entries (${totalPlayers} total players)`);
+    console.log(`✅ Fetched ${leaderboardWithUserData.length} leaderboard entries (${totalPlayers} total players)`);
 
     return NextResponse.json({
       success: true,
-      leaderboard,
+      leaderboard: leaderboardWithUserData,
       weekStarting: weekStarting.toISOString(),
       totalPlayers,
       maxScore: 500,
