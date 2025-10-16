@@ -3,19 +3,15 @@
 /**
  * 🌐 WEB3 PROVIDER
  *
- * Provides Web3 wallet connection capabilities using Wagmi and RainbowKit
+ * Provides Web3 wallet connection capabilities using Wagmi and Farcaster connector
  * Handles wallet connection, token claims, and blockchain interactions
  */
 
-import React, { ReactNode, useState, useEffect } from 'react';
+import React, { ReactNode } from 'react';
 import { WagmiProvider } from 'wagmi';
-import { RainbowKitProvider, darkTheme } from '@rainbow-me/rainbowkit';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import wagmiConfig from '@/lib/web3/config';
 import miniappWagmiConfig from '@/lib/web3/miniapp-config';
-
-// Import RainbowKit CSS
-import '@rainbow-me/rainbowkit/styles.css';
 
 // Create a client for React Query
 const queryClient = new QueryClient({
@@ -33,14 +29,6 @@ interface Web3ProviderProps {
   useMiniappConfig?: boolean; // Flag to use Farcaster miniapp config
 }
 
-// Custom RainbowKit theme to match Lexipop brand
-const lexipopTheme = darkTheme({
-  accentColor: '#2563eb', // Blue-600 to match our brand
-  accentColorForeground: 'white',
-  borderRadius: 'medium',
-  fontStack: 'system',
-});
-
 export default function Web3Provider({ children, useMiniappConfig = false }: Web3ProviderProps) {
   // Use miniapp config when in Farcaster context, otherwise use standard config
   const selectedConfig = useMiniappConfig ? miniappWagmiConfig : wagmiConfig;
@@ -48,14 +36,7 @@ export default function Web3Provider({ children, useMiniappConfig = false }: Web
   return (
     <WagmiProvider config={selectedConfig}>
       <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider
-          theme={lexipopTheme}
-          modalSize="compact"
-          showRecentTransactions={true}
-          coolMode={false} // Disable cool mode for better performance
-        >
-          {children}
-        </RainbowKitProvider>
+        {children}
       </QueryClientProvider>
     </WagmiProvider>
   );

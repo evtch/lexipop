@@ -78,12 +78,9 @@ export const walletConfig = {
   // Connection timeout
   connectTimeout: 10000, // 10 seconds
 
-  // Supported wallet types
+  // Supported wallet types - simplified to Farcaster only
   supportedWallets: [
-    'metamask',
-    'walletconnect',
-    'coinbase',
-    'rainbow'
+    'farcaster'
   ]
 } as const;
 
