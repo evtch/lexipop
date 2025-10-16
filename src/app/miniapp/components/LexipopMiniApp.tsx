@@ -908,7 +908,7 @@ Play now! 👇`;
                         icon="📸"
                         className="w-full whitespace-nowrap"
                       >
-                        {hasSharedVisualScore ? 'Shared your score ✓' : 'Share Your Score'}
+                        Share Your Score
                       </MiniAppButton>
                       <div className="text-xs text-gray-500 text-center mt-1">
                         {hasSharedVisualScore ? 'Thanks for sharing your achievement!' : ''}
