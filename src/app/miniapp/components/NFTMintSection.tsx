@@ -154,7 +154,7 @@ export default function NFTMintSection({
                   variant="primary"
                   size="md"
                   disabled={isMinting || isConfirming || isPreviewLoading}
-                  className="w-full bg-gradient-to-r from-green-500 to-blue-500 text-white hover:from-green-600 hover:to-blue-600 border-0 font-semibold"
+                  className="w-full bg-gradient-to-r from-pink-500 to-purple-500 text-white hover:from-pink-600 hover:to-purple-600 border-0 font-semibold"
                 >
                   {isPreviewLoading
                     ? 'Generating Preview...'

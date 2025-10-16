@@ -886,9 +886,8 @@ Play now! 👇`;
                         onClick={generateTokens}
                         variant="primary"
                         size="md"
-                        icon="🎰"
                         disabled={isGeneratingTokens || requiresNFT() || isLoadingNFT}
-                        className="w-full bg-white text-purple-600 hover:bg-purple-50 border border-purple-200 font-semibold"
+                        className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 border-0 font-semibold"
                       >
                         {isGeneratingTokens
                           ? 'Generating...'
@@ -924,7 +923,7 @@ Play now! 👇`;
                       <div className="text-4xl font-bold text-white mb-2 text-center">
                         {generatedTokens}
                       </div>
-                      <div className="text-white text-lg text-center mb-4">
+                      <div className="text-white text-base text-center mb-4">
                         You won {generatedTokens} $LEXIPOP
                       </div>
 
@@ -1044,16 +1043,6 @@ Play now! 👇`;
                 </MiniAppButton>
               </div>
 
-              {/* Daily streak bonus message */}
-              <div className="mt-4 bg-gradient-to-r from-orange-400 to-yellow-400 text-white rounded-lg p-3 shadow-lg">
-                <p className="text-sm font-semibold flex items-center justify-center gap-2">
-                  <span>🔥</span>
-                  Play daily to earn more bonus points!
-                </p>
-                <p className="text-xs text-center mt-1 text-white/90">
-                  Current streak: {dailyStreak} day{dailyStreak !== 1 ? 's' : ''} • Bonus: +{(dailyStreak - 1) * 100} pts
-                </p>
-              </div>
             </>
           ) : (
             // First Time Layout
