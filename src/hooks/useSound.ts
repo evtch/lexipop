@@ -16,7 +16,7 @@ export function useSound() {
             audioContextRef.current = new (window as any).webkitAudioContext();
 
             // Resume context if suspended
-            if (audioContextRef.current.state === 'suspended') {
+            if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
               await audioContextRef.current.resume();
             }
 
@@ -116,7 +116,9 @@ export function useSound() {
       // iOS: Ensure AudioContext is resumed before playing
       if (/iPad|iPhone|iPod/.test(navigator.userAgent) && audioContextRef.current) {
         if (audioContextRef.current.state === 'suspended') {
-          audioContextRef.current.resume();
+          audioContextRef.current.resume().catch(error => {
+            console.log('Failed to resume AudioContext:', error);
+          });
         }
       }
 
