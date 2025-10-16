@@ -803,7 +803,6 @@ Play now! 👇`;
                 className="bg-gradient-to-r from-green-400 to-blue-500 rounded-lg p-2 text-white shadow-lg mb-3"
               >
                 <div className="text-center">
-                  <div className="text-base font-bold mb-1">Game Complete!</div>
 
                   {/* Compact Score Display */}
                   <div className="bg-white/20 rounded-lg p-1.5 mb-1.5">
@@ -875,7 +874,7 @@ Play now! 👇`;
                       <div className="text-4xl font-bold text-white mb-2">
                         {currentNumber === 0 ? '🎁' : currentNumber}
                       </div>
-                      <div className="text-white text-lg mb-4">
+                      <div className="text-white text-base mb-4">
                         $LEXIPOP
                       </div>
 
@@ -897,13 +896,13 @@ Play now! 👇`;
 
 
                     {/* Visual Score Sharing */}
-                    <div className="mb-3">
+                    <div className="space-y-2">
                       <MiniAppButton
                         onClick={handleShareWithVisualScore}
                         variant="secondary"
                         size="md"
-                        icon="📸"
-                        className="w-full whitespace-nowrap"
+                        icon="🌟"
+                        className="w-full"
                       >
                         Share Your Score
                       </MiniAppButton>
