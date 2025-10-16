@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
 
     // Test payload - broadcast to all users
     const payload = {
-      targetFids: [], // Empty array = broadcast to all
+      target_fids: [], // Empty array = broadcast to all (changed from targetFids)
       notification: {
         title: "🧪 Test from Lexipop",
         body: "Testing Neynar notifications API directly",
@@ -38,9 +38,9 @@ export async function POST(request: NextRequest) {
     const response = await fetch('https://api.neynar.com/v2/farcaster/frame/notifications', {
       method: 'POST',
       headers: {
-        'api_key': NEYNAR_API_KEY,
-        'client_id': NEYNAR_CLIENT_ID,
+        'x-api-key': NEYNAR_API_KEY, // Fixed: changed from 'api_key' to 'x-api-key'
         'Content-Type': 'application/json',
+        // Removed 'client_id' header - not needed
       },
       body: JSON.stringify(payload),
     });

@@ -96,11 +96,11 @@ async function sendNeynarNotification(
   notification: { title: string; body: string; target_url?: string },
   targetFids?: number[]
 ): Promise<NotificationResponse> {
-  const { NEYNAR_API_KEY, NEYNAR_CLIENT_ID } = serverEnv;
+  const { NEYNAR_API_KEY } = serverEnv;
 
-  if (!NEYNAR_API_KEY || !NEYNAR_CLIENT_ID) {
-    console.error('❌ Missing Neynar API credentials');
-    return { success: false, error: 'Missing Neynar API credentials' };
+  if (!NEYNAR_API_KEY) {
+    console.error('❌ Missing Neynar API key');
+    return { success: false, error: 'Missing Neynar API key' };
   }
 
   try {
@@ -122,7 +122,7 @@ async function sendNeynarNotification(
         body: notification.body,
         target_url: notification.target_url || 'https://www.lexipop.xyz'
       },
-      ...(targetFids && { target_fids: targetFids })
+      ...(targetFids && targetFids.length > 0 && { target_fids: targetFids })
     };
 
     console.log('📡 Neynar payload:', JSON.stringify(payload, null, 2));
