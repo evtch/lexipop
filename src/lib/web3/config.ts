@@ -7,7 +7,7 @@
 
 import { createConfig, http } from 'wagmi';
 import { mainnet, base, baseSepolia, sepolia } from 'wagmi/chains';
-import { metaMask, coinbaseWallet } from 'wagmi/connectors';
+import { coinbaseWallet } from 'wagmi/connectors';
 
 const appName = 'Lexipop';
 
@@ -21,9 +21,8 @@ export const wagmiConfig = createConfig({
     ...(process.env.NODE_ENV === 'development' ? [baseSepolia, sepolia] : [])
   ],
   connectors: [
-    metaMask(),
     coinbaseWallet({ appName }),
-    // Removed WalletConnect to prevent SSR indexedDB errors
+    // Removed MetaMask and WalletConnect to prevent SSR issues
   ],
   transports: {
     [mainnet.id]: http(),

@@ -10,7 +10,6 @@ import { useFarcasterUser } from '@/lib/hooks/useFarcasterUser'; // Uses Farcast
 import { generateImprovedRandomness } from '@/lib/pyth-entropy';
 import { useSound } from '@/hooks/useSound';
 import { useAccount, useConnect, useDisconnect, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
-import ClientOnlyWagmi from './ClientOnlyWagmi';
 import { useFarcasterAccount } from '@/lib/web3/hooks/useFarcasterAccount';
 import { useNFTGating } from '@/lib/nft/useNFTGating';
 import { generateScoreShareSvg, svgToPngDataUrl } from '@/lib/utils/svgToPng';
