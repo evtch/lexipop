@@ -11,6 +11,7 @@ import { generateImprovedRandomness } from '@/lib/pyth-entropy';
 import { useSound } from '@/hooks/useSound';
 import { useAccount, useConnect, useDisconnect, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { useFarcasterAccount } from '@/lib/web3/hooks/useFarcasterAccount';
+import { useNFTGating } from '@/lib/nft/useNFTGating';
 import { getVersionString } from '@/lib/version';
 
 // Frame-optimized components
@@ -18,6 +19,7 @@ import FrameWordBubble from './FrameWordBubble';
 import FrameAnswerOption from './FrameAnswerOption';
 import ScoreShare from './ScoreShare';
 import MiniAppButton from './MiniAppButton';
+import NFTMintSection from './NFTMintSection';
 // import NotificationPrompt from './NotificationPrompt'; // Removed - miniapp handles notifications via SDK
 
 export default function LexipopMiniApp() {
@@ -72,6 +74,18 @@ export default function LexipopMiniApp() {
   const { connect, connectors } = useConnect();
   const { disconnect } = useDisconnect();
   const farcasterAccount = useFarcasterAccount();
+
+  // NFT gating for token claims
+  const {
+    hasNFTForGame,
+    isCheckingNFT,
+    userNFTCount,
+    error: nftError,
+    isLoading: isLoadingNFT,
+    canClaimTokens,
+    requiresNFT,
+    refresh: refreshNFTCheck
+  } = useNFTGating(gameState.gameQuestions?.map(q => q.word) || []);
 
   // Contract writing hook
   const { writeContract, data: hash, error: writeError, isPending: isWritePending } = useWriteContract();
@@ -323,6 +337,12 @@ export default function LexipopMiniApp() {
   const generateTokens = () => {
     if (isGeneratingTokens) return;
 
+    // Check NFT ownership first (Hard Gate)
+    if (!canClaimTokens()) {
+      setClaimError('You must mint an NFT first before claiming tokens!');
+      return;
+    }
+
     setIsGeneratingTokens(true);
     setGeneratedTokens(null);
     setClaimError(null);
@@ -494,7 +514,7 @@ export default function LexipopMiniApp() {
 
   // Check if user has Farcaster wallet connected and verified
   const hasFarcasterWallet = isConnected && farcasterAccount.isConnected && farcasterAccount.fid;
-  const canClaimTokens = hasFarcasterWallet && generatedTokens && !isClaimingTokens;
+  const canClaimGeneratedTokens = hasFarcasterWallet && generatedTokens && !isClaimingTokens;
 
   const nextQuestion = () => {
     const nextIndex = gameState.currentQuestionIndex + 1;
@@ -673,6 +693,20 @@ export default function LexipopMiniApp() {
                       💡 Higher scores + daily streak = bigger rewards!
                     </div>
 
+                    {/* NFT Requirement Check */}
+                    {requiresNFT() && (
+                      <div className="bg-gradient-to-r from-purple-100 to-pink-100 border border-purple-200 rounded-lg p-3 mb-4">
+                        <div className="text-sm font-bold text-purple-800 text-center">
+                          🎨 Mint Free NFT to Claim $LEXIPOP
+                        </div>
+                        {isLoadingNFT && (
+                          <div className="text-xs text-purple-600 mt-1 text-center">
+                            Checking NFT ownership...
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     {/* Airport-style Number Generator */}
                     <motion.div
                       className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl p-4 mb-4 shadow-xl"
@@ -699,10 +733,14 @@ export default function LexipopMiniApp() {
                       variant="primary"
                       size="md"
                       icon="🎰"
-                      disabled={isGeneratingTokens}
+                      disabled={isGeneratingTokens || requiresNFT() || isLoadingNFT}
                       className="w-full mb-3"
                     >
-                      {isGeneratingTokens ? 'Generating...' : 'Generate my reward'}
+                      {isGeneratingTokens
+                        ? 'Generating...'
+                        : requiresNFT()
+                        ? 'Mint NFT First'
+                        : 'Generate my reward'}
                     </MiniAppButton>
 
 
@@ -818,7 +856,7 @@ export default function LexipopMiniApp() {
                           variant="primary"
                           size="md"
                           icon="💰"
-                          disabled={isClaimingTokens || isWritePending || isConfirming || (isFirstTimeClaim && !hasSharedCast)}
+                          disabled={!canClaimGeneratedTokens || isWritePending || isConfirming || (isFirstTimeClaim && !hasSharedCast)}
                           className="w-full mb-3"
                         >
                           {isWritePending
@@ -862,6 +900,18 @@ export default function LexipopMiniApp() {
                   </div>
                 )}
               </div>
+
+              {/* NFT Minting Section - Show before token generation if NFT required */}
+              <NFTMintSection
+                words={gameState.gameQuestions.map(q => q.word)}
+                score={gameState.score + streakBonus}
+                streak={dailyStreak}
+                visible={gameState.totalQuestions > 0}
+                onMintSuccess={() => {
+                  // Refresh NFT check when NFT is successfully minted
+                  refreshNFTCheck();
+                }}
+              />
 
               {/* Action Buttons */}
               <div className="space-y-2 mt-auto">
