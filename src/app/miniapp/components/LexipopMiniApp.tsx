@@ -12,6 +12,7 @@ import { useSound } from '@/hooks/useSound';
 import { useAccount, useConnect, useDisconnect, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { useFarcasterAccount } from '@/lib/web3/hooks/useFarcasterAccount';
 import { useNFTGating } from '@/lib/nft/useNFTGating';
+import { generateScoreShareSvg, svgToPngDataUrl } from '@/lib/utils/svgToPng';
 import { getVersionString } from '@/lib/version';
 
 // Frame-optimized components
@@ -60,6 +61,7 @@ export default function LexipopMiniApp() {
   // const [showNotificationPrompt, setShowNotificationPrompt] = useState(false); // Disabled for miniapp
   // const [hasSeenNotificationPrompt, setHasSeenNotificationPrompt] = useState(false); // Disabled for miniapp
   const [hasSharedCast, setHasSharedCast] = useState(false);
+  const [hasSharedVisualScore, setHasSharedVisualScore] = useState(false);
   const [isFirstTimeClaim, setIsFirstTimeClaim] = useState(true);
 
   // Token generation state
@@ -82,7 +84,7 @@ export default function LexipopMiniApp() {
     userNFTCount,
     error: nftError,
     isLoading: isLoadingNFT,
-    canClaimTokens,
+    canClaimTokens: canClaimWithNFT,
     requiresNFT,
     refresh: refreshNFTCheck
   } = useNFTGating(gameState.gameQuestions?.map(q => q.word) || []);
@@ -135,6 +137,11 @@ export default function LexipopMiniApp() {
       const hasSharedKey = `lexipop_has_shared_${currentUser.fid}`;
       const hasShared = localStorage.getItem(hasSharedKey) === 'true';
       setHasSharedCast(hasShared);
+
+      // Check if user has shared visual score
+      const hasSharedVisualKey = `lexipop_has_shared_visual_${currentUser.fid}`;
+      const hasSharedVisual = localStorage.getItem(hasSharedVisualKey) === 'true';
+      setHasSharedVisualScore(hasSharedVisual);
     }
   }, [currentUser?.fid]);
 
@@ -338,7 +345,7 @@ export default function LexipopMiniApp() {
     if (isGeneratingTokens) return;
 
     // Check NFT ownership first (Hard Gate)
-    if (!canClaimTokens()) {
+    if (!canClaimWithNFT()) {
       setClaimError('You must mint an NFT first before claiming tokens!');
       return;
     }
@@ -363,16 +370,23 @@ export default function LexipopMiniApp() {
         // Use the improved entropy generation function
         const { tokenAmount } = generateImprovedRandomness(gameData);
 
+        // Apply soft bonus for sharing visual score
+        const visualShareBonus = hasSharedVisualScore ? Math.floor(tokenAmount * 0.25) : 0; // 25% bonus
+        const finalTokenAmount = tokenAmount + visualShareBonus;
+
         console.log('🎲 LexipopMiniApp Score-based Generation:', {
           baseScore: gameState.score,
           streakBonus,
           finalScore,
           gameData,
-          tokenAmount,
-          source: 'Score-based Entropy with Daily Streak Bonus'
+          baseTokenAmount: tokenAmount,
+          visualShareBonus,
+          finalTokenAmount,
+          hasSharedVisualScore,
+          source: 'Score-based Entropy with Daily Streak Bonus + Visual Share Bonus'
         });
 
-        return tokenAmount;
+        return finalTokenAmount;
       } catch (error) {
         console.error('❌ Score-based entropy failed, using fallback:', error);
         // Fallback using the same score-based ranges with streak bonus
@@ -395,7 +409,9 @@ export default function LexipopMiniApp() {
           minTokens = 50; maxTokens = 500;
         }
 
-        return minTokens + Math.floor(Math.random() * (maxTokens - minTokens));
+        const baseAmount = minTokens + Math.floor(Math.random() * (maxTokens - minTokens));
+        const visualShareBonus = hasSharedVisualScore ? Math.floor(baseAmount * 0.25) : 0; // 25% bonus
+        return baseAmount + visualShareBonus;
       }
     };
 
@@ -412,16 +428,112 @@ export default function LexipopMiniApp() {
   };
 
   const handleFarcasterWalletConnect = () => {
-    // Find the Farcaster Frame connector
+    // Debug log available connectors
+    console.log('🔗 Available connectors:', connectors.map(c => ({ name: c.name, id: c.id })));
+
+    // Find the Farcaster Frame connector first
     const farcasterConnector = connectors.find(connector =>
       connector.name.toLowerCase().includes('farcaster') ||
       connector.id.includes('farcaster')
     );
 
     if (farcasterConnector) {
+      console.log('🎯 Using Farcaster connector:', farcasterConnector.name);
       connect({ connector: farcasterConnector });
     } else {
-      setClaimError('Farcaster wallet connector not found');
+      // Fallback to WalletConnect for desktop users
+      const walletConnectConnector = connectors.find(connector =>
+        connector.name.toLowerCase().includes('walletconnect') ||
+        connector.id.includes('walletconnect')
+      );
+
+      if (walletConnectConnector) {
+        console.log('🔗 Using WalletConnect connector:', walletConnectConnector.name);
+        connect({ connector: walletConnectConnector });
+      } else {
+        // Final fallback to any available connector
+        const anyConnector = connectors[0];
+        if (anyConnector) {
+          console.log('💼 Using fallback connector:', anyConnector.name);
+          connect({ connector: anyConnector });
+        } else {
+          console.error('❌ No connectors available');
+          setClaimError('No wallet connectors available');
+        }
+      }
+    }
+  };
+
+  const handleShareWithVisualScore = async () => {
+    try {
+      // Generate SVG for the score
+      const svgContent = generateScoreShareSvg({
+        score: gameState.score,
+        words: gameState.gameQuestions.map(q => q.word),
+        streakBonus,
+        dailyStreak
+      });
+
+      // Convert SVG to PNG
+      const pngDataUrl = await svgToPngDataUrl(svgContent, {
+        width: 600,
+        height: 600,
+        backgroundColor: 'white'
+      });
+
+      // Create cast text
+      const castText = `Just crushed it at Lexipop! 🧠✨
+
+Final Score: ${gameState.score + streakBonus} points
+${streakBonus > 0 ? `🔥 ${dailyStreak} day streak bonus!` : ''}
+
+Join me to:
+📚 Learn new vocabulary
+🎯 Test your skills
+💰 Earn $LEXIPOP tokens
+🎨 Mint memory NFTs
+
+Play now! 👇`;
+
+      const miniappUrl = window.location.origin + '/miniapp';
+
+      try {
+        // Use Farcaster miniapp SDK for native cast creation with image
+        await sdk.actions.composeCast({
+          text: castText,
+          embeds: [
+            {
+              url: pngDataUrl // Use the PNG data URL as embed
+            },
+            miniappUrl
+          ]
+        });
+
+        setHasSharedVisualScore(true);
+        setHasSharedCast(true); // Also count as regular share
+
+        // Save sharing state
+        if (currentUser?.fid) {
+          localStorage.setItem(`lexipop_has_shared_visual_${currentUser.fid}`, 'true');
+          localStorage.setItem(`lexipop_has_shared_${currentUser.fid}`, 'true');
+        }
+      } catch (error) {
+        console.error('Failed to create visual cast:', error);
+        // Fallback to regular sharing without image
+        const shareUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(castText)}&embeds[]=${encodeURIComponent(miniappUrl)}`;
+        window.open(shareUrl, '_blank');
+
+        setHasSharedVisualScore(true);
+        setHasSharedCast(true);
+        if (currentUser?.fid) {
+          localStorage.setItem(`lexipop_has_shared_visual_${currentUser.fid}`, 'true');
+          localStorage.setItem(`lexipop_has_shared_${currentUser.fid}`, 'true');
+        }
+      }
+    } catch (error) {
+      console.error('Failed to generate visual score:', error);
+      // Fallback to text-only sharing
+      alert('Failed to generate visual score. Please try again.');
     }
   };
 
@@ -514,7 +626,9 @@ export default function LexipopMiniApp() {
 
   // Check if user has Farcaster wallet connected and verified
   const hasFarcasterWallet = isConnected && farcasterAccount.isConnected && farcasterAccount.fid;
-  const canClaimGeneratedTokens = hasFarcasterWallet && generatedTokens && !isClaimingTokens;
+  // For desktop users, allow any wallet connection if Farcaster account isn't available
+  const hasAnyWallet = isConnected && address;
+  const canClaimGeneratedTokens = (hasFarcasterWallet || hasAnyWallet) && generatedTokens && !isClaimingTokens;
 
   const nextQuestion = () => {
     const nextIndex = gameState.currentQuestionIndex + 1;
@@ -698,26 +812,10 @@ export default function LexipopMiniApp() {
                 {!generatedTokens ? (
                   // Token Generation Display
                   <div className="text-center">
-                    <div className="text-sm text-gray-600 mb-2">
-                      Generating using secure onchain Pyth Entropy...
-                    </div>
                     <div className="text-xs text-blue-600 font-medium mb-4">
                       💡 Higher scores + daily streak = bigger rewards!
                     </div>
 
-                    {/* NFT Requirement Check */}
-                    {requiresNFT() && (
-                      <div className="bg-gray-100 border border-gray-200 rounded-lg p-3 mb-4">
-                        <div className="text-sm font-medium text-gray-700 text-center">
-                          🔒 NFT required to unlock rewards
-                        </div>
-                        {isLoadingNFT && (
-                          <div className="text-xs text-gray-600 mt-1 text-center">
-                            Checking NFT ownership...
-                          </div>
-                        )}
-                      </div>
-                    )}
 
                     {/* Airport-style Number Generator */}
                     <motion.div
@@ -756,51 +854,30 @@ export default function LexipopMiniApp() {
                     </MiniAppButton>
 
 
-                    {/* Invite Friends Button */}
+                    {/* Visual Score Sharing */}
                     <div className="mb-3">
-                      <MiniAppButton
-                        onClick={async () => {
-                          const castText = `I crushed it at Lexipop! 🧠✨ Just learned some amazing vocabulary words and earned $LEXIPOP tokens! 🪙\n\nJoin me to:\n📚 Learn new words\n🎯 Test your vocabulary\n💰 Earn crypto rewards\n🔥 Have fun while learning!\n\nPlay now and show me your score! 👇`;
-                          const miniappUrl = window.location.origin + '/miniapp';
+                      {!hasSharedVisualScore && (
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
+                          <div className="text-sm font-medium text-blue-800 mb-1 text-center">
+                            📸 Share Your Visual Score
+                          </div>
+                          <div className="text-xs text-blue-700 text-center">
+                            Get better rewards by sharing your achievement with a beautiful score image!
+                          </div>
+                        </div>
+                      )}
 
-                          try {
-                            // Use Farcaster miniapp SDK for native cast creation
-                            await sdk.actions.composeCast({
-                              text: castText,
-                              embeds: [miniappUrl]
-                            });
-                            setHasSharedCast(true);
-                            // Save that user has shared cast
-                            if (currentUser?.fid) {
-                              localStorage.setItem(`lexipop_has_shared_${currentUser.fid}`, 'true');
-                            }
-                          } catch (error) {
-                            console.error('Failed to create cast:', error);
-                            // Fallback to web share for non-Farcaster environments
-                            try {
-                              const shareUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(castText)}&embeds[]=${encodeURIComponent(miniappUrl)}`;
-                              window.open(shareUrl, '_blank');
-                              setHasSharedCast(true);
-                              if (currentUser?.fid) {
-                                localStorage.setItem(`lexipop_has_shared_${currentUser.fid}`, 'true');
-                              }
-                            } catch (fallbackError) {
-                              // Final fallback - copy to clipboard
-                              const simpleCastText = `I crushed it at Lexipop! Check it out: ${window.location.origin}/miniapp`;
-                              navigator.clipboard?.writeText(simpleCastText);
-                              alert('Link copied to clipboard!');
-                            }
-                          }
-                        }}
+                      <MiniAppButton
+                        onClick={handleShareWithVisualScore}
                         variant="secondary"
                         size="md"
-                        icon="👥"
+                        icon="📸"
                         className="w-full whitespace-nowrap"
                       >
-                        {hasSharedCast ? 'Invited friends ✓' : 'Invite friends (+50%)'}
+                        {hasSharedVisualScore ? 'Shared visual score ✓' : 'Share Score with Image (+bonus)'}
                       </MiniAppButton>
                       <div className="text-xs text-gray-500 text-center mt-1">
-                        {hasSharedCast ? 'Thanks for sharing!' : 'Increases chance for a higher reward by 50%'}
+                        {hasSharedVisualScore ? 'Thanks for sharing your achievement!' : 'Soft requirement for better token rewards'}
                       </div>
                     </div>
                   </div>
@@ -822,10 +899,10 @@ export default function LexipopMiniApp() {
                     </motion.div>
 
                     {/* Wallet Status & Claim Button */}
-                    {!hasFarcasterWallet ? (
+                    {!hasAnyWallet ? (
                       <div>
                         <p className="text-orange-600 mb-2 text-sm">
-                          Connect Farcaster wallet to claim $LEXIPOP
+                          {hasFarcasterWallet ? 'Connect Farcaster wallet to claim $LEXIPOP' : 'Connect wallet to claim $LEXIPOP'}
                         </p>
                         <MiniAppButton
                           onClick={handleFarcasterWalletConnect}
