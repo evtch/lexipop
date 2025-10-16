@@ -524,18 +524,16 @@ export default function LexipopMiniApp() {
   const handleShareWithVisualScore = async () => {
     try {
       // Create cast text
-      const castText = `Just crushed it at Lexipop! 🧠✨
+      const castText = `Wow, I just crushed it at @lexipop! 🎈
 
-Final Score: ${gameState.score + streakBonus} points
-${streakBonus > 0 ? `🔥 ${dailyStreak} day streak bonus!` : ''}
+Final score: ${gameState.score + streakBonus} points
 
 Words mastered: ${gameState.gameQuestions.map(q => q.word.toUpperCase()).join(' • ')}
 
 Join me to:
 📚 Learn new vocabulary
-🎯 Test your skills
 💰 Earn $LEXIPOP tokens
-🎨 Mint memory NFTs
+🎨 Mint words NFTs
 
 Play now! 👇`;
 
