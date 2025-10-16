@@ -134,7 +134,7 @@ export default function NFTMintSection({
               >
                 <div className="text-lg font-bold mb-2">🎉 NFT Minted!</div>
                 <div className="text-sm text-purple-100 mb-2">
-                  Your memory NFT has been created successfully
+                  Your Words NFT has been minted
                 </div>
                 {hash && (
                   <a
