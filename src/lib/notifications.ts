@@ -86,6 +86,94 @@ export const NOTIFICATION_TEMPLATES = {
   new_words_added: {
     title: "🆕 Fresh Content!",
     body: "New vocabulary words have been added! Discover them in Lexipop."
+  },
+
+  // Educational notifications - Word Teasers
+  word_teaser_1: {
+    title: "🤔 Word Challenge",
+    body: "Can you define 'perspicacious'? Test yourself in Lexipop!"
+  },
+  word_teaser_2: {
+    title: "💭 Vocabulary Quiz",
+    body: "What does 'serendipity' mean? Find out in today's quiz!"
+  },
+  word_teaser_3: {
+    title: "🎯 Word of the Moment",
+    body: "Challenge: Use 'mellifluous' in a sentence today!"
+  },
+  word_teaser_4: {
+    title: "🧩 Quick Question",
+    body: "Do you know what 'ephemeral' means? Discover now!"
+  },
+  word_teaser_5: {
+    title: "💡 Vocabulary Boost",
+    body: "Can you guess the meaning of 'ubiquitous'? Play to learn!"
+  },
+
+  // Educational notifications - Word of the Day with definitions
+  word_of_day_1: {
+    title: "📖 Word: Ephemeral",
+    body: "Lasting for a very short time. Learn more words like this!"
+  },
+  word_of_day_2: {
+    title: "✨ Word: Quixotic",
+    body: "Extremely idealistic and unrealistic. Expand your vocabulary!"
+  },
+  word_of_day_3: {
+    title: "🌟 Word: Mellifluous",
+    body: "Sweet or musical sounding. Discover more beautiful words!"
+  },
+  word_of_day_4: {
+    title: "📚 Word: Sagacious",
+    body: "Having good judgment and wisdom. Build your word power!"
+  },
+  word_of_day_5: {
+    title: "💫 Word: Serendipity",
+    body: "Happy accident or pleasant surprise. Learn daily!"
+  },
+
+  // Educational notifications - Context Clues
+  context_clue_1: {
+    title: "🔍 Context Challenge",
+    body: "The ephemeral fame lasted weeks. What does ephemeral mean?"
+  },
+  context_clue_2: {
+    title: "🎯 Guess the Word",
+    body: "Her sagacious advice saved us. Can you define sagacious?"
+  },
+  context_clue_3: {
+    title: "💭 Word Detective",
+    body: "The ubiquitous smartphones are everywhere. What's ubiquitous?"
+  },
+  context_clue_4: {
+    title: "🧩 Vocabulary Puzzle",
+    body: "His mellifluous voice charmed all. Define mellifluous!"
+  },
+  context_clue_5: {
+    title: "📝 Context Clues",
+    body: "The quixotic plan was too idealistic. What's quixotic?"
+  },
+
+  // Educational notifications - Difficulty-based challenges
+  beginner_challenge: {
+    title: "🌱 Easy Word Quiz",
+    body: "Ready for a simple word? Define 'benevolent' in Lexipop!"
+  },
+  intermediate_challenge: {
+    title: "🚀 Level Up!",
+    body: "Medium challenge: What does 'ubiquitous' mean? Test yourself!"
+  },
+  advanced_challenge: {
+    title: "🏆 Master Challenge",
+    body: "Expert level: Can you define 'sesquipedalian'? Prove it!"
+  },
+  genius_challenge: {
+    title: "🧠 Genius Mode",
+    body: "Ultimate test: Define 'perspicacious'! Are you ready?"
+  },
+  weekly_challenge: {
+    title: "📅 Weekly Challenge",
+    body: "This week's word: 'evanescent'. Can you master it?"
   }
 } as const;
 
@@ -122,7 +210,7 @@ async function sendNeynarNotification(
         body: notification.body,
         target_url: notification.target_url || 'https://www.lexipop.xyz'
       },
-      ...(targetFids && targetFids.length > 0 && { target_fids: targetFids })
+      target_fids: targetFids && targetFids.length > 0 ? targetFids : []
     };
 
     console.log('📡 Neynar payload:', JSON.stringify(payload, null, 2));
@@ -354,6 +442,68 @@ export function getRandomDailyReminder(): keyof typeof NOTIFICATION_TEMPLATES {
 }
 
 /**
+ * Get a random word teaser template
+ */
+export function getRandomWordTeaser(): keyof typeof NOTIFICATION_TEMPLATES {
+  const wordTeasers = [
+    'word_teaser_1',
+    'word_teaser_2',
+    'word_teaser_3',
+    'word_teaser_4',
+    'word_teaser_5'
+  ] as const;
+
+  const randomIndex = Math.floor(Math.random() * wordTeasers.length);
+  return wordTeasers[randomIndex];
+}
+
+/**
+ * Get a random word of the day template
+ */
+export function getRandomWordOfDay(): keyof typeof NOTIFICATION_TEMPLATES {
+  const wordOfDayTemplates = [
+    'word_of_day_1',
+    'word_of_day_2',
+    'word_of_day_3',
+    'word_of_day_4',
+    'word_of_day_5'
+  ] as const;
+
+  const randomIndex = Math.floor(Math.random() * wordOfDayTemplates.length);
+  return wordOfDayTemplates[randomIndex];
+}
+
+/**
+ * Get a random context clue template
+ */
+export function getRandomContextClue(): keyof typeof NOTIFICATION_TEMPLATES {
+  const contextClues = [
+    'context_clue_1',
+    'context_clue_2',
+    'context_clue_3',
+    'context_clue_4',
+    'context_clue_5'
+  ] as const;
+
+  const randomIndex = Math.floor(Math.random() * contextClues.length);
+  return contextClues[randomIndex];
+}
+
+/**
+ * Get difficulty-based challenge template
+ */
+export function getDifficultyChallenge(userLevel: 'beginner' | 'intermediate' | 'advanced' | 'genius' = 'intermediate'): keyof typeof NOTIFICATION_TEMPLATES {
+  const challengeMap = {
+    beginner: 'beginner_challenge',
+    intermediate: 'intermediate_challenge',
+    advanced: 'advanced_challenge',
+    genius: 'genius_challenge'
+  } as const;
+
+  return challengeMap[userLevel];
+}
+
+/**
  * Schedule daily reminders (to be called by cron job)
  */
 export async function scheduleDailyReminders(): Promise<NotificationResponse> {
@@ -361,6 +511,149 @@ export async function scheduleDailyReminders(): Promise<NotificationResponse> {
   console.log(`📅 Sending daily reminder: ${randomTemplate}`);
 
   return broadcastNotification(randomTemplate);
+}
+
+/**
+ * Send educational word teaser notifications
+ */
+export async function sendWordTeaser(userFid?: number): Promise<NotificationResponse> {
+  try {
+    // Try to create a dynamic notification first
+    const dynamicNotification = await createDynamicWordNotification('teaser');
+
+    if (dynamicNotification) {
+      console.log('📚 Sending dynamic word teaser notification');
+      if (userFid) {
+        return await sendNeynarNotification(dynamicNotification, [userFid]);
+      } else {
+        return await sendNeynarNotification(dynamicNotification);
+      }
+    } else {
+      // Fallback to template-based notification
+      const template = getRandomWordTeaser();
+      console.log(`📚 Sending template word teaser: ${template}`);
+
+      if (userFid) {
+        return notifyUser(userFid, template);
+      } else {
+        return broadcastNotification(template);
+      }
+    }
+  } catch (error) {
+    console.error('❌ Error sending word teaser:', error);
+    return { success: false, error: 'Failed to send word teaser notification' };
+  }
+}
+
+/**
+ * Send word of the day notifications with real definitions
+ */
+export async function sendWordOfTheDay(userFid?: number): Promise<NotificationResponse> {
+  try {
+    // Try to create a dynamic notification first
+    const dynamicNotification = await createDynamicWordNotification('word_of_day');
+
+    if (dynamicNotification) {
+      console.log('📖 Sending dynamic word of the day notification');
+      if (userFid) {
+        return await sendNeynarNotification(dynamicNotification, [userFid]);
+      } else {
+        return await sendNeynarNotification(dynamicNotification);
+      }
+    } else {
+      // Fallback to template-based notification
+      const template = getRandomWordOfDay();
+      console.log(`📖 Sending template word of the day: ${template}`);
+
+      if (userFid) {
+        return notifyUser(userFid, template);
+      } else {
+        return broadcastNotification(template);
+      }
+    }
+  } catch (error) {
+    console.error('❌ Error sending word of the day:', error);
+    return { success: false, error: 'Failed to send word of the day notification' };
+  }
+}
+
+/**
+ * Send context clue challenge notifications
+ */
+export async function sendContextClueChallenge(userFid?: number): Promise<NotificationResponse> {
+  try {
+    // Try to create a dynamic notification first
+    const dynamicNotification = await createDynamicWordNotification('context_clue');
+
+    if (dynamicNotification) {
+      console.log('🔍 Sending dynamic context clue notification');
+      if (userFid) {
+        return await sendNeynarNotification(dynamicNotification, [userFid]);
+      } else {
+        return await sendNeynarNotification(dynamicNotification);
+      }
+    } else {
+      // Fallback to template-based notification
+      const template = getRandomContextClue();
+      console.log(`🔍 Sending template context clue: ${template}`);
+
+      if (userFid) {
+        return notifyUser(userFid, template);
+      } else {
+        return broadcastNotification(template);
+      }
+    }
+  } catch (error) {
+    console.error('❌ Error sending context clue challenge:', error);
+    return { success: false, error: 'Failed to send context clue challenge' };
+  }
+}
+
+/**
+ * Send difficulty-based challenge based on user's skill level
+ */
+export async function sendDifficultyChallenge(
+  userLevel: 'beginner' | 'intermediate' | 'advanced' | 'genius' = 'intermediate',
+  userFid?: number
+): Promise<NotificationResponse> {
+  try {
+    // Map user level to word difficulty
+    const difficultyMap = {
+      beginner: 'easy' as const,
+      intermediate: 'medium' as const,
+      advanced: 'hard' as const,
+      genius: 'hard' as const
+    };
+
+    // Try to create a dynamic notification first
+    const dynamicNotification = await createDynamicWordNotification(
+      'difficulty_challenge',
+      difficultyMap[userLevel],
+      userLevel
+    );
+
+    if (dynamicNotification) {
+      console.log(`🎯 Sending dynamic ${userLevel} challenge notification`);
+      if (userFid) {
+        return await sendNeynarNotification(dynamicNotification, [userFid]);
+      } else {
+        return await sendNeynarNotification(dynamicNotification);
+      }
+    } else {
+      // Fallback to template-based notification
+      const template = getDifficultyChallenge(userLevel);
+      console.log(`🎯 Sending template ${userLevel} challenge: ${template}`);
+
+      if (userFid) {
+        return notifyUser(userFid, template);
+      } else {
+        return broadcastNotification(template);
+      }
+    }
+  } catch (error) {
+    console.error('❌ Error sending difficulty challenge:', error);
+    return { success: false, error: 'Failed to send difficulty challenge' };
+  }
 }
 
 /**
@@ -377,6 +670,108 @@ export async function notifyUserDirect(fid: number, notification: { title: strin
 export async function broadcastNotificationDirect(notification: { title: string; body: string; target_url?: string }): Promise<boolean> {
   const result = await sendNeynarNotification(notification);
   return result.success;
+}
+
+/**
+ * Create dynamic word-based notifications using actual database words
+ */
+export async function createDynamicWordNotification(
+  type: 'teaser' | 'word_of_day' | 'context_clue' | 'difficulty_challenge',
+  difficulty?: 'easy' | 'medium' | 'hard',
+  userLevel?: 'beginner' | 'intermediate' | 'advanced' | 'genius'
+): Promise<{ title: string; body: string; target_url?: string } | null> {
+  try {
+    // Fetch a random word from the database based on difficulty
+    const { prisma } = await import('./prisma');
+
+    // Build difficulty filter
+    let difficultyFilter: any = {};
+    if (difficulty) {
+      const difficultyMap = { 'easy': [1, 2], 'medium': [3], 'hard': [4, 5] };
+      difficultyFilter = { difficulty: { in: difficultyMap[difficulty] } };
+    }
+
+    // Get a random word
+    const wordsCount = await prisma.word.count({ where: difficultyFilter });
+    if (wordsCount === 0) return null;
+
+    const randomSkip = Math.floor(Math.random() * wordsCount);
+    const randomWord = await prisma.word.findFirst({
+      where: difficultyFilter,
+      skip: randomSkip,
+      select: {
+        word: true,
+        correctDefinition: true,
+        difficulty: true,
+        partOfSpeech: true
+      }
+    });
+
+    if (!randomWord) return null;
+
+    const word = randomWord.word;
+    const definition = randomWord.correctDefinition;
+    const partOfSpeech = randomWord.partOfSpeech || '';
+
+    // Create different notification types based on type parameter
+    switch (type) {
+      case 'teaser':
+        const teaserTemplates = [
+          { title: `🤔 Word Challenge`, body: `Can you define '${word}'? Test yourself in Lexipop!` },
+          { title: `💭 Vocabulary Quiz`, body: `What does '${word}' mean? Find out now!` },
+          { title: `🎯 Word Mystery`, body: `Challenge: Do you know what '${word}' means?` },
+          { title: `🧩 Quick Question`, body: `Can you guess the meaning of '${word}'? Discover now!` },
+          { title: `💡 Brain Teaser`, body: `Test yourself: Define '${word}' in Lexipop!` }
+        ];
+        const randomTeaser = teaserTemplates[Math.floor(Math.random() * teaserTemplates.length)];
+        return { ...randomTeaser, target_url: 'https://www.lexipop.xyz' };
+
+      case 'word_of_day':
+        const cleanDefinition = definition.length > 80 ? definition.substring(0, 77) + '...' : definition;
+        return {
+          title: `📖 Word: ${word}`,
+          body: `${cleanDefinition} Learn more words like this!`,
+          target_url: 'https://www.lexipop.xyz'
+        };
+
+      case 'context_clue':
+        // Create a simple sentence with the word
+        const contextTemplates = [
+          `The ${word} ${word.toLowerCase() === 'ubiquitous' ? 'smartphones are everywhere' : 'concept was clear'}. What does ${word} mean?`,
+          `Her ${word} ${word.toLowerCase() === 'sagacious' ? 'advice saved us' : 'approach worked'}. Can you define ${word}?`,
+          `The ${word} ${word.toLowerCase() === 'ephemeral' ? 'fame lasted weeks' : 'situation was obvious'}. Define ${word}!`,
+          `His ${word} ${word.toLowerCase() === 'mellifluous' ? 'voice charmed all' : 'method succeeded'}. What's ${word}?`
+        ];
+        const randomContext = contextTemplates[Math.floor(Math.random() * contextTemplates.length)];
+        const contextBody = randomContext.length > 120 ? randomContext.substring(0, 117) + '...' : randomContext;
+        return {
+          title: `🔍 Context Challenge`,
+          body: contextBody,
+          target_url: 'https://www.lexipop.xyz'
+        };
+
+      case 'difficulty_challenge':
+        const level = userLevel || 'intermediate';
+        const levelEmojis = { beginner: '🌱', intermediate: '🚀', advanced: '🏆', genius: '🧠' };
+        const levelTitles = {
+          beginner: 'Easy Word Quiz',
+          intermediate: 'Level Up!',
+          advanced: 'Master Challenge',
+          genius: 'Genius Mode'
+        };
+        return {
+          title: `${levelEmojis[level]} ${levelTitles[level]}`,
+          body: `${level.charAt(0).toUpperCase() + level.slice(1)} challenge: Define '${word}'! Test yourself.`,
+          target_url: 'https://www.lexipop.xyz'
+        };
+
+      default:
+        return null;
+    }
+  } catch (error) {
+    console.error('❌ Error creating dynamic word notification:', error);
+    return null;
+  }
 }
 
 /**

@@ -17,6 +17,10 @@ import {
   notifyUserDirect,
   broadcastNotificationDirect,
   testNeynarEndpoints,
+  sendWordTeaser,
+  sendWordOfTheDay,
+  sendContextClueChallenge,
+  sendDifficultyChallenge,
   NOTIFICATION_TEMPLATES
 } from '@/lib/notifications';
 
@@ -29,7 +33,11 @@ type NotificationType =
   | 'leaderboard_update'
   | 'new_words_added'
   | 'daily_reminder'
-  | 'custom';
+  | 'custom'
+  | 'word_teaser'
+  | 'word_of_day'
+  | 'context_clue'
+  | 'difficulty_challenge';
 
 interface NotificationRequest {
   type: NotificationType;
@@ -37,6 +45,8 @@ interface NotificationRequest {
   userFids?: number[];
   title?: string;
   body?: string;
+  userLevel?: 'beginner' | 'intermediate' | 'advanced' | 'genius';
+  difficulty?: 'easy' | 'medium' | 'hard';
 }
 
 /**
@@ -60,7 +70,11 @@ export async function GET() {
           'leaderboard_update',
           'new_words_added',
           'daily_reminder',
-          'custom'
+          'custom',
+          'word_teaser',
+          'word_of_day',
+          'context_clue',
+          'difficulty_challenge'
         ]
       }
     });
@@ -79,9 +93,9 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body: NotificationRequest = await request.json();
-    const { type, userFid, userFids, title, body: customBody } = body;
+    const { type, userFid, userFids, title, body: customBody, userLevel, difficulty } = body;
 
-    console.log('📨 Notification request:', { type, userFid, userFids: userFids?.length });
+    console.log('📨 Notification request:', { type, userFid, userFids: userFids?.length, userLevel, difficulty });
 
     // Validate request
     if (!type) {
@@ -134,6 +148,27 @@ export async function POST(request: NextRequest) {
           // Broadcast to all users
           result = await broadcastCustomNotification(title, customBody);
         }
+        break;
+
+      case 'word_teaser':
+        // Send educational word teaser
+        result = await sendWordTeaser(userFid);
+        break;
+
+      case 'word_of_day':
+        // Send word of the day with definition
+        result = await sendWordOfTheDay(userFid);
+        break;
+
+      case 'context_clue':
+        // Send context clue challenge
+        result = await sendContextClueChallenge(userFid);
+        break;
+
+      case 'difficulty_challenge':
+        // Send difficulty-based challenge
+        const level = userLevel || 'intermediate';
+        result = await sendDifficultyChallenge(level, userFid);
         break;
 
       default:
