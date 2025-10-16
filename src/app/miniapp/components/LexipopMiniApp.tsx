@@ -44,6 +44,8 @@ export default function LexipopMiniApp() {
     showResult: false,
     isCorrect: null
   });
+  const [dailyStreak, setDailyStreak] = useState<number>(0);
+  const [streakBonus, setStreakBonus] = useState<number>(0);
 
   const [shuffledDefinitions, setShuffledDefinitions] = useState<string[]>([]);
   const [hasSubmittedScore, setHasSubmittedScore] = useState(false);
@@ -143,37 +145,57 @@ export default function LexipopMiniApp() {
   const submitScore = async (score: number, streak: number, totalQuestions: number) => {
     if (!currentUser) return;
 
-    console.log('🎯 Submitting score to weekly leaderboard:', {
+    console.log('🎯 Submitting score with daily streak:', {
       fid: currentUser.fid,
       username: currentUser.username,
-      score,
+      baseScore: score,
       streak,
-      totalQuestions,
-      expectedMaxScore: totalQuestions * 100,
-      DEBUG_currentGameState: gameState
+      totalQuestions
     });
 
     try {
-      const response = await fetch('/api/leaderboard/submit', {
+      // First submit to game score API to calculate streak bonus
+      const scoreResponse = await fetch('/api/game/score', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userFid: currentUser.fid,
-          username: currentUser.username,
-          displayName: currentUser.displayName,
-          pfpUrl: currentUser.pfpUrl,
-          score
+          fid: currentUser.fid,
+          score,
+          streak,
+          totalQuestions
         }),
       });
 
-      const data = await response.json();
-      console.log('📊 Leaderboard submission response:', data);
-      if (data.success) {
-        console.log(`✅ Score submitted successfully - Rank ${data.rank} ${data.isNewBest ? '(NEW BEST!)' : ''}`);
+      const scoreData = await scoreResponse.json();
+      if (scoreData.success) {
+        console.log(`✅ Score recorded with streak bonus: Base ${scoreData.baseScore}, Bonus +${scoreData.streakBonus}, Total ${scoreData.finalScore}`);
+        setDailyStreak(scoreData.currentStreak);
+        setStreakBonus(scoreData.streakBonus);
+
+        // Now submit final score to leaderboard
+        const leaderboardResponse = await fetch('/api/leaderboard/submit', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userFid: currentUser.fid,
+            username: currentUser.username,
+            displayName: currentUser.displayName,
+            pfpUrl: currentUser.pfpUrl,
+            score: scoreData.finalScore // Use final score with streak bonus
+          }),
+        });
+
+        const leaderboardData = await leaderboardResponse.json();
+        console.log('📊 Leaderboard submission response:', leaderboardData);
+        if (leaderboardData.success) {
+          console.log(`✅ Leaderboard updated - Rank ${leaderboardData.rank} ${leaderboardData.isNewBest ? '(NEW BEST!)' : ''}`);
+        }
       } else {
-        console.error('❌ Score submission failed:', data.error);
+        console.error('❌ Score submission failed:', scoreData.error);
       }
     } catch (error) {
       console.error('❌ Failed to submit score:', error);
@@ -186,6 +208,20 @@ export default function LexipopMiniApp() {
     try {
       // Show loading state
       setGameState(prev => ({ ...prev, isGameActive: false }));
+
+      // Fetch user's current streak info
+      if (currentUser?.fid) {
+        try {
+          const statsResponse = await fetch(`/api/game/score?fid=${currentUser.fid}`);
+          const statsData = await statsResponse.json();
+          if (statsData.success) {
+            setDailyStreak(statsData.stats.currentDailyStreak || 0);
+            console.log(`🔥 Current daily streak: ${statsData.stats.currentDailyStreak || 0}`);
+          }
+        } catch (error) {
+          console.log('Could not fetch streak info:', error);
+        }
+      }
 
       const gameQuestions = await getUniqueWords(5); // 5 questions per game from database
       const firstWord = gameQuestions[0];
@@ -208,6 +244,7 @@ export default function LexipopMiniApp() {
         isCorrect: null
       });
       setHasSubmittedScore(false); // Reset submission flag for new game
+      setStreakBonus(0); // Reset streak bonus for new game
 
       console.log(`🎯 Game started with words: ${gameQuestions.map(w => w.word).join(', ')}`);
     } catch (error) {
@@ -291,13 +328,14 @@ export default function LexipopMiniApp() {
     setClaimError(null);
     setCurrentNumber(0);
 
-    // Generate final token amount using new score-based system
+    // Generate final token amount using new score-based system with streak bonus
     const generateFinalAmount = () => {
       try {
-        // Create game data for entropy generation
+        // Create game data for entropy generation with final score including streak bonus
+        const finalScore = gameState.score + streakBonus;
         const gameData = {
           gameId,
-          score: gameState.score,
+          score: finalScore, // Use final score with streak bonus for better rewards
           streak: gameState.streak,
           userFid: currentUser?.fid
         };
@@ -306,27 +344,32 @@ export default function LexipopMiniApp() {
         const { tokenAmount } = generateImprovedRandomness(gameData);
 
         console.log('🎲 LexipopMiniApp Score-based Generation:', {
+          baseScore: gameState.score,
+          streakBonus,
+          finalScore,
           gameData,
           tokenAmount,
-          source: 'New Score-based Multi-source Entropy'
+          source: 'Score-based Entropy with Daily Streak Bonus'
         });
 
         return tokenAmount;
       } catch (error) {
         console.error('❌ Score-based entropy failed, using fallback:', error);
-        // Fallback using the same score-based ranges
-        const score = gameState.score;
+        // Fallback using the same score-based ranges with streak bonus
+        const finalScore = gameState.score + streakBonus;
         let minTokens, maxTokens;
 
-        if (score >= 500) {
+        if (finalScore >= 1000) {
+          minTokens = 10000; maxTokens = 40000;
+        } else if (finalScore >= 500) {
           minTokens = 5000; maxTokens = 25000;
-        } else if (score >= 400) {
+        } else if (finalScore >= 400) {
           minTokens = 2000; maxTokens = 15000;
-        } else if (score >= 300) {
+        } else if (finalScore >= 300) {
           minTokens = 1000; maxTokens = 10000;
-        } else if (score >= 200) {
+        } else if (finalScore >= 200) {
           minTokens = 300; maxTokens = 3000;
-        } else if (score >= 100) {
+        } else if (finalScore >= 100) {
           minTokens = 100; maxTokens = 1000;
         } else {
           minTokens = 50; maxTokens = 500;
@@ -546,7 +589,14 @@ export default function LexipopMiniApp() {
       <div className="flex flex-col p-4 text-gray-800" style={{ height: '90vh', maxHeight: '90vh' }}>
         {/* Header - Same as quiz page */}
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-xl font-bold">Lexipop</h1>
+          <div>
+            <h1 className="text-xl font-bold">Lexipop</h1>
+            {dailyStreak > 0 && (
+              <div className="text-xs text-orange-500 font-medium">
+                🔥 {dailyStreak} day streak
+              </div>
+            )}
+          </div>
           {isUserAuthenticated && currentUser && (
             <div className="flex items-center gap-2">
               {currentUser.pfpUrl && (
@@ -581,8 +631,18 @@ export default function LexipopMiniApp() {
                   {/* Compact Score Display */}
                   <div className="bg-white/20 rounded-lg p-1.5 mb-1.5">
                     <div className="text-xl font-bold">
-                      {gameState.score} pts
+                      {gameState.score + streakBonus} pts
                     </div>
+                    {streakBonus > 0 && (
+                      <div className="text-xs mt-1">
+                        Base: {gameState.score} + Streak Bonus: +{streakBonus}
+                      </div>
+                    )}
+                    {dailyStreak > 0 && (
+                      <div className="text-xs mt-1">
+                        🔥 Daily Streak: Day {dailyStreak}
+                      </div>
+                    )}
                   </div>
 
                   {/* Performance Message */}
@@ -594,6 +654,8 @@ export default function LexipopMiniApp() {
                       : gameState.score >= 300
                       ? "Well done! 👍"
                       : "Keep practicing! 📚"}
+                    {dailyStreak >= 7 && " 🏆 Week Warrior!"}
+                    {dailyStreak >= 30 && " 🎯 Monthly Master!"}
                   </div>
                 </div>
               </motion.div>
@@ -608,7 +670,7 @@ export default function LexipopMiniApp() {
                       Generating using secure onchain Pyth Entropy...
                     </div>
                     <div className="text-xs text-blue-600 font-medium mb-4">
-                      💡 Higher scores unlock bigger rewards!
+                      💡 Higher scores + daily streak = bigger rewards!
                     </div>
 
                     {/* Airport-style Number Generator */}
@@ -866,16 +928,26 @@ export default function LexipopMiniApp() {
 
               {/* Error message for unauthenticated users */}
               {currentUser.error && (
-                <div className="mb-6 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg p-4 border border-purple-300 shadow-lg">
-                  <p className="text-base font-semibold flex items-center gap-2">
-                    <span className="text-lg">🚀</span>
-                    Made for Farcaster. Open in Farcaster to play
-                  </p>
-                  <p className="text-sm text-purple-100 mt-2">
-                    {currentUser.error}
+                <div className="mb-6 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg p-3 border border-purple-300 shadow-lg">
+                  <p className="text-sm font-semibold flex items-center justify-center gap-2">
+                    <span>🟪</span>
+                    Play on Farcaster to earn rewards
                   </p>
                 </div>
               )}
+
+              {/* Daily streak bonus message */}
+              <div className="mb-4 bg-gradient-to-r from-orange-400 to-yellow-400 text-white rounded-lg p-3 shadow-lg">
+                <p className="text-sm font-semibold flex items-center justify-center gap-2">
+                  <span>🔥</span>
+                  Play daily to earn more bonus points!
+                </p>
+                {dailyStreak > 0 && (
+                  <p className="text-xs text-center mt-1 text-white/90">
+                    Current streak: {dailyStreak} day{dailyStreak !== 1 ? 's' : ''} • Bonus: +{(dailyStreak - 1) * 100} pts
+                  </p>
+                )}
+              </div>
 
               <div className="space-y-4 mt-auto">
                 {/* Start Playing Button with User Info */}

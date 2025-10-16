@@ -48,7 +48,7 @@ export function useFarcasterUser(): FarcasterUser {
         } else {
           setUser({
             isLoading: false,
-            error: 'No Farcaster user context available',
+            error: '',
           });
         }
       } catch (error) {

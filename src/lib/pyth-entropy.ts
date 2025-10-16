@@ -37,6 +37,7 @@ export const SCORE_BASED_RANGES = {
   300: { min: 1000, max: 10000, label: '1,000-10,000 $LEXIPOP' },
   400: { min: 2000, max: 15000, label: '2,000-15,000 $LEXIPOP' },
   500: { min: 5000, max: 25000, label: '5,000-25,000 $LEXIPOP' },
+  1000: { min: 10000, max: 40000, label: '10,000-40,000 $LEXIPOP' }, // Mega streak bonus!
   0: { min: 50, max: 500, label: '50-500 $LEXIPOP' }, // Fallback for 0 points
 } as const;
 
@@ -319,7 +320,9 @@ export function generateMockRandomness(): number {
 export function getScoreBasedReward(score: number, randomNumber: bigint): number {
   // Get the appropriate range based on score
   let range;
-  if (score >= 500) {
+  if (score >= 1000) {
+    range = SCORE_BASED_RANGES[1000];
+  } else if (score >= 500) {
     range = SCORE_BASED_RANGES[500];
   } else if (score >= 400) {
     range = SCORE_BASED_RANGES[400];
@@ -407,7 +410,8 @@ export function generateImprovedRandomness(gameData?: {
     // Fallback to simple random within score range
     const score = gameData?.score || 0;
     let range;
-    if (score >= 500) range = SCORE_BASED_RANGES[500];
+    if (score >= 1000) range = SCORE_BASED_RANGES[1000];
+    else if (score >= 500) range = SCORE_BASED_RANGES[500];
     else if (score >= 400) range = SCORE_BASED_RANGES[400];
     else if (score >= 300) range = SCORE_BASED_RANGES[300];
     else if (score >= 200) range = SCORE_BASED_RANGES[200];
