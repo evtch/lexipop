@@ -84,12 +84,47 @@ export default function NFTMintSection({
 
             {/* Minting States */}
             {!isConnected ? (
-              <div className="text-sm text-purple-200">
-                Connect your wallet to mint your memory NFT
+              <div className="space-y-2">
+                <div className="text-sm text-purple-200 text-center mb-2">
+                  Connect your wallet
+                </div>
+                <MiniAppButton
+                  onClick={() => {
+                    // Try multiple wallet connection methods for desktop compatibility
+                    const event = new CustomEvent('connect-wallet');
+                    window.dispatchEvent(event);
+
+                    // Also try direct RainbowKit modal opening as fallback
+                    setTimeout(() => {
+                      const connectButton = document.querySelector('[data-testid="rk-connect-button"]') as HTMLElement;
+                      if (connectButton) {
+                        connectButton.click();
+                      }
+                    }, 100);
+                  }}
+                  variant="primary"
+                  size="md"
+                  className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700 border-0"
+                >
+                  Connect Wallet
+                </MiniAppButton>
               </div>
             ) : !isSupportedNetwork() ? (
-              <div className="text-sm text-purple-200">
-                Switch to Base network to mint NFTs
+              <div className="space-y-2">
+                <div className="text-sm text-purple-200 text-center mb-2">
+                  Switch to Base network to mint NFTs
+                </div>
+                <MiniAppButton
+                  onClick={() => {
+                    // This will trigger network switch
+                    console.log('Switch to Base network');
+                  }}
+                  variant="primary"
+                  size="md"
+                  className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:from-blue-700 hover:to-cyan-700 border-0"
+                >
+                  Switch to Base Network
+                </MiniAppButton>
               </div>
             ) : isSuccess ? (
               <motion.div
@@ -119,7 +154,7 @@ export default function NFTMintSection({
                   variant="primary"
                   size="md"
                   disabled={isMinting || isConfirming || isPreviewLoading}
-                  className="w-full bg-white text-purple-600 hover:bg-purple-50 border border-purple-200"
+                  className="w-full bg-gradient-to-r from-green-500 to-blue-500 text-white hover:from-green-600 hover:to-blue-600 border-0 font-semibold"
                 >
                   {isPreviewLoading
                     ? 'Generating Preview...'

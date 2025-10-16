@@ -145,6 +145,19 @@ export default function LexipopMiniApp() {
     }
   }, [currentUser?.fid]);
 
+  // Listen for wallet connection events from NFT component
+  useEffect(() => {
+    const handleConnectWallet = () => {
+      console.log('🔗 Received connect-wallet event, initiating connection...');
+      handleFarcasterWalletConnect();
+    };
+
+    window.addEventListener('connect-wallet', handleConnectWallet);
+    return () => {
+      window.removeEventListener('connect-wallet', handleConnectWallet);
+    };
+  }, [connectors, connect]);
+
   // Watch for game completion and submit score with correct state
   useEffect(() => {
     // Only submit when game becomes inactive (completed), we have a score, and haven't submitted yet
@@ -427,6 +440,50 @@ export default function LexipopMiniApp() {
     }, 3000);
   };
 
+  const generateNFTVisualUrl = async (): Promise<string | null> => {
+    try {
+      // Generate the same SVG that would be used for the NFT
+      const svgContent = generateScoreShareSvg({
+        score: gameState.score,
+        words: gameState.gameQuestions.map(q => q.word),
+        streakBonus,
+        dailyStreak
+      });
+
+      // Convert SVG to PNG and upload to a temporary URL service
+      // For now, we'll use a data URL, but in production you might want to upload to a service
+      const pngDataUrl = await svgToPngDataUrl(svgContent, {
+        width: 600,
+        height: 600,
+        backgroundColor: 'white'
+      });
+
+      // For Farcaster, we need a public URL, not a data URL
+      // Let's create a temporary file endpoint
+      const response = await fetch('/api/temp-image', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          imageData: pngDataUrl,
+          score: gameState.score + streakBonus,
+          words: gameState.gameQuestions.map(q => q.word)
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return data.imageUrl;
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Failed to generate NFT visual URL:', error);
+      return null;
+    }
+  };
+
   const handleFarcasterWalletConnect = () => {
     // Debug log available connectors
     console.log('🔗 Available connectors:', connectors.map(c => ({ name: c.name, id: c.id })));
@@ -466,26 +523,13 @@ export default function LexipopMiniApp() {
 
   const handleShareWithVisualScore = async () => {
     try {
-      // Generate SVG for the score
-      const svgContent = generateScoreShareSvg({
-        score: gameState.score,
-        words: gameState.gameQuestions.map(q => q.word),
-        streakBonus,
-        dailyStreak
-      });
-
-      // Convert SVG to PNG
-      const pngDataUrl = await svgToPngDataUrl(svgContent, {
-        width: 600,
-        height: 600,
-        backgroundColor: 'white'
-      });
-
       // Create cast text
       const castText = `Just crushed it at Lexipop! 🧠✨
 
 Final Score: ${gameState.score + streakBonus} points
 ${streakBonus > 0 ? `🔥 ${dailyStreak} day streak bonus!` : ''}
+
+Words mastered: ${gameState.gameQuestions.map(q => q.word.toUpperCase()).join(' • ')}
 
 Join me to:
 📚 Learn new vocabulary
@@ -497,12 +541,15 @@ Play now! 👇`;
 
       const miniappUrl = window.location.origin + '/miniapp';
 
+      // Generate NFT visual URL for embedding
+      const nftVisualUrl = await generateNFTVisualUrl();
+
       try {
-        // Use Farcaster miniapp SDK for native cast creation with image
+        // Use Farcaster miniapp SDK for native cast creation with NFT visual
         await sdk.actions.composeCast({
           text: castText,
           embeds: [
-            pngDataUrl, // Use the PNG data URL as embed
+            nftVisualUrl || miniappUrl, // Use NFT visual URL or fallback to miniapp URL
             miniappUrl
           ]
         });
@@ -854,17 +901,6 @@ Play now! 👇`;
 
                     {/* Visual Score Sharing */}
                     <div className="mb-3">
-                      {!hasSharedVisualScore && (
-                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
-                          <div className="text-sm font-medium text-blue-800 mb-1 text-center">
-                            📸 Share Your Visual Score
-                          </div>
-                          <div className="text-xs text-blue-700 text-center">
-                            Get better rewards by sharing your achievement with a beautiful score image!
-                          </div>
-                        </div>
-                      )}
-
                       <MiniAppButton
                         onClick={handleShareWithVisualScore}
                         variant="secondary"
@@ -872,10 +908,10 @@ Play now! 👇`;
                         icon="📸"
                         className="w-full whitespace-nowrap"
                       >
-                        {hasSharedVisualScore ? 'Shared visual score ✓' : 'Share Score with Image (+bonus)'}
+                        {hasSharedVisualScore ? 'Shared your score ✓' : 'Share Your Score'}
                       </MiniAppButton>
                       <div className="text-xs text-gray-500 text-center mt-1">
-                        {hasSharedVisualScore ? 'Thanks for sharing your achievement!' : 'Soft requirement for better token rewards'}
+                        {hasSharedVisualScore ? 'Thanks for sharing your achievement!' : ''}
                       </div>
                     </div>
                   </div>
