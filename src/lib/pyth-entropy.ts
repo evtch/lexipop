@@ -32,13 +32,13 @@ export const publicClient = createPublicClient({
 
 // Token reward ranges based on score points
 export const SCORE_BASED_RANGES = {
-  100: { min: 100, max: 1000, label: '100-1,000 $LEXIPOP' },
-  200: { min: 300, max: 3000, label: '300-3,000 $LEXIPOP' },
-  300: { min: 1000, max: 10000, label: '1,000-10,000 $LEXIPOP' },
-  400: { min: 2000, max: 15000, label: '2,000-15,000 $LEXIPOP' },
-  500: { min: 5000, max: 25000, label: '5,000-25,000 $LEXIPOP' },
-  1000: { min: 10000, max: 40000, label: '10,000-40,000 $LEXIPOP' }, // Mega streak bonus!
-  0: { min: 50, max: 500, label: '50-500 $LEXIPOP' }, // Fallback for 0 points
+  100: { min: 100, max: 1500, label: '100-1,500 $LEXIPOP' },
+  200: { min: 500, max: 5000, label: '500-5,000 $LEXIPOP' },
+  300: { min: 1500, max: 15000, label: '1,500-15,000 $LEXIPOP' },
+  400: { min: 3000, max: 25000, label: '3,000-25,000 $LEXIPOP' },
+  500: { min: 5000, max: 35000, label: '5,000-35,000 $LEXIPOP' },
+  1000: { min: 15000, max: 50000, label: '15,000-50,000 $LEXIPOP' }, // Mega streak bonus!
+  0: { min: 50, max: 750, label: '50-750 $LEXIPOP' }, // Fallback for 0 points
 } as const;
 
 // Legacy token reward tiers (kept for backward compatibility)

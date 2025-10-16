@@ -407,19 +407,19 @@ export default function LexipopMiniApp() {
         let minTokens, maxTokens;
 
         if (finalScore >= 1000) {
-          minTokens = 10000; maxTokens = 40000;
+          minTokens = 15000; maxTokens = 50000;
         } else if (finalScore >= 500) {
-          minTokens = 5000; maxTokens = 25000;
+          minTokens = 5000; maxTokens = 35000;
         } else if (finalScore >= 400) {
-          minTokens = 2000; maxTokens = 15000;
+          minTokens = 3000; maxTokens = 25000;
         } else if (finalScore >= 300) {
-          minTokens = 1000; maxTokens = 10000;
+          minTokens = 1500; maxTokens = 15000;
         } else if (finalScore >= 200) {
-          minTokens = 300; maxTokens = 3000;
+          minTokens = 500; maxTokens = 5000;
         } else if (finalScore >= 100) {
-          minTokens = 100; maxTokens = 1000;
+          minTokens = 100; maxTokens = 1500;
         } else {
-          minTokens = 50; maxTokens = 500;
+          minTokens = 50; maxTokens = 750;
         }
 
         const baseAmount = minTokens + Math.floor(Math.random() * (maxTokens - minTokens));

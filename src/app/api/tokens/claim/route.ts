@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate token amount
-    if (tokensToClaimgame <= 0 || tokensToClaimgame > 25000) {
+    if (tokensToClaimgame <= 0 || tokensToClaimgame > 50000) {
       return NextResponse.json(
         { success: false, error: 'Invalid token amount' },
         { status: 400 }
@@ -368,7 +368,7 @@ export async function GET() {
       },
       limits: {
         minTokens: 1,
-        maxTokens: 25000,
+        maxTokens: 50000,
         rateLimitMinutes: 5
       }
     },

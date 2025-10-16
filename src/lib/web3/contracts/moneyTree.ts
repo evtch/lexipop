@@ -261,7 +261,7 @@ export function isValidAddress(address: string): address is Address {
 }
 
 export function validateTokenAmount(amount: number): boolean {
-  return amount > 0 && amount <= 25000 && Number.isFinite(amount);
+  return amount > 0 && amount <= 50000 && Number.isFinite(amount);
 }
 
 /**
