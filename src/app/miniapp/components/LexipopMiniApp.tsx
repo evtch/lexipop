@@ -681,6 +681,18 @@ export default function LexipopMiniApp() {
               </motion.div>
 
 
+              {/* NFT Minting Section - Show first to establish clear flow */}
+              <NFTMintSection
+                words={gameState.gameQuestions.map(q => q.word)}
+                score={gameState.score + streakBonus}
+                streak={dailyStreak}
+                visible={gameState.totalQuestions > 0}
+                onMintSuccess={() => {
+                  // Refresh NFT check when NFT is successfully minted
+                  refreshNFTCheck();
+                }}
+              />
+
               {/* Token Generation Section */}
               <div className="mb-4">
                 {!generatedTokens ? (
@@ -695,12 +707,12 @@ export default function LexipopMiniApp() {
 
                     {/* NFT Requirement Check */}
                     {requiresNFT() && (
-                      <div className="bg-gradient-to-r from-purple-100 to-pink-100 border border-purple-200 rounded-lg p-3 mb-4">
-                        <div className="text-sm font-bold text-purple-800 text-center">
-                          🎨 Mint Free NFT to Claim $LEXIPOP
+                      <div className="bg-gray-100 border border-gray-200 rounded-lg p-3 mb-4">
+                        <div className="text-sm font-medium text-gray-700 text-center">
+                          🔒 NFT required to unlock rewards
                         </div>
                         {isLoadingNFT && (
-                          <div className="text-xs text-purple-600 mt-1 text-center">
+                          <div className="text-xs text-gray-600 mt-1 text-center">
                             Checking NFT ownership...
                           </div>
                         )}
@@ -900,18 +912,6 @@ export default function LexipopMiniApp() {
                   </div>
                 )}
               </div>
-
-              {/* NFT Minting Section - Show before token generation if NFT required */}
-              <NFTMintSection
-                words={gameState.gameQuestions.map(q => q.word)}
-                score={gameState.score + streakBonus}
-                streak={dailyStreak}
-                visible={gameState.totalQuestions > 0}
-                onMintSuccess={() => {
-                  // Refresh NFT check when NFT is successfully minted
-                  refreshNFTCheck();
-                }}
-              />
 
               {/* Action Buttons */}
               <div className="space-y-2 mt-auto">

@@ -119,7 +119,7 @@ export default function NFTMintSection({
                   variant="primary"
                   size="md"
                   disabled={isMinting || isConfirming || isPreviewLoading}
-                  className="w-full bg-white text-purple-600 hover:bg-purple-50"
+                  className="w-full bg-white text-purple-600 hover:bg-purple-50 border border-purple-200"
                 >
                   {isPreviewLoading
                     ? 'Generating Preview...'
