@@ -7,9 +7,7 @@
 
 import { createConfig, http } from 'wagmi';
 import { mainnet, base, baseSepolia, sepolia } from 'wagmi/chains';
-import { coinbaseWallet } from 'wagmi/connectors';
-
-const appName = 'Lexipop';
+import { farcasterFrame } from '@farcaster/miniapp-wagmi-connector';
 
 export const wagmiConfig = createConfig({
   chains: [
@@ -21,8 +19,7 @@ export const wagmiConfig = createConfig({
     ...(process.env.NODE_ENV === 'development' ? [baseSepolia, sepolia] : [])
   ],
   connectors: [
-    coinbaseWallet({ appName }),
-    // Removed MetaMask and WalletConnect to prevent SSR issues
+    farcasterFrame(), // Only Farcaster - works everywhere, no SSR issues
   ],
   transports: {
     [mainnet.id]: http(),

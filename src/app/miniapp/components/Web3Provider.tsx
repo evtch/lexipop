@@ -42,20 +42,8 @@ const lexipopTheme = darkTheme({
 });
 
 export default function Web3Provider({ children, useMiniappConfig = false }: Web3ProviderProps) {
-  const [isClient, setIsClient] = useState(false);
-
-  // Only initialize on client side to prevent SSR issues with WalletConnect
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
   // Use miniapp config when in Farcaster context, otherwise use standard config
   const selectedConfig = useMiniappConfig ? miniappWagmiConfig : wagmiConfig;
-
-  // Show children without Web3 providers during SSR to prevent indexedDB errors
-  if (!isClient) {
-    return <>{children}</>;
-  }
 
   return (
     <WagmiProvider config={selectedConfig}>
