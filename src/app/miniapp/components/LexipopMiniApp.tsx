@@ -924,73 +924,73 @@ Play now! 👇`;
                       <div className="text-4xl font-bold text-white mb-2 text-center">
                         {generatedTokens}
                       </div>
-                      <div className="text-white text-lg text-center">
+                      <div className="text-white text-lg text-center mb-4">
                         You won {generatedTokens} $LEXIPOP
                       </div>
+
+                      {/* Claim Button inside token container */}
+                      {hasAnyWallet ? (
+                        <div>
+                          {/* Show sharing requirement for first-time users */}
+                          {isFirstTimeClaim && !hasSharedCast && (
+                            <div className="bg-yellow-100 border border-yellow-300 rounded-lg p-3 mb-3">
+                              <div className="text-sm font-medium text-yellow-800 mb-1">
+                                🎉 First Time Claim!
+                              </div>
+                              <div className="text-xs text-yellow-700">
+                                Share your achievement on Farcaster above to unlock your first $LEXIPOP claim!
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Show success message when sharing is completed for first-time users */}
+                          {isFirstTimeClaim && hasSharedCast && (
+                            <div className="bg-green-100 border border-green-300 rounded-lg p-3 mb-3">
+                              <div className="text-sm font-medium text-green-800 mb-1">
+                                ✅ Thanks for sharing!
+                              </div>
+                              <div className="text-xs text-green-700">
+                                You can now claim your first $LEXIPOP tokens below!
+                              </div>
+                            </div>
+                          )}
+
+                          <MiniAppButton
+                            onClick={handleTokenClaim}
+                            variant="primary"
+                            size="md"
+                            disabled={!canClaimGeneratedTokens || isWritePending || isConfirming || (isFirstTimeClaim && !hasSharedCast)}
+                            className="w-full bg-white text-purple-600 hover:bg-purple-50 border border-purple-200 font-semibold"
+                          >
+                            {isWritePending
+                              ? 'Confirming...'
+                              : isConfirming
+                              ? 'Processing...'
+                              : isClaimingTokens
+                              ? 'Claiming...'
+                              : (isFirstTimeClaim && !hasSharedCast)
+                              ? 'Share First to Claim'
+                              : 'Claim Reward'}
+                          </MiniAppButton>
+                        </div>
+                      ) : (
+                        <div>
+                          <p className="text-white/90 mb-3 text-sm text-center">
+                            Connect wallet to claim $LEXIPOP
+                          </p>
+                          <MiniAppButton
+                            onClick={handleFarcasterWalletConnect}
+                            variant="primary"
+                            size="md"
+                            icon="🎯"
+                            className="w-full bg-white text-purple-600 hover:bg-purple-50 border border-purple-200 font-semibold"
+                          >
+                            Connect Wallet
+                          </MiniAppButton>
+                        </div>
+                      )}
                     </motion.div>
 
-                    {/* Wallet Status & Claim Button */}
-                    {!hasAnyWallet ? (
-                      <div>
-                        <p className="text-orange-600 mb-2 text-sm">
-                          {hasFarcasterWallet ? 'Connect Farcaster wallet to claim $LEXIPOP' : 'Connect wallet to claim $LEXIPOP'}
-                        </p>
-                        <MiniAppButton
-                          onClick={handleFarcasterWalletConnect}
-                          variant="primary"
-                          size="md"
-                          icon="🎯"
-                          className="w-full mb-3"
-                        >
-                          Connect Wallet
-                        </MiniAppButton>
-                      </div>
-                    ) : (
-                      <div>
-                        {/* Show sharing requirement for first-time users */}
-                        {isFirstTimeClaim && !hasSharedCast && (
-                          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-3">
-                            <div className="text-sm font-medium text-yellow-800 mb-1">
-                              🎉 First Time Claim!
-                            </div>
-                            <div className="text-xs text-yellow-700">
-                              Share your achievement on Farcaster above to unlock your first $LEXIPOP claim!
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Show success message when sharing is completed for first-time users */}
-                        {isFirstTimeClaim && hasSharedCast && (
-                          <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-3">
-                            <div className="text-sm font-medium text-green-800 mb-1">
-                              ✅ Thanks for sharing!
-                            </div>
-                            <div className="text-xs text-green-700">
-                              You can now claim your first $LEXIPOP tokens below!
-                            </div>
-                          </div>
-                        )}
-
-                        <MiniAppButton
-                          onClick={handleTokenClaim}
-                          variant="primary"
-                          size="md"
-                          icon="💰"
-                          disabled={!canClaimGeneratedTokens || isWritePending || isConfirming || (isFirstTimeClaim && !hasSharedCast)}
-                          className="w-full mb-3"
-                        >
-                          {isWritePending
-                            ? 'Confirming...'
-                            : isConfirming
-                            ? 'Processing...'
-                            : isClaimingTokens
-                            ? 'Claiming...'
-                            : (isFirstTimeClaim && !hasSharedCast)
-                            ? 'Share First to Claim'
-                            : `Claim ${generatedTokens} $LEXIPOP`}
-                        </MiniAppButton>
-                      </div>
-                    )}
 
                     {/* Success Display */}
                     {isConfirmed && hash && (
@@ -1043,6 +1043,17 @@ Play now! 👇`;
                   View Leaderboard
                 </MiniAppButton>
               </div>
+
+              {/* Daily streak bonus message */}
+              <div className="mt-4 bg-gradient-to-r from-orange-400 to-yellow-400 text-white rounded-lg p-3 shadow-lg">
+                <p className="text-sm font-semibold flex items-center justify-center gap-2">
+                  <span>🔥</span>
+                  Play daily to earn more bonus points!
+                </p>
+                <p className="text-xs text-center mt-1 text-white/90">
+                  Current streak: {dailyStreak} day{dailyStreak !== 1 ? 's' : ''} • Bonus: +{(dailyStreak - 1) * 100} pts
+                </p>
+              </div>
             </>
           ) : (
             // First Time Layout
@@ -1094,18 +1105,6 @@ Play now! 👇`;
                 </div>
               )}
 
-              {/* Daily streak bonus message */}
-              <div className="mb-4 bg-gradient-to-r from-orange-400 to-yellow-400 text-white rounded-lg p-3 shadow-lg">
-                <p className="text-sm font-semibold flex items-center justify-center gap-2">
-                  <span>🔥</span>
-                  Play daily to earn more bonus points!
-                </p>
-                {dailyStreak > 0 && (
-                  <p className="text-xs text-center mt-1 text-white/90">
-                    Current streak: {dailyStreak} day{dailyStreak !== 1 ? 's' : ''} • Bonus: +{(dailyStreak - 1) * 100} pts
-                  </p>
-                )}
-              </div>
 
               <div className="space-y-4 mt-auto">
                 {/* Start Playing Button with User Info */}
@@ -1144,6 +1143,17 @@ Play now! 👇`;
                 >
                   View Leaderboard
                 </MiniAppButton>
+
+                {/* Daily streak bonus message */}
+                <div className="mt-4 bg-gradient-to-r from-orange-400 to-yellow-400 text-white rounded-lg p-3 shadow-lg">
+                  <p className="text-sm font-semibold flex items-center justify-center gap-2">
+                    <span>🔥</span>
+                    Play daily to earn more bonus points!
+                  </p>
+                  <p className="text-xs text-center mt-1 text-white/90">
+                    Current streak: {dailyStreak} day{dailyStreak !== 1 ? 's' : ''} • Bonus: +{(dailyStreak - 1) * 100} pts
+                  </p>
+                </div>
               </div>
             </>
           )}

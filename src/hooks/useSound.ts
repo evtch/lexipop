@@ -9,10 +9,30 @@ export function useSound() {
     try {
       // Create or reuse audio element
       if (!audioRefs.current[soundPath]) {
-        audioRefs.current[soundPath] = new Audio(soundPath);
-        audioRefs.current[soundPath].preload = 'auto';
+        const audio = new Audio(soundPath);
+        audio.preload = 'auto';
+
+        // Configure for background mixing - doesn't interrupt other audio
+        audio.volume = 0.3; // Lower default volume
+        audio.muted = false;
+
+        // Set audio to be less intrusive and mix with other audio
+        if ('mozAudioChannelType' in audio) {
+          (audio as any).mozAudioChannelType = 'content';
+        }
+
+        // Modern browsers: configure for mixing with other audio
+        if ('setSinkId' in audio && typeof audio.setSinkId === 'function') {
+          // Allow audio to be mixed rather than take exclusive control
+          Object.defineProperty(audio, 'mixWithOthers', {
+            value: true,
+            writable: false
+          });
+        }
+
+        audioRefs.current[soundPath] = audio;
         // Pre-load the audio immediately to reduce delay
-        audioRefs.current[soundPath].load();
+        audio.load();
       }
 
       const audio = audioRefs.current[soundPath];
@@ -20,6 +40,14 @@ export function useSound() {
 
       // Reset audio to beginning and play immediately
       audio.currentTime = 0;
+
+      // Ensure audio doesn't interrupt other audio sources
+      if ('webkitAudioContext' in window || 'AudioContext' in window) {
+        // For browsers that support it, try to set as background audio
+        if ((audio as any).mozPreservesPitch !== undefined) {
+          (audio as any).mozPreservesPitch = true;
+        }
+      }
 
       // Use immediate play without waiting for promise
       audio.play().catch(error => {
@@ -32,19 +60,19 @@ export function useSound() {
   }, []);
 
   const playCorrectSound = useCallback(() => {
-    playSound('/sounds/correct-answer.mp3', 0.4);
+    playSound('/sounds/correct-answer.mp3', 0.25);
   }, [playSound]);
 
   const playWrongSound = useCallback(() => {
-    playSound('/sounds/wrong-answer.mp3', 0.4);
+    playSound('/sounds/wrong-answer.mp3', 0.25);
   }, [playSound]);
 
   const playRewardGeneratingSound = useCallback(() => {
-    playSound('/sounds/reward-generating.mp3', 0.4);
+    playSound('/sounds/reward-generating.mp3', 0.3);
   }, [playSound]);
 
   const playRewardClaimSound = useCallback(() => {
-    playSound('/sounds/reward-claim.mp3', 0.4);
+    playSound('/sounds/reward-claim.mp3', 0.3);
   }, [playSound]);
 
   return {

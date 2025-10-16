@@ -162,7 +162,7 @@ export default function NFTMintSection({
                     ? 'Minting...'
                     : isConfirming
                     ? 'Confirming...'
-                    : 'Mint Free NFT 🎨'}
+                    : 'Mint Free NFT'}
                 </MiniAppButton>
 
                 <div className="text-xs text-purple-200">
