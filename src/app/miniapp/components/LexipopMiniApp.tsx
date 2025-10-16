@@ -502,9 +502,7 @@ Play now! 👇`;
         await sdk.actions.composeCast({
           text: castText,
           embeds: [
-            {
-              url: pngDataUrl // Use the PNG data URL as embed
-            },
+            pngDataUrl, // Use the PNG data URL as embed
             miniappUrl
           ]
         });
