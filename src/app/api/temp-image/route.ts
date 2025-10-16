@@ -7,7 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 
 export async function POST(request: NextRequest) {
   try {
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     const imageBuffer = Buffer.from(base64Data, 'base64');
 
     // Create unique filename
-    const filename = `score-${uuidv4()}.png`;
+    const filename = `score-${randomUUID()}.png`;
     const publicDir = path.join(process.cwd(), 'public', 'temp-images');
 
     // Ensure directory exists
