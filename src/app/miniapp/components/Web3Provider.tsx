@@ -7,7 +7,7 @@
  * Handles wallet connection, token claims, and blockchain interactions
  */
 
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useState, useEffect } from 'react';
 import { WagmiProvider } from 'wagmi';
 import { RainbowKitProvider, darkTheme } from '@rainbow-me/rainbowkit';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -42,8 +42,20 @@ const lexipopTheme = darkTheme({
 });
 
 export default function Web3Provider({ children, useMiniappConfig = false }: Web3ProviderProps) {
+  const [isClient, setIsClient] = useState(false);
+
+  // Only initialize on client side to prevent SSR issues with WalletConnect
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   // Use miniapp config when in Farcaster context, otherwise use standard config
   const selectedConfig = useMiniappConfig ? miniappWagmiConfig : wagmiConfig;
+
+  // Show children without Web3 providers during SSR to prevent indexedDB errors
+  if (!isClient) {
+    return <>{children}</>;
+  }
 
   return (
     <WagmiProvider config={selectedConfig}>
