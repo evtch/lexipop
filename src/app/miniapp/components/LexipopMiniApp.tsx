@@ -877,26 +877,26 @@ Play now! 👇`;
                       <div className="text-4xl font-bold text-white mb-2">
                         {currentNumber === 0 ? '🎁' : currentNumber}
                       </div>
-                      <div className="text-white text-lg">
+                      <div className="text-white text-lg mb-4">
                         $LEXIPOP
                       </div>
-                    </motion.div>
 
-                    {/* Generate Button */}
-                    <MiniAppButton
-                      onClick={generateTokens}
-                      variant="primary"
-                      size="md"
-                      icon="🎰"
-                      disabled={isGeneratingTokens || requiresNFT() || isLoadingNFT}
-                      className="w-full mb-3"
-                    >
-                      {isGeneratingTokens
-                        ? 'Generating...'
-                        : requiresNFT()
-                        ? 'Mint NFT First'
-                        : 'Generate my reward'}
-                    </MiniAppButton>
+                      {/* Generate Button inside container */}
+                      <MiniAppButton
+                        onClick={generateTokens}
+                        variant="primary"
+                        size="md"
+                        icon="🎰"
+                        disabled={isGeneratingTokens || requiresNFT() || isLoadingNFT}
+                        className="w-full bg-white text-purple-600 hover:bg-purple-50 border border-purple-200 font-semibold"
+                      >
+                        {isGeneratingTokens
+                          ? 'Generating...'
+                          : requiresNFT()
+                          ? 'Mint NFT First'
+                          : 'Generate my reward'}
+                      </MiniAppButton>
+                    </motion.div>
 
 
                     {/* Visual Score Sharing */}
@@ -960,7 +960,7 @@ Play now! 👇`;
                             variant="primary"
                             size="md"
                             disabled={!canClaimGeneratedTokens || isWritePending || isConfirming || (isFirstTimeClaim && !hasSharedCast)}
-                            className="w-full bg-white text-purple-600 hover:bg-purple-50 border border-purple-200 font-semibold"
+                            className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 border-0 font-semibold"
                           >
                             {isWritePending
                               ? 'Confirming...'
@@ -983,7 +983,7 @@ Play now! 👇`;
                             variant="primary"
                             size="md"
                             icon="🎯"
-                            className="w-full bg-white text-purple-600 hover:bg-purple-50 border border-purple-200 font-semibold"
+                            className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 border-0 font-semibold"
                           >
                             Connect Wallet
                           </MiniAppButton>

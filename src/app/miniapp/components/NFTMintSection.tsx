@@ -187,7 +187,7 @@ export default function NFTMintSection({
               <div className="text-xs text-purple-200 mb-1">
                 Your words:
               </div>
-              <div className="text-sm font-medium">
+              <div className="text-xs font-medium">
                 {words.join(' • ')}
               </div>
             </div>
