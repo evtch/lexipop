@@ -5,17 +5,13 @@
  * Supports multiple chains and wallet providers
  */
 
-import { getDefaultConfig } from '@rainbow-me/rainbowkit';
+import { createConfig, http } from 'wagmi';
 import { mainnet, base, baseSepolia, sepolia } from 'wagmi/chains';
+import { metaMask, coinbaseWallet } from 'wagmi/connectors';
 
-// Get environment variables with fallbacks
-const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || '7e3c82dfe33435c5ae224a90a29e25db';
 const appName = 'Lexipop';
-const appDescription = 'Learn vocabulary the fun way!';
 
-export const wagmiConfig = getDefaultConfig({
-  appName,
-  projectId,
+export const wagmiConfig = createConfig({
   chains: [
     // Production chains
     mainnet,
@@ -24,7 +20,18 @@ export const wagmiConfig = getDefaultConfig({
     // Test chains (only in development)
     ...(process.env.NODE_ENV === 'development' ? [baseSepolia, sepolia] : [])
   ],
-  ssr: true, // Enable SSR support for Next.js
+  connectors: [
+    metaMask(),
+    coinbaseWallet({ appName }),
+    // Removed WalletConnect to prevent SSR indexedDB errors
+  ],
+  transports: {
+    [mainnet.id]: http(),
+    [base.id]: http(),
+    [baseSepolia.id]: http(),
+    [sepolia.id]: http(),
+  },
+  ssr: true,
 });
 
 // Chain configurations for different environments
