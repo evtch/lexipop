@@ -10,6 +10,16 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 /**
+ * GET /api/user/enable-notifications - Method not allowed
+ */
+export async function GET() {
+  return NextResponse.json(
+    { error: 'Method not allowed - use POST to enable notifications' },
+    { status: 405 }
+  );
+}
+
+/**
  * POST /api/user/enable-notifications - Enable notifications for a user
  */
 export async function POST(request: NextRequest) {

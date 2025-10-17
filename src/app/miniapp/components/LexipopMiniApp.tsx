@@ -436,8 +436,8 @@ export default function LexipopMiniApp() {
       setIsGeneratingTokens(false);
       setGeneratedTokens(finalAmount);
       setCurrentNumber(finalAmount);
-      // Play reward claim sound when tokens are revealed
-      playRewardClaimSound();
+      // Play reward generating sound when tokens are revealed (not claim sound)
+      playRewardGeneratingSound();
     }, 3000);
   };
 
@@ -801,7 +801,7 @@ Play now! 👇`;
               <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="bg-gradient-to-r from-green-400 to-blue-500 rounded-lg p-2 text-white shadow-lg mb-3"
+                className="bg-gradient-to-r from-green-400 to-blue-500 rounded-lg p-2 text-white shadow-lg mb-2"
               >
                 <div className="text-center">
 
@@ -853,17 +853,17 @@ Play now! 👇`;
 
               {/* Token Generation Section */}
               <div className="mb-4">
+                <AnimatePresence mode="wait">
                 {!generatedTokens ? (
                   // Token Generation Display
-                  <div className="text-center">
-                    <div className="text-xs text-blue-600 font-medium mb-4">
-                      💡 Higher scores + daily streak = bigger rewards!
-                    </div>
-
-
+                  <motion.div
+                    key="generation"
+                    initial={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="text-center">
                     {/* Airport-style Number Generator */}
                     <motion.div
-                      className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl p-4 mb-4 shadow-xl"
+                      className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl p-3 mb-3 shadow-xl"
                       animate={isGeneratingTokens ? {
                         scale: [1, 1.05, 1]
                       } : {}}
@@ -873,10 +873,10 @@ Play now! 👇`;
                         ease: "easeInOut"
                       }}
                     >
-                      <div className="text-4xl font-bold text-white mb-2">
+                      <div className="text-3xl font-bold text-white mb-1">
                         {currentNumber === 0 ? '🎁' : currentNumber}
                       </div>
-                      <div className="text-white text-base mb-4">
+                      <div className="text-white text-sm mb-3">
                         $LEXIPOP
                       </div>
 
@@ -901,32 +901,28 @@ Play now! 👇`;
                     </motion.div>
 
 
-                    {/* Visual Score Sharing */}
-                    <div className="space-y-2">
-                      <MiniAppButton
-                        onClick={handleShareWithVisualScore}
-                        variant="secondary"
-                        size="md"
-                        icon="🌟"
-                        className="w-full"
-                      >
-                        Share Your Score
-                      </MiniAppButton>
-                    </div>
-                  </div>
+                    {/* Visual Score Sharing moved to action buttons section */}
+                  </motion.div>
                 ) : (
                   // Token Claim Section
-                  <div className="text-center">
+                  <motion.div
+                    key="claim"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-center">
+                    {/* Visual Score Sharing moved to action buttons section */}
+
                     {/* Result Display - Same style as generation box */}
                     <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl p-4 mb-4 shadow-xl"
+                      initial={{ scale: 1, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ duration: 0.3 }}
+                      className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl p-3 mb-3 shadow-xl"
                     >
-                      <div className="text-4xl font-bold text-white mb-2 text-center">
+                      <div className="text-3xl font-bold text-white mb-1 text-center">
                         {generatedTokens}
                       </div>
-                      <div className="text-white text-base text-center mb-4">
+                      <div className="text-white text-sm text-center mb-3">
                         You won {generatedTokens} $LEXIPOP
                       </div>
 
@@ -1019,12 +1015,25 @@ Play now! 👇`;
                         </div>
                       </motion.div>
                     )}
-                  </div>
+                  </motion.div>
                 )}
+                </AnimatePresence>
               </div>
 
               {/* Action Buttons */}
               <div className="space-y-2 mt-auto">
+                {!hasSharedVisualScore && (
+                  <MiniAppButton
+                    onClick={handleShareWithVisualScore}
+                    variant="secondary"
+                    size="md"
+                    icon="🌟"
+                    className="w-full"
+                  >
+                    Share Your Score
+                  </MiniAppButton>
+                )}
+
                 <MiniAppButton
                   onClick={startNewGame}
                   variant="secondary"

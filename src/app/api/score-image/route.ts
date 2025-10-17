@@ -7,6 +7,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateScoreShareSvg } from '@/lib/utils/svgToPng';
 
+export async function GET() {
+  return NextResponse.json(
+    { error: 'Method not allowed - use POST to generate image' },
+    { status: 405 }
+  );
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
