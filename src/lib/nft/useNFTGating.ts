@@ -25,6 +25,9 @@ export function useNFTGating(gameWords: string[]) {
     error: null
   });
 
+  // Manual override for immediate updates after minting
+  const [manualOverride, setManualOverride] = useState<boolean | null>(null);
+
   // Get user's NFT count
   const {
     data: userTokens,
@@ -106,18 +109,30 @@ export function useNFTGating(gameWords: string[]) {
     }
   }, [tokenError]);
 
+  // Use manual override if available, otherwise use computed state
+  const finalHasNFT = manualOverride !== null ? manualOverride : gatingState.hasNFTForGame;
+
   return {
     ...gatingState,
+    hasNFTForGame: finalHasNFT,
     isLoading: isLoadingTokens || gatingState.isCheckingNFT,
 
     // Helper methods
-    canClaimTokens: () => gatingState.hasNFTForGame,
-    requiresNFT: () => !gatingState.hasNFTForGame,
+    canClaimTokens: () => finalHasNFT,
+    requiresNFT: () => !finalHasNFT,
 
     // Refresh check
     refresh: () => {
-      // This will trigger a re-check via the useEffect
+      // Clear manual override and trigger a re-check
+      setManualOverride(null);
       setGatingState(prev => ({ ...prev, isCheckingNFT: true }));
+    },
+
+    // Manual override for immediate updates after minting
+    setHasMintedNFT: () => {
+      console.log('🎉 NFT minted successfully - enabling token claims immediately');
+      setManualOverride(true);
+      setGatingState(prev => ({ ...prev, userNFTCount: prev.userNFTCount + 1 }));
     }
   };
 }

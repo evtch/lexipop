@@ -86,7 +86,8 @@ export default function LexipopMiniApp() {
     isLoading: isLoadingNFT,
     canClaimTokens: canClaimWithNFT,
     requiresNFT,
-    refresh: refreshNFTCheck
+    refresh: refreshNFTCheck,
+    setHasMintedNFT
   } = useNFTGating(gameState.gameQuestions?.map(q => q.word) || []);
 
   // Contract writing hook
@@ -844,7 +845,8 @@ Play now! 👇`;
                 streak={dailyStreak}
                 visible={gameState.totalQuestions > 0}
                 onMintSuccess={() => {
-                  // Refresh NFT check when NFT is successfully minted
+                  // Immediately enable token claims and refresh NFT check
+                  setHasMintedNFT();
                   refreshNFTCheck();
                 }}
               />
@@ -884,7 +886,11 @@ Play now! 👇`;
                         variant="primary"
                         size="md"
                         disabled={isGeneratingTokens || requiresNFT() || isLoadingNFT}
-                        className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 border-0 font-semibold"
+                        className={`w-full text-white border-0 font-semibold ${
+                          requiresNFT()
+                            ? 'bg-gray-400 hover:bg-gray-500'
+                            : 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700'
+                        }`}
                       >
                         {isGeneratingTokens
                           ? 'Generating...'
