@@ -28,18 +28,30 @@ export function useNFTGating(gameWords: string[]) {
   // Manual override for immediate updates after minting
   const [manualOverride, setManualOverride] = useState<boolean | null>(null);
 
+  // Get contract address safely with error handling
+  const getContractAddressSafe = (chainId: number): string | null => {
+    try {
+      return getContractAddress(chainId);
+    } catch (error) {
+      console.warn(`NFT contract not available on chain ${chainId}:`, error);
+      return null;
+    }
+  };
+
+  const contractAddress = chainId ? getContractAddressSafe(chainId) : null;
+
   // Get user's NFT count
   const {
     data: userTokens,
     isLoading: isLoadingTokens,
     error: tokenError
   } = useReadContract({
-    address: chainId ? getContractAddress(chainId) as `0x${string}` : undefined,
+    address: contractAddress as `0x${string}` | undefined,
     abi: LEXIPOP_NFT_ABI,
     functionName: 'getPlayerTokens',
     args: address ? [address] : undefined,
     query: {
-      enabled: !!address && !!chainId
+      enabled: !!address && !!chainId && !!contractAddress
     }
   });
 

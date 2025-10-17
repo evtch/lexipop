@@ -488,10 +488,10 @@ export const LEXIPOP_NFT_ABI = [
 
 // Contract addresses for different networks
 export const CONTRACT_ADDRESSES = {
-  // Base Mainnet
+  // Base Mainnet - where NFT contract is deployed
   8453: '0xb6eA78c8c5feB29a5562266c9967e38C63124bFb',
   // Base Sepolia Testnet (for testing)
-  84532: ''
+  84532: '0xb6eA78c8c5feB29a5562266c9967e38C63124bFb' // Use same for testing
 } as const;
 
 export type ContractNetwork = keyof typeof CONTRACT_ADDRESSES;

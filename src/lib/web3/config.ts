@@ -11,9 +11,10 @@ import { farcasterFrame } from '@farcaster/miniapp-wagmi-connector';
 
 export const wagmiConfig = createConfig({
   chains: [
-    // Production chains
-    mainnet,
+    // Base first - where contracts are deployed
     base,
+    // Mainnet second for token interactions
+    mainnet,
 
     // Test chains (only in development)
     ...(process.env.NODE_ENV === 'development' ? [baseSepolia, sepolia] : [])
@@ -36,8 +37,8 @@ export const supportedChains = {
   development: [mainnet, base, baseSepolia, sepolia]
 };
 
-// Default chain based on environment
-export const defaultChain = process.env.NODE_ENV === 'production' ? base : baseSepolia;
+// Default chain - always Base where contracts are deployed
+export const defaultChain = base;
 
 // Real contract addresses
 export const tokenContracts = {
