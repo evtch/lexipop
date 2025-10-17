@@ -6,56 +6,44 @@
  */
 
 import { createConfig, http } from 'wagmi';
-import { mainnet, base, baseSepolia, sepolia } from 'wagmi/chains';
+import { base, baseSepolia } from 'wagmi/chains';
 import { farcasterFrame } from '@farcaster/miniapp-wagmi-connector';
 
 export const wagmiConfig = createConfig({
   chains: [
-    // Base first - where contracts are deployed
+    // Base only - where all contracts are deployed
     base,
-    // Mainnet second for token interactions
-    mainnet,
 
     // Test chains (only in development)
-    ...(process.env.NODE_ENV === 'development' ? [baseSepolia, sepolia] : [])
+    ...(process.env.NODE_ENV === 'development' ? [baseSepolia] : [])
   ],
   connectors: [
     farcasterFrame(), // Only Farcaster - works everywhere, no SSR issues
   ],
   transports: {
-    [mainnet.id]: http(),
     [base.id]: http(),
     [baseSepolia.id]: http(),
-    [sepolia.id]: http(),
   },
   ssr: true,
 });
 
 // Chain configurations for different environments
 export const supportedChains = {
-  production: [mainnet, base],
-  development: [mainnet, base, baseSepolia, sepolia]
+  production: [base],
+  development: [base, baseSepolia]
 };
 
 // Default chain - always Base where contracts are deployed
 export const defaultChain = base;
 
-// Real contract addresses
+// Real contract addresses - Base only
 export const tokenContracts = {
-  [mainnet.id]: {
-    lexipopToken: '0xf732f31f73e7DC21299f3ab42BD22E8a7C6b4B07', // LEXIPOP token on mainnet
-    moneyTree: '0xE636BaaF2c390A591EdbffaF748898EB3f6FF9A1', // MoneyTree distributor
-  },
   [base.id]: {
     lexipopToken: '0xf732f31f73e7DC21299f3ab42BD22E8a7C6b4B07', // LEXIPOP token on Base
     moneyTree: '0xE636BaaF2c390A591EdbffaF748898EB3f6FF9A1', // MoneyTree distributor
   },
   [baseSepolia.id]: {
     lexipopToken: '0xf732f31f73e7DC21299f3ab42BD22E8a7C6b4B07', // LEXIPOP token on Base Sepolia
-    moneyTree: '0xE636BaaF2c390A591EdbffaF748898EB3f6FF9A1', // MoneyTree distributor
-  },
-  [sepolia.id]: {
-    lexipopToken: '0xf732f31f73e7DC21299f3ab42BD22E8a7C6b4B07', // LEXIPOP token on Sepolia
     moneyTree: '0xE636BaaF2c390A591EdbffaF748898EB3f6FF9A1', // MoneyTree distributor
   }
 } as const;

@@ -28,8 +28,15 @@ export function useNFTGating(gameWords: string[]) {
   // Manual override for immediate updates after minting
   const [manualOverride, setManualOverride] = useState<boolean | null>(null);
 
+  // Supported chain IDs where NFT contract is deployed
+  const SUPPORTED_CHAINS = [8453, 84532]; // Base mainnet and Base Sepolia
+
   // Get contract address safely with error handling
   const getContractAddressSafe = (chainId: number): string | null => {
+    if (!SUPPORTED_CHAINS.includes(chainId)) {
+      // Don't log warning for unsupported chains to avoid spam
+      return null;
+    }
     try {
       return getContractAddress(chainId);
     } catch (error) {
@@ -38,7 +45,7 @@ export function useNFTGating(gameWords: string[]) {
     }
   };
 
-  const contractAddress = chainId ? getContractAddressSafe(chainId) : null;
+  const contractAddress = chainId && SUPPORTED_CHAINS.includes(chainId) ? getContractAddressSafe(chainId) : null;
 
   // Get user's NFT count
   const {
@@ -57,7 +64,7 @@ export function useNFTGating(gameWords: string[]) {
 
   // Check if user has NFT for current game words
   useEffect(() => {
-    if (!address || !chainId || !gameWords.length || !userTokens) {
+    if (!address || !chainId || !gameWords.length || !userTokens || !contractAddress) {
       setGatingState(prev => ({
         ...prev,
         hasNFTForGame: false,
