@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: `You already claimed tokens. Play again in ${remainingMinutes} minute${remainingMinutes > 1 ? 's' : ''}.`
+          error: `Tokens already claimed. Play again in ${remainingMinutes} min.`
         },
         { status: 429 }
       );

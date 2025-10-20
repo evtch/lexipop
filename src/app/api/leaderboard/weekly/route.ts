@@ -59,14 +59,23 @@ export async function GET(request: NextRequest) {
       where: { weekStarting }
     });
 
-    console.log(`✅ Fetched ${leaderboard.length} leaderboard entries (${totalPlayers} total players) - Using stored avatar data`);
+    // Get the actual max score from the database
+    const maxScoreResult = await prisma.leaderboardScore.aggregate({
+      where: { weekStarting },
+      _max: {
+        score: true
+      }
+    });
+    const maxScore = maxScoreResult._max.score || 500; // Default to 500 if no scores yet
+
+    console.log(`✅ Fetched ${leaderboard.length} leaderboard entries (${totalPlayers} total players, max score: ${maxScore}) - Using stored avatar data`);
 
     return NextResponse.json({
       success: true,
       leaderboard,
       weekStarting: weekStarting.toISOString(),
       totalPlayers,
-      maxScore: 500,
+      maxScore,
       message: `Weekly leaderboard for ${weekStarting.toDateString()}`
     });
 

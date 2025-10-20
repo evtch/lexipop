@@ -233,7 +233,7 @@ model LeaderboardScore {
   username     String   // Farcaster username
   displayName  String?  // Farcaster display name
   pfpUrl       String?  // Farcaster profile picture URL
-  score        Int      // 0-500 points (100 per correct answer)
+  score        Int      // Base: 0-500 (100 per correct answer), can be higher with streak bonuses
   weekStarting DateTime // Monday of the week at 00:00:00
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt

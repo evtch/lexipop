@@ -1021,7 +1021,7 @@ Play now! 👇`;
               </div>
 
               {/* Action Buttons */}
-              <div className="space-y-2 mt-auto">
+              <div className="space-y-2 mt-4">
                 {!hasSharedVisualScore && (
                   <MiniAppButton
                     onClick={handleShareWithVisualScore}
