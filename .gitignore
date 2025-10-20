@@ -67,3 +67,4 @@ schema.graphql
 src/TokenHandlers.ts
 src/MoneyTreeHandlers.ts
 src/lib/leaderboardCache.ts
+generated/
