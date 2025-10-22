@@ -27,7 +27,7 @@ import NFTMintSection from './NFTMintSection';
 export default function LexipopMiniApp() {
   // Using both Farcaster SDK and Neynar for comprehensive miniapp functionality
   // Neynar MiniAppProvider handles notification tracking and analytics
-  const { isSDKLoaded, addMiniApp: neynarAddMiniApp } = useMiniApp();
+  const { isSDKLoaded, actions } = useMiniApp();
 
   // Use automatic Farcaster user detection from miniapp context
   const farcasterUser = useFarcasterUser();
@@ -107,11 +107,11 @@ export default function LexipopMiniApp() {
         // Wait for SDKs to be ready
         await sdk.actions.ready();
 
-        if (isSDKLoaded) {
+        if (isSDKLoaded && actions) {
           // Use Neynar's addMiniApp for notification tracking
-          const result = await neynarAddMiniApp();
+          const result = await actions.addMiniApp();
 
-          if (result.added && result.notificationDetails) {
+          if (result?.notificationDetails) {
             console.log('✅ Mini app added with notification tracking:', result.notificationDetails.token);
 
             // Track that user enabled notifications
@@ -127,9 +127,8 @@ export default function LexipopMiniApp() {
               }).catch(err => console.error('Failed to track notification enablement:', err));
             }
           } else {
-            // Fallback to Farcaster SDK if Neynar fails
-            await sdk.actions.addMiniApp();
-            console.log('✅ Native Farcaster popup shown via SDK');
+            // User might have dismissed or mini app was already added
+            console.log('✅ Mini app add prompt shown (no notification details returned)');
           }
         } else {
           // Fallback to Farcaster SDK if Neynar SDK not loaded
@@ -146,7 +145,7 @@ export default function LexipopMiniApp() {
     if (currentUser?.fid && !currentUser.error) {
       showNativeFarcasterPopup();
     }
-  }, [currentUser?.fid, currentUser?.error, isSDKLoaded, neynarAddMiniApp]);
+  }, [currentUser?.fid, currentUser?.error, isSDKLoaded, actions]);
 
   // Check if user has seen notification prompt and claimed tokens before
   useEffect(() => {
