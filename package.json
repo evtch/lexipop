@@ -24,6 +24,7 @@
     "@farcaster/miniapp-sdk": "^0.2.0",
     "@farcaster/miniapp-wagmi-connector": "^1.1.0",
     "@neynar/nodejs-sdk": "^3.34.0",
+    "@neynar/react": "^1.2.15",
     "@prisma/client": "^6.17.1",
     "@rainbow-me/rainbowkit": "^2.0.8",
     "@tanstack/react-query": "^5.90.2",
@@ -55,10 +56,10 @@
     "typescript": "^5"
   },
   "optionalDependencies": {
-    "lightningcss-linux-x64-gnu": "^1.28.1",
-    "lightningcss-linux-arm64-gnu": "^1.28.1",
-    "lightningcss-darwin-x64": "^1.28.1",
     "lightningcss-darwin-arm64": "^1.28.1",
+    "lightningcss-darwin-x64": "^1.28.1",
+    "lightningcss-linux-arm64-gnu": "^1.28.1",
+    "lightningcss-linux-x64-gnu": "^1.28.1",
     "lightningcss-win32-x64-msvc": "^1.28.1"
   }
 }

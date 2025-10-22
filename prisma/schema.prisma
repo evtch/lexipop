@@ -130,9 +130,10 @@ model UserStats {
   wordsLearned           Int @default(0) // unique words answered correctly
 
   // Notification fields
-  notificationToken     String?
-  notificationUrl       String?
-  notificationsEnabled  Boolean @default(false)
+  notificationToken           String?
+  notificationUrl             String?
+  notificationsEnabled        Boolean @default(false)
+  lastNotificationInteraction DateTime? // Track when user last opened a notification
 
   // Timestamps
   firstGameAt DateTime @default(now())

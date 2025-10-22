@@ -7,6 +7,7 @@ import { GameState, VocabularyWord } from '@/types/game';
 import { getUniqueWords, shuffleArray } from '@/data/vocabulary';
 import { sdk } from '@farcaster/miniapp-sdk'; // For miniapp functionality
 import { useFarcasterUser } from '@/lib/hooks/useFarcasterUser'; // Uses Farcaster SDK for user context
+import { useMiniApp } from '@neynar/react'; // Neynar MiniApp hook for notification tracking
 import { generateImprovedRandomness } from '@/lib/pyth-entropy';
 import { useSound } from '@/hooks/useSound';
 import { useAccount, useConnect, useDisconnect, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
@@ -24,8 +25,9 @@ import NFTMintSection from './NFTMintSection';
 // import NotificationPrompt from './NotificationPrompt'; // Removed - miniapp handles notifications via SDK
 
 export default function LexipopMiniApp() {
-  // Using Farcaster SDK directly for miniapp functionality (Neynar disabled due to SSR issues)
-  // No additional variables needed - will use sdk.actions.addMiniApp() directly
+  // Using both Farcaster SDK and Neynar for comprehensive miniapp functionality
+  // Neynar MiniAppProvider handles notification tracking and analytics
+  const { isSDKLoaded, addMiniApp: neynarAddMiniApp } = useMiniApp();
 
   // Use automatic Farcaster user detection from miniapp context
   const farcasterUser = useFarcasterUser();
@@ -98,16 +100,42 @@ export default function LexipopMiniApp() {
 
 
 
-  // Trigger native Farcaster "Add to Farcaster" popup on app load
+  // Trigger native Farcaster "Add to Farcaster" popup on app load with Neynar tracking
   useEffect(() => {
     const showNativeFarcasterPopup = async () => {
       try {
-        // Wait for SDK to be ready (should already be ready from useFarcasterUser)
+        // Wait for SDKs to be ready
         await sdk.actions.ready();
 
-        // Trigger native Farcaster popup with app info and notification consent
-        await sdk.actions.addMiniApp();
-        console.log('✅ Native Farcaster popup shown successfully');
+        if (isSDKLoaded) {
+          // Use Neynar's addMiniApp for notification tracking
+          const result = await neynarAddMiniApp();
+
+          if (result.added && result.notificationDetails) {
+            console.log('✅ Mini app added with notification tracking:', result.notificationDetails.token);
+
+            // Track that user enabled notifications
+            if (currentUser?.fid) {
+              fetch('/api/user/enable-notifications', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  fid: currentUser.fid,
+                  notificationToken: result.notificationDetails.token,
+                  enabled: true
+                })
+              }).catch(err => console.error('Failed to track notification enablement:', err));
+            }
+          } else {
+            // Fallback to Farcaster SDK if Neynar fails
+            await sdk.actions.addMiniApp();
+            console.log('✅ Native Farcaster popup shown via SDK');
+          }
+        } else {
+          // Fallback to Farcaster SDK if Neynar SDK not loaded
+          await sdk.actions.addMiniApp();
+          console.log('✅ Native Farcaster popup shown (Neynar SDK not ready)');
+        }
       } catch (error) {
         console.log('ℹ️ Native popup dismissed or already added:', error);
         // This is expected behavior - user might dismiss or already have it added
@@ -118,7 +146,7 @@ export default function LexipopMiniApp() {
     if (currentUser?.fid && !currentUser.error) {
       showNativeFarcasterPopup();
     }
-  }, [currentUser?.fid, currentUser?.error]);
+  }, [currentUser?.fid, currentUser?.error, isSDKLoaded, neynarAddMiniApp]);
 
   // Check if user has seen notification prompt and claimed tokens before
   useEffect(() => {
