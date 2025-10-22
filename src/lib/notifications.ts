@@ -344,6 +344,84 @@ export async function broadcastNotification(
 }
 
 /**
+ * Send engaging "Do you know what X means?" style notification
+ */
+export async function sendDoYouKnowNotification(userFid?: number): Promise<NotificationResponse> {
+  try {
+    // Get a random word from the database
+    const wordsCount = await prisma.word.count();
+    if (wordsCount === 0) {
+      return { success: false, error: 'No words found in database' };
+    }
+
+    const randomSkip = Math.floor(Math.random() * wordsCount);
+    const randomWord = await prisma.word.findFirst({
+      skip: randomSkip,
+      select: {
+        word: true,
+        correctDefinition: true,
+        difficulty: true
+      }
+    });
+
+    if (!randomWord) {
+      return { success: false, error: 'Failed to fetch random word' };
+    }
+
+    // Create engaging question-style notifications
+    const templates = [
+      {
+        title: `🎯 Do you know this word?`,
+        body: `What does "${randomWord.word}" mean? Test your knowledge in Lexipop!`
+      },
+      {
+        title: `📚 Word Challenge`,
+        body: `Can you define "${randomWord.word}"? Play now to find out!`
+      },
+      {
+        title: `🤔 Quick Quiz`,
+        body: `Do you know what "${randomWord.word}" means? Check your answer!`
+      },
+      {
+        title: `💡 Vocabulary Test`,
+        body: `"${randomWord.word}" - Know the meaning? Prove it in Lexipop!`
+      },
+      {
+        title: `🎮 Word Game Time`,
+        body: `Challenge: Define "${randomWord.word}" correctly! Play now.`
+      },
+      {
+        title: `🧠 Brain Teaser`,
+        body: `What's the meaning of "${randomWord.word}"? Take the quiz!`
+      }
+    ];
+
+    const template = templates[Math.floor(Math.random() * templates.length)];
+
+    // Ensure body fits within 128 character limit
+    if (template.body.length > 128) {
+      template.body = template.body.substring(0, 125) + '...';
+    }
+
+    console.log(`📨 Sending "Do you know" notification for word: ${randomWord.word}`);
+
+    if (userFid) {
+      return await sendNeynarNotification({
+        title: template.title,
+        body: template.body,
+        target_url: 'https://www.lexipop.xyz/miniapp'
+      }, [userFid]);
+    } else {
+      return await broadcastCustomNotification(template.title, template.body);
+    }
+
+  } catch (error) {
+    console.error('❌ Error sending do-you-know notification:', error);
+    return { success: false, error: 'Failed to send notification' };
+  }
+}
+
+/**
  * Broadcast custom notification to all users with notifications enabled
  */
 export async function broadcastCustomNotification(

@@ -12,6 +12,7 @@ import {
   sendWordTeaser,
   sendContextClueChallenge,
   sendDifficultyChallenge,
+  sendDoYouKnowNotification,
   createDynamicWordNotification,
   broadcastCustomNotification
 } from '@/lib/notifications';
@@ -69,22 +70,22 @@ async function handleWordNotifications(request: NextRequest) {
     let notificationResult: any;
 
     switch (dayOfWeek) {
-      case 0: // Sunday - Word of the Day
+      case 0: // Sunday - "Do You Know" Challenge
+        console.log('🎯 Sending "Do You Know" notification...');
+        notificationType = 'do_you_know';
+        notificationResult = await sendDoYouKnowNotification();
+        break;
+
+      case 1: // Monday - Word of the Day
         console.log('📖 Sending Word of the Day notification...');
         notificationType = 'word_of_day';
         notificationResult = await sendWordOfTheDay();
         break;
 
-      case 1: // Monday - Easy Challenge (start week easy)
-        console.log('🌱 Sending Beginner Challenge notification...');
-        notificationType = 'beginner_challenge';
-        notificationResult = await sendDifficultyChallenge('beginner');
-        break;
-
-      case 2: // Tuesday - Word Teaser
-        console.log('🤔 Sending Word Teaser notification...');
-        notificationType = 'word_teaser';
-        notificationResult = await sendWordTeaser();
+      case 2: // Tuesday - Another "Do You Know" Challenge
+        console.log('🤔 Sending "Do You Know" notification...');
+        notificationType = 'do_you_know';
+        notificationResult = await sendDoYouKnowNotification();
         break;
 
       case 3: // Wednesday - Context Clue Challenge
@@ -93,27 +94,30 @@ async function handleWordNotifications(request: NextRequest) {
         notificationResult = await sendContextClueChallenge();
         break;
 
-      case 4: // Thursday - Intermediate Challenge
-        console.log('🚀 Sending Intermediate Challenge notification...');
-        notificationType = 'intermediate_challenge';
-        notificationResult = await sendDifficultyChallenge('intermediate');
+      case 4: // Thursday - "Do You Know" Challenge
+        console.log('💡 Sending "Do You Know" notification...');
+        notificationType = 'do_you_know';
+        notificationResult = await sendDoYouKnowNotification();
         break;
 
-      case 5: // Friday - Advanced Challenge (end week strong)
-        console.log('🏆 Sending Advanced Challenge notification...');
-        notificationType = 'advanced_challenge';
-        notificationResult = await sendDifficultyChallenge('advanced');
+      case 5: // Friday - Difficulty Challenge
+        console.log('🏆 Sending Difficulty Challenge notification...');
+        notificationType = 'difficulty_challenge';
+        // Randomly pick a difficulty level for variety
+        const difficulties = ['beginner', 'intermediate', 'advanced'] as const;
+        const randomDifficulty = difficulties[Math.floor(Math.random() * difficulties.length)];
+        notificationResult = await sendDifficultyChallenge(randomDifficulty);
         break;
 
-      case 6: // Saturday - Custom Word Exploration
-        console.log('💫 Sending Custom Word Exploration notification...');
-        notificationType = 'word_exploration';
-        notificationResult = await sendCustomWordExploration();
+      case 6: // Saturday - "Do You Know" Weekend Challenge
+        console.log('🎮 Sending Weekend "Do You Know" notification...');
+        notificationType = 'do_you_know';
+        notificationResult = await sendDoYouKnowNotification();
         break;
 
       default:
-        notificationType = 'word_teaser';
-        notificationResult = await sendWordTeaser();
+        notificationType = 'do_you_know';
+        notificationResult = await sendDoYouKnowNotification();
         break;
     }
 
@@ -222,13 +226,13 @@ export async function HEAD() {
     endpoint: '/api/cron/word-notifications',
     methods: ['GET', 'POST'],
     schedule: {
-      sunday: 'Word of the Day',
-      monday: 'Beginner Challenge',
-      tuesday: 'Word Teaser',
+      sunday: 'Do You Know Challenge',
+      monday: 'Word of the Day',
+      tuesday: 'Do You Know Challenge',
       wednesday: 'Context Clue Challenge',
-      thursday: 'Intermediate Challenge',
-      friday: 'Advanced Challenge',
-      saturday: 'Word Exploration'
+      thursday: 'Do You Know Challenge',
+      friday: 'Difficulty Challenge (Random)',
+      saturday: 'Weekend Do You Know Challenge'
     },
     timestamp: new Date().toISOString()
   });
