@@ -884,9 +884,21 @@ Play now! 👇`;
                 streak={dailyStreak}
                 visible={gameState.totalQuestions > 0}
                 onMintSuccess={() => {
-                  // Immediately enable token claims and refresh NFT check
+                  console.log('🎉 NFT mint successful, updating gating state...');
+                  // Immediately enable token claims
                   setHasMintedNFT();
-                  refreshNFTCheck();
+
+                  // Refresh NFT check after a short delay to allow blockchain state to update
+                  setTimeout(() => {
+                    console.log('🔄 Refreshing NFT check after 2s...');
+                    refreshNFTCheck();
+                  }, 2000); // 2 second delay
+
+                  // Also refresh again after a longer delay to be sure
+                  setTimeout(() => {
+                    console.log('🔄 Final NFT refresh after 5s...');
+                    refreshNFTCheck();
+                  }, 5000); // 5 second delay
                 }}
               />
 
@@ -924,7 +936,17 @@ Play now! 👇`;
                         onClick={generateTokens}
                         variant="primary"
                         size="md"
-                        disabled={isGeneratingTokens || requiresNFT() || isLoadingNFT}
+                        disabled={(() => {
+                          const disabled = isGeneratingTokens || requiresNFT() || isLoadingNFT;
+                          console.log('🎮 Reward button state:', {
+                            disabled,
+                            isGeneratingTokens,
+                            requiresNFT: requiresNFT(),
+                            isLoadingNFT,
+                            hasNFTForGame
+                          });
+                          return disabled;
+                        })()}
                         className={`w-full text-white border-0 font-semibold ${
                           requiresNFT()
                             ? 'bg-gray-400 hover:bg-gray-500'
