@@ -5,7 +5,7 @@
  * Supports multiple chains and wallet providers
  */
 
-import { createConfig, http } from 'wagmi';
+import { createConfig, http, fallback } from 'wagmi';
 import { base, baseSepolia } from 'wagmi/chains';
 import { farcasterMiniApp } from '@farcaster/miniapp-wagmi-connector';
 import { metaMask, walletConnect, coinbaseWallet } from 'wagmi/connectors';
@@ -36,8 +36,15 @@ export const wagmiConfig = createConfig({
     })
   ],
   transports: {
-    [base.id]: http(),
-    [baseSepolia.id]: http(),
+    [base.id]: fallback([
+      http(process.env.NEXT_PUBLIC_BASE_RPC_URL),
+      http('https://mainnet.base.org'),
+      http() // Public fallback
+    ]),
+    [baseSepolia.id]: fallback([
+      http('https://sepolia.base.org'),
+      http() // Public fallback
+    ]),
   },
   ssr: true,
 });
