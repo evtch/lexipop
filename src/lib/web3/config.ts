@@ -9,7 +9,6 @@ import { createConfig, http, fallback } from 'wagmi';
 import { base, baseSepolia } from 'wagmi/chains';
 import { farcasterMiniApp } from '@farcaster/miniapp-wagmi-connector';
 import { metaMask, walletConnect, coinbaseWallet } from 'wagmi/connectors';
-import { farcasterEmbedded } from './farcasterEmbeddedConnector';
 
 export const wagmiConfig = createConfig({
   chains: [
@@ -20,9 +19,7 @@ export const wagmiConfig = createConfig({
     ...(process.env.NODE_ENV === 'development' ? [baseSepolia] : [])
   ],
   connectors: [
-    // Try embedded connector first for desktop Farcaster
-    farcasterEmbedded(),
-    farcasterMiniApp(), // Fallback/mobile Farcaster users
+    farcasterMiniApp(), // Primary for Farcaster users
     metaMask(), // For MetaMask users
     coinbaseWallet({
       appName: 'Lexipop',

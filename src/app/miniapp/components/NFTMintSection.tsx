@@ -82,33 +82,13 @@ export default function NFTMintSection({
   const handleWalletConnect = () => {
     console.log('🔗 Available connectors:', connectors.map(c => ({ name: c.name, id: c.id })));
 
-    // Detect if we're on desktop vs mobile
-    const isDesktop = typeof window !== 'undefined' && window.innerWidth > 768;
-
-    // Try to find the appropriate connector
-    let targetConnector = connectors[0]; // Default to first available
-
-    if (isDesktop) {
-      // On desktop, prioritize embedded connector
-      const embeddedConnector = connectors.find(c => c.id === 'farcaster-embedded');
-      if (embeddedConnector) {
-        targetConnector = embeddedConnector;
-        console.log('🖥️ Desktop detected, using embedded connector');
-      }
+    // Try the first available connector (farcasterMiniApp should be first)
+    const primaryConnector = connectors[0];
+    if (primaryConnector) {
+      console.log('🎯 Using primary connector:', primaryConnector.name);
+      connect({ connector: primaryConnector });
     } else {
-      // On mobile, use farcasterMiniApp connector
-      const miniappConnector = connectors.find(c => c.id === 'farcasterMiniApp');
-      if (miniappConnector) {
-        targetConnector = miniappConnector;
-        console.log('📱 Mobile detected, using miniapp connector');
-      }
-    }
-
-    if (targetConnector) {
-      console.log('🎯 Using connector:', targetConnector.name);
-      connect({ connector: targetConnector });
-    } else {
-      console.error('❌ No suitable connector found');
+      console.error('❌ No connectors available');
     }
   };
 
