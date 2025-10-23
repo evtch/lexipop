@@ -35,9 +35,20 @@ export default function NotificationPrompt({
   }, [isAuthenticated, user, autoShow, hasPrompted]);
 
   const checkNotificationStatus = async () => {
+    // Ensure user and fid exist before making API call
+    if (!user || !user.fid) {
+      console.log('⚠️ Cannot check notification status: user not authenticated');
+      return;
+    }
+
     try {
       // Check if notifications are already enabled for this user
-      const response = await fetch(`/api/user/notification-status?fid=${user?.fid}`);
+      const response = await fetch(`/api/user/notification-status?fid=${user.fid}`);
+
+      if (!response.ok) {
+        throw new Error(`API returned ${response.status}`);
+      }
+
       const data = await response.json();
 
       if (data.success) {
@@ -58,7 +69,10 @@ export default function NotificationPrompt({
   };
 
   const handleEnableNotifications = async () => {
-    if (!user) return;
+    if (!user || !user.fid) {
+      console.error('❌ Cannot enable notifications: user or fid missing');
+      return;
+    }
 
     setIsEnabling(true);
 
@@ -74,7 +88,7 @@ export default function NotificationPrompt({
           }
         }, '*');
 
-        console.log('📤 Notification permission request sent');
+        console.log('📤 Notification permission request sent for FID:', user.fid);
 
         // For now, assume success (real implementation would wait for confirmation)
         setTimeout(() => {
@@ -87,13 +101,15 @@ export default function NotificationPrompt({
         }, 2000);
       } else {
         // Fallback: direct API call (for testing outside frame)
+        console.log('🔔 Enabling notifications via API for FID:', user.fid);
+
         const response = await fetch('/api/user/enable-notifications', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            userFid: user.fid
+            userFid: Number(user.fid) // Ensure it's a number
           })
         });
 

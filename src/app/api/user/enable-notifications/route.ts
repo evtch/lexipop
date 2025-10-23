@@ -27,9 +27,27 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { userFid } = body;
 
-    if (!userFid || typeof userFid !== 'number') {
+    // More detailed validation and error messages
+    if (userFid === undefined || userFid === null) {
+      console.error('❌ Missing userFid in request body');
       return NextResponse.json(
-        { success: false, error: 'Valid userFid is required' },
+        { success: false, error: 'userFid is required in request body' },
+        { status: 400 }
+      );
+    }
+
+    if (typeof userFid !== 'number') {
+      console.error(`❌ Invalid userFid type: ${typeof userFid}, value: ${userFid}`);
+      return NextResponse.json(
+        { success: false, error: `userFid must be a number, received ${typeof userFid}` },
+        { status: 400 }
+      );
+    }
+
+    if (userFid <= 0) {
+      console.error(`❌ Invalid userFid value: ${userFid}`);
+      return NextResponse.json(
+        { success: false, error: 'userFid must be a positive number' },
         { status: 400 }
       );
     }
