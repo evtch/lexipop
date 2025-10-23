@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/utils/Base64.sol";
 
 /**
  * @title LexipopMemoryNFT
- * @notice Free-to-mint NFT collection for Lexipop game memories on Base
+ * @notice NFT collection for Lexipop game memories on Base
  * @dev Each NFT contains an on-chain SVG with the 5 words from a game session
  */
 contract LexipopMemoryNFT is ERC721 {
@@ -23,6 +23,12 @@ contract LexipopMemoryNFT is ERC721 {
 
     // Token ID counter
     uint256 private _tokenIdCounter;
+
+    // Minting fee (0.0001 ETH)
+    uint256 public constant MINT_FEE = 0.0001 ether;
+
+    // Contract owner (for fee withdrawal)
+    address public owner;
 
     // Mapping from token ID to game memory
     mapping(uint256 => GameMemory) public gameMemories;
@@ -40,10 +46,11 @@ contract LexipopMemoryNFT is ERC721 {
 
     constructor() ERC721("Lexipop Memories", "LEXMEM") {
         _tokenIdCounter = 1; // Start from 1
+        owner = msg.sender;
     }
 
     /**
-     * @notice Mint a new memory NFT (free, gas only)
+     * @notice Mint a new memory NFT (0.0001 ETH + gas)
      * @param words The 5 words from the game
      * @param score The player's score
      * @param streak The player's streak
@@ -52,7 +59,9 @@ contract LexipopMemoryNFT is ERC721 {
         string[5] memory words,
         uint256 score,
         uint256 streak
-    ) external {
+    ) external payable {
+        require(msg.value >= MINT_FEE, "Insufficient payment for minting");
+
         uint256 tokenId = _tokenIdCounter++;
 
         // Store the game memory
@@ -79,10 +88,10 @@ contract LexipopMemoryNFT is ERC721 {
     function generateSVG(uint256 tokenId) internal view returns (string memory) {
         require(_exists(tokenId), "Token does not exist");
 
-        GameMemory memory memory = gameMemories[tokenId];
+        GameMemory memory gameMemory = gameMemories[tokenId];
 
         // Determine primary gradient color based on score
-        string memory primaryColor = getPrimaryColor(memory.score);
+        string memory primaryColor = getPrimaryColor(gameMemory.score);
 
         // Build optimized SVG (shortened attributes for gas efficiency)
         bytes memory svg = abi.encodePacked(
@@ -90,7 +99,7 @@ contract LexipopMemoryNFT is ERC721 {
             '<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">',
             '<stop offset="0" stop-color="', primaryColor, '" stop-opacity=".2"/>',
             '<stop offset="1" stop-color="',
-            getSecondaryColor(memory.score),
+            getSecondaryColor(gameMemory.score),
             '" stop-opacity=".3"/>',
             '</linearGradient></defs>',
             '<rect width="600" height="600" fill="#fff"/>',
@@ -109,7 +118,7 @@ contract LexipopMemoryNFT is ERC721 {
                 '<text x="300" y="', yPos.toString(),
                 '" font-family="Arial Black" font-size="48"',
                 ' font-weight="900" fill="#1a202c" text-anchor="middle">',
-                toUppercase(memory.words[i]),
+                toUppercase(gameMemory.words[i]),
                 '</text>'
             );
         }
@@ -125,16 +134,16 @@ contract LexipopMemoryNFT is ERC721 {
     function tokenURI(uint256 tokenId) public view override returns (string memory) {
         require(_exists(tokenId), "Token does not exist");
 
-        GameMemory memory memory = gameMemories[tokenId];
+        GameMemory memory gameMemory = gameMemories[tokenId];
         string memory svg = generateSVG(tokenId);
         string memory svgBase64 = Base64.encode(bytes(svg));
 
         // Build attributes array
         string memory attributes = string(abi.encodePacked(
-            '[{"trait_type":"Score","value":', memory.score.toString(), '},',
-            '{"trait_type":"Streak","value":', memory.streak.toString(), '},',
-            '{"trait_type":"Perfect Game","value":"', memory.score >= 500 ? 'Yes' : 'No', '"},',
-            '{"trait_type":"Timestamp","value":', memory.timestamp.toString(), '}]'
+            '[{"trait_type":"Score","value":', gameMemory.score.toString(), '},',
+            '{"trait_type":"Streak","value":', gameMemory.streak.toString(), '},',
+            '{"trait_type":"Perfect Game","value":"', gameMemory.score >= 500 ? 'Yes' : 'No', '"},',
+            '{"trait_type":"Timestamp","value":', gameMemory.timestamp.toString(), '}]'
         ));
 
         // Build metadata JSON
@@ -142,10 +151,10 @@ contract LexipopMemoryNFT is ERC721 {
             bytes(
                 string(abi.encodePacked(
                     '{"name":"Lexipop Memory #', tokenId.toString(),
-                    '","description":"Words mastered: ', memory.words[0], ', ', memory.words[1],
-                    ', ', memory.words[2], ', ', memory.words[3], ', ', memory.words[4],
-                    '. Score: ', memory.score.toString(), ' points',
-                    memory.streak > 1 ? string(abi.encodePacked(' with a ', memory.streak.toString(), ' day streak!')) : '.',
+                    '","description":"Words mastered: ', gameMemory.words[0], ', ', gameMemory.words[1],
+                    ', ', gameMemory.words[2], ', ', gameMemory.words[3], ', ', gameMemory.words[4],
+                    '. Score: ', gameMemory.score.toString(), ' points',
+                    gameMemory.streak > 1 ? string(abi.encodePacked(' with a ', gameMemory.streak.toString(), ' day streak!')) : '.',
                     '","image":"data:image/svg+xml;base64,', svgBase64,
                     '","attributes":', attributes, '}'
                 ))
@@ -224,5 +233,32 @@ contract LexipopMemoryNFT is ERC721 {
         if (wordLength > 10) return 50;
         if (wordLength > 8) return 56;
         return 62;
+    }
+
+    /**
+     * @notice Withdraw collected minting fees (owner only)
+     */
+    function withdrawFees() external {
+        require(msg.sender == owner, "Only owner can withdraw fees");
+        require(address(this).balance > 0, "No fees to withdraw");
+
+        (bool success, ) = payable(owner).call{value: address(this).balance}("");
+        require(success, "Fee withdrawal failed");
+    }
+
+    /**
+     * @notice Transfer ownership (owner only)
+     */
+    function transferOwnership(address newOwner) external {
+        require(msg.sender == owner, "Only owner can transfer ownership");
+        require(newOwner != address(0), "New owner cannot be zero address");
+        owner = newOwner;
+    }
+
+    /**
+     * @notice Get contract balance
+     */
+    function getBalance() external view returns (uint256) {
+        return address(this).balance;
     }
 }

@@ -27,6 +27,9 @@ export function useNFTMint() {
     isPending: isWritePending
   } = useWriteContract();
 
+  // Premium minting fee (0.0001 ETH)
+  const PREMIUM_MINT_FEE = BigInt('100000000000000'); // 0.0001 ETH in wei
+
   const {
     isLoading: isConfirming,
     isSuccess: isConfirmed,
@@ -90,14 +93,17 @@ export function useNFTMint() {
         words: wordsArray,
         score: params.score,
         streak: params.streak,
-        player: address
+        player: address,
+        value: PREMIUM_MINT_FEE
       });
 
+      // Send 0.0001 ETH payment with mint
       writeContract({
         address: contractAddress as `0x${string}`,
         abi: LEXIPOP_NFT_ABI,
         functionName: 'mintMemory',
-        args: [wordsArray, BigInt(params.score), BigInt(params.streak)]
+        args: [wordsArray, BigInt(params.score), BigInt(params.streak)],
+        value: PREMIUM_MINT_FEE
       });
 
     } catch (error) {

@@ -52,9 +52,10 @@ async function main() {
   if (hre.network.name === "localhost" || hre.network.name === "hardhat") {
     console.log("\n🧪 Minting test NFT...");
     const testWords = ["ESOTERIC", "RECALCITRANT", "PERSPICACIOUS", "DISPARATE", "CACOPHONY"];
-    const testTx = await nftContract.mintMemory(testWords, 500, 7);
+    const mintFee = hre.ethers.parseEther("0.0001");
+    const testTx = await nftContract.mintMemory(testWords, 500, 7, { value: mintFee });
     await testTx.wait();
-    console.log("✅ Test NFT minted!");
+    console.log("✅ Test NFT minted with 0.0001 ETH fee!");
   }
 
   return contractAddress;

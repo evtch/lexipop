@@ -98,10 +98,20 @@ export function getRewardFromRandomness(randomNumber: bigint): RewardTier {
 }
 
 /**
- * Calculate bonus multipliers based on game performance
+ * Calculate bonus multipliers based on game performance and NFT ownership
  */
-export function calculateBonusMultiplier(score: number, streak: number, totalQuestions: number): number {
+export function calculateBonusMultiplier(
+  score: number,
+  streak: number,
+  totalQuestions: number,
+  hasNFT: boolean = false
+): number {
   let multiplier = 1;
+
+  // NFT holder bonus (2x base multiplier)
+  if (hasNFT) {
+    multiplier = 2;
+  }
 
   // Perfect score bonus
   if (score === totalQuestions && totalQuestions >= 5) {
@@ -123,7 +133,7 @@ export function calculateBonusMultiplier(score: number, streak: number, totalQue
     multiplier += 0.2;
   }
 
-  return Math.min(multiplier, 3); // Cap at 3x
+  return Math.min(multiplier, 5); // Cap at 5x (increased for NFT holders)
 }
 
 /**

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { REWARD_TIERS, RewardTier, generateMockRandomness, calculateBonusMultiplier, getPythRandomNumber } from '@/lib/pyth-entropy';
 import { useWalletClient } from 'wagmi';
 import { useSound } from '@/hooks/useSound';
+import { useNFTGating } from '@/lib/nft/useNFTGating';
 
 interface SpinningWheelProps {
   isVisible: boolean;
@@ -13,6 +14,7 @@ interface SpinningWheelProps {
   gameScore: number;
   gameStreak: number;
   totalQuestions: number;
+  gameWords: string[];
 }
 
 export default function SpinningWheel({
@@ -21,7 +23,8 @@ export default function SpinningWheel({
   onRewardClaimed,
   gameScore,
   gameStreak,
-  totalQuestions
+  totalQuestions,
+  gameWords
 }: SpinningWheelProps) {
   const [isSpinning, setIsSpinning] = useState(false);
   const [hasSpun, setHasSpun] = useState(false);
@@ -35,6 +38,9 @@ export default function SpinningWheel({
   const wheelRef = useRef<HTMLDivElement>(null);
   const { data: walletClient } = useWalletClient();
 
+  // NFT gating to check if user has NFTs for 2x rewards
+  const { hasNFTForGame } = useNFTGating(gameWords);
+
   // Calculate segment angle (360 degrees / 6 segments)
   const segmentAngle = 360 / REWARD_TIERS.length;
 
@@ -45,9 +51,9 @@ export default function SpinningWheel({
       setHasSpun(false);
       setFinalReward(null);
       setFinalTokens(0);
-      setBonusMultiplier(calculateBonusMultiplier(gameScore, gameStreak, totalQuestions));
+      setBonusMultiplier(calculateBonusMultiplier(gameScore, gameStreak, totalQuestions, hasNFTForGame));
     }
-  }, [isVisible, gameScore, gameStreak, totalQuestions]);
+  }, [isVisible, gameScore, gameStreak, totalQuestions, hasNFTForGame]);
 
   const spinWheel = async () => {
     if (isSpinning || hasSpun) return;
@@ -152,9 +158,10 @@ export default function SpinningWheel({
             {bonusMultiplier > 1 && (
               <div className="bg-blue-50 rounded-lg p-3 mb-4">
                 <p className="text-sm text-blue-800 font-medium">
-                  🎉 Performance Bonus: {bonusMultiplier}x multiplier!
+                  🎉 {hasNFTForGame ? 'NFT Holder Bonus' : 'Performance Bonus'}: {bonusMultiplier}x multiplier!
                 </p>
                 <p className="text-xs text-blue-600">
+                  {hasNFTForGame && '💎 2x base multiplier for NFT ownership! '}
                   {gameScore === totalQuestions && 'Perfect score! '}
                   {gameStreak >= 5 && `${gameStreak} streak bonus! `}
                 </p>

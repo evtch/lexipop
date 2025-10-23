@@ -162,11 +162,11 @@ export default function NFTMintSection({
                     ? 'Minting...'
                     : isConfirming
                     ? 'Confirming...'
-                    : 'Mint Free NFT'}
+                    : 'Mint Your Words'}
                 </MiniAppButton>
 
                 <div className="text-xs text-purple-200">
-                  Free to mint • Only pay gas (~$0.01)
+                  Just 0.0001 ETH plus gas • Unlocks 2x rewards
                 </div>
               </div>
             )}

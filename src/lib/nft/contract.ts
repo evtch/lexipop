@@ -269,7 +269,7 @@ export const LEXIPOP_NFT_ABI = [
     ],
     name: "mintMemory",
     outputs: [],
-    stateMutability: "nonpayable",
+    stateMutability: "payable",
     type: "function"
   },
   {
@@ -483,15 +483,74 @@ export const LEXIPOP_NFT_ABI = [
     outputs: [],
     stateMutability: "nonpayable",
     type: "function"
+  },
+  {
+    inputs: [],
+    name: "MINT_FEE",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256"
+      }
+    ],
+    stateMutability: "view",
+    type: "function"
+  },
+  {
+    inputs: [],
+    name: "owner",
+    outputs: [
+      {
+        internalType: "address",
+        name: "",
+        type: "address"
+      }
+    ],
+    stateMutability: "view",
+    type: "function"
+  },
+  {
+    inputs: [],
+    name: "withdrawFees",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function"
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "newOwner",
+        type: "address"
+      }
+    ],
+    name: "transferOwnership",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function"
+  },
+  {
+    inputs: [],
+    name: "getBalance",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256"
+      }
+    ],
+    stateMutability: "view",
+    type: "function"
   }
 ] as const;
 
 // Contract addresses for different networks
 export const CONTRACT_ADDRESSES = {
   // Base Mainnet - where NFT contract is deployed
-  8453: '0xb6eA78c8c5feB29a5562266c9967e38C63124bFb',
+  8453: '0x15fDb50b1AeC6145BD277F5AB89A12aD3585870f',
   // Base Sepolia Testnet (for testing)
-  84532: '0xb6eA78c8c5feB29a5562266c9967e38C63124bFb' // Use same for testing
+  84532: '0x15fDb50b1AeC6145BD277F5AB89A12aD3585870f' // Use same for testing
 } as const;
 
 export type ContractNetwork = keyof typeof CONTRACT_ADDRESSES;

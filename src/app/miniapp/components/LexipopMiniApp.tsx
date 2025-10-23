@@ -411,9 +411,13 @@ export default function LexipopMiniApp() {
         // Use the improved entropy generation function
         const { tokenAmount } = generateImprovedRandomness(gameData);
 
+        // Apply NFT holder 2x bonus (only if user has NFT)
+        const nftBonusMultiplier = hasNFTForGame ? 2 : 1;
+        const nftBonusAmount = Math.floor(tokenAmount * nftBonusMultiplier);
+
         // Apply soft bonus for sharing visual score
-        const visualShareBonus = hasSharedVisualScore ? Math.floor(tokenAmount * 0.25) : 0; // 25% bonus
-        const finalTokenAmount = tokenAmount + visualShareBonus;
+        const visualShareBonus = hasSharedVisualScore ? Math.floor(nftBonusAmount * 0.25) : 0; // 25% bonus
+        const finalTokenAmount = nftBonusAmount + visualShareBonus;
 
         console.log('🎲 LexipopMiniApp Score-based Generation:', {
           baseScore: gameState.score,
@@ -421,10 +425,13 @@ export default function LexipopMiniApp() {
           finalScore,
           gameData,
           baseTokenAmount: tokenAmount,
+          nftBonusMultiplier,
+          nftBonusAmount,
           visualShareBonus,
           finalTokenAmount,
           hasSharedVisualScore,
-          source: 'Score-based Entropy with Daily Streak Bonus + Visual Share Bonus'
+          hasNFTForGame,
+          source: 'Score-based Entropy with Daily Streak Bonus + NFT 2x Bonus + Visual Share Bonus'
         });
 
         return finalTokenAmount;
@@ -451,8 +458,13 @@ export default function LexipopMiniApp() {
         }
 
         const baseAmount = minTokens + Math.floor(Math.random() * (maxTokens - minTokens));
-        const visualShareBonus = hasSharedVisualScore ? Math.floor(baseAmount * 0.25) : 0; // 25% bonus
-        return baseAmount + visualShareBonus;
+
+        // Apply NFT holder 2x bonus (only if user has NFT)
+        const nftBonusMultiplier = hasNFTForGame ? 2 : 1;
+        const nftBonusAmount = Math.floor(baseAmount * nftBonusMultiplier);
+
+        const visualShareBonus = hasSharedVisualScore ? Math.floor(nftBonusAmount * 0.25) : 0; // 25% bonus
+        return nftBonusAmount + visualShareBonus;
       }
     };
 
