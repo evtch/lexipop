@@ -65,6 +65,7 @@ export default function LexipopMiniApp() {
   const [hasSharedCast, setHasSharedCast] = useState(false);
   const [hasSharedVisualScore, setHasSharedVisualScore] = useState(false);
   const [isFirstTimeClaim, setIsFirstTimeClaim] = useState(true);
+  const [hasShownNotificationPrompt, setHasShownNotificationPrompt] = useState(false);
 
   // Token generation state
   const [generatedTokens, setGeneratedTokens] = useState<number | null>(null);
@@ -116,7 +117,10 @@ export default function LexipopMiniApp() {
 
             // Track that user enabled notifications
             if (currentUser?.fid) {
-              fetch('/api/user/enable-notifications', {
+              const apiUrl = `${window.location.origin}/api/user/enable-notifications`;
+              console.log('📡 Calling notification API:', apiUrl);
+
+              fetch(apiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -124,7 +128,10 @@ export default function LexipopMiniApp() {
                   notificationToken: result.notificationDetails.token,
                   enabled: true
                 })
-              }).catch(err => console.error('Failed to track notification enablement:', err));
+              }).catch(err => {
+                console.error('Failed to track notification enablement:', err);
+                console.error('API URL was:', apiUrl);
+              });
             }
           } else {
             // User might have dismissed or mini app was already added
@@ -141,11 +148,12 @@ export default function LexipopMiniApp() {
       }
     };
 
-    // Only show popup if user is authenticated
-    if (currentUser?.fid && !currentUser.error) {
+    // Only show popup if user is authenticated and we haven't shown it yet
+    if (currentUser?.fid && !currentUser.error && !hasShownNotificationPrompt) {
+      setHasShownNotificationPrompt(true);
       showNativeFarcasterPopup();
     }
-  }, [currentUser?.fid, currentUser?.error, isSDKLoaded, actions]);
+  }, [currentUser?.fid, currentUser?.error, isSDKLoaded, actions, hasShownNotificationPrompt]);
 
   // Check if user has seen notification prompt and claimed tokens before
   useEffect(() => {

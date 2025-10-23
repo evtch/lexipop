@@ -69,9 +69,24 @@ export default function NFTMintSection({
 
   const handleMint = async () => {
     try {
+      console.log('🎨 Starting NFT mint process...');
       await mintNFT({ words, score, streak });
-    } catch (error) {
-      console.error('Failed to mint NFT:', error);
+    } catch (error: any) {
+      console.error('❌ Failed to mint NFT:', {
+        message: error?.message,
+        code: error?.code,
+        details: error?.details,
+        cause: error?.cause,
+        stack: error?.stack
+      });
+
+      // Check for specific error types
+      if (error?.message?.includes('fetch')) {
+        console.error('🔍 Network/RPC error detected. This may be due to:');
+        console.error('- RPC endpoint issues');
+        console.error('- CORS restrictions on desktop');
+        console.error('- Wallet provider not properly initialized');
+      }
     }
   };
 
@@ -79,14 +94,35 @@ export default function NFTMintSection({
     setShowPreview(!showPreview);
   };
 
-  const handleWalletConnect = () => {
+  const handleWalletConnect = async () => {
     console.log('🔗 Available connectors:', connectors.map(c => ({ name: c.name, id: c.id })));
+    console.log('🌐 Environment info:', {
+      userAgent: navigator.userAgent,
+      platform: navigator.platform,
+      isDesktop: window.innerWidth > 768,
+      hasEthereum: !!window.ethereum,
+      hasParentEthereum: !!window.parent?.ethereum
+    });
 
     // Try the first available connector (farcasterMiniApp should be first)
     const primaryConnector = connectors[0];
     if (primaryConnector) {
       console.log('🎯 Using primary connector:', primaryConnector.name);
-      connect({ connector: primaryConnector });
+      try {
+        const result = await connect({ connector: primaryConnector });
+        console.log('✅ Wallet connection successful:', result);
+      } catch (error: any) {
+        console.error('❌ Wallet connection failed:', {
+          message: error?.message,
+          code: error?.code,
+          details: error?.details,
+          connector: primaryConnector.name
+        });
+
+        if (error?.message?.includes('fetch')) {
+          console.error('🔍 Desktop Farcaster wallet connection issues detected');
+        }
+      }
     } else {
       console.error('❌ No connectors available');
     }
