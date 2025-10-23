@@ -6,7 +6,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useAccount } from 'wagmi';
+import { useAccount, useConnect } from 'wagmi';
 import { useNFTMint } from '@/lib/nft/useNFTMint';
 import MiniAppButton from './MiniAppButton';
 
@@ -26,6 +26,7 @@ export default function NFTMintSection({
   onMintSuccess
 }: NFTMintSectionProps) {
   const { address, isConnected } = useAccount();
+  const { connect, connectors } = useConnect();
   const [showPreview, setShowPreview] = useState(false);
 
   const {
@@ -68,6 +69,42 @@ export default function NFTMintSection({
     setShowPreview(!showPreview);
   };
 
+  const handleFarcasterWalletConnect = () => {
+    // Debug log available connectors
+    console.log('🔗 Available connectors:', connectors.map(c => ({ name: c.name, id: c.id })));
+
+    // Find the Farcaster Frame connector first
+    const farcasterConnector = connectors.find(connector =>
+      connector.name.toLowerCase().includes('farcaster') ||
+      connector.id.includes('farcaster')
+    );
+
+    if (farcasterConnector) {
+      console.log('🎯 Using Farcaster connector:', farcasterConnector.name);
+      connect({ connector: farcasterConnector });
+    } else {
+      // Fallback to WalletConnect for desktop users
+      const walletConnectConnector = connectors.find(connector =>
+        connector.name.toLowerCase().includes('walletconnect') ||
+        connector.id.includes('walletconnect')
+      );
+
+      if (walletConnectConnector) {
+        console.log('🔗 Using WalletConnect connector:', walletConnectConnector.name);
+        connect({ connector: walletConnectConnector });
+      } else {
+        // Final fallback to any available connector
+        const anyConnector = connectors[0];
+        if (anyConnector) {
+          console.log('💼 Using fallback connector:', anyConnector.name);
+          connect({ connector: anyConnector });
+        } else {
+          console.error('❌ No connectors available');
+        }
+      }
+    }
+  };
+
   if (!visible) return null;
 
   return (
@@ -89,19 +126,7 @@ export default function NFTMintSection({
                   Connect your wallet
                 </div>
                 <MiniAppButton
-                  onClick={() => {
-                    // Try multiple wallet connection methods for desktop compatibility
-                    const event = new CustomEvent('connect-wallet');
-                    window.dispatchEvent(event);
-
-                    // Also try direct RainbowKit modal opening as fallback
-                    setTimeout(() => {
-                      const connectButton = document.querySelector('[data-testid="rk-connect-button"]') as HTMLElement;
-                      if (connectButton) {
-                        connectButton.click();
-                      }
-                    }, 100);
-                  }}
+                  onClick={handleFarcasterWalletConnect}
                   variant="primary"
                   size="md"
                   className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700 border-0"

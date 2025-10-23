@@ -929,6 +929,11 @@ Play now! 👇`;
                       </div>
                       <div className="text-white text-sm mb-3">
                         $LEXIPOP
+                        {hasNFTForGame && (
+                          <div className="text-xs text-blue-100 mt-1">
+                            💎 2x NFT Bonus Active
+                          </div>
+                        )}
                       </div>
 
                       {/* Generate Button inside container */}
@@ -957,6 +962,8 @@ Play now! 👇`;
                           ? 'Generating...'
                           : requiresNFT()
                           ? 'Mint NFT First'
+                          : hasNFTForGame
+                          ? 'Generate my reward x2'
                           : 'Generate my reward'}
                       </MiniAppButton>
                     </motion.div>
@@ -985,6 +992,11 @@ Play now! 👇`;
                       </div>
                       <div className="text-white text-sm text-center mb-3">
                         You won {generatedTokens} $LEXIPOP
+                        {hasNFTForGame && (
+                          <div className="text-xs text-blue-100 mt-1">
+                            💎 NFT Holder Bonus: 2x Rewards Applied!
+                          </div>
+                        )}
                       </div>
 
                       {/* Claim Button inside token container */}
@@ -1029,6 +1041,8 @@ Play now! 👇`;
                               ? 'Claiming...'
                               : (isFirstTimeClaim && !hasSharedCast)
                               ? 'Share First to Claim'
+                              : hasNFTForGame
+                              ? 'Claim Reward x2'
                               : 'Claim Reward'}
                           </MiniAppButton>
                         </div>
