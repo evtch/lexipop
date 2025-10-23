@@ -6,7 +6,8 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useAccount, useConnect } from 'wagmi';
+import { useAccount, useConnect, useSwitchChain } from 'wagmi';
+import { base } from 'wagmi/chains';
 import { useNFTMint } from '@/lib/nft/useNFTMint';
 import MiniAppButton from './MiniAppButton';
 
@@ -27,7 +28,9 @@ export default function NFTMintSection({
 }: NFTMintSectionProps) {
   const { address, isConnected } = useAccount();
   const { connect, connectors } = useConnect();
+  const { switchChain, isPending: isSwitchingChain, error: switchError } = useSwitchChain();
   const [showPreview, setShowPreview] = useState(false);
+  const [networkSwitchError, setNetworkSwitchError] = useState<string | null>(null);
 
   const {
     previewUrl,
@@ -57,6 +60,13 @@ export default function NFTMintSection({
     }
   }, [isSuccess, onMintSuccess]);
 
+  // Clear network switch error when network is supported
+  useEffect(() => {
+    if (isSupportedNetwork()) {
+      setNetworkSwitchError(null);
+    }
+  }, [isSupportedNetwork]);
+
   const handleMint = async () => {
     try {
       await mintNFT({ words, score, streak });
@@ -80,6 +90,17 @@ export default function NFTMintSection({
       connect({ connector: primaryConnector });
     } else {
       console.error('❌ No connectors available');
+    }
+  };
+
+  const handleNetworkSwitch = async () => {
+    try {
+      setNetworkSwitchError(null);
+      console.log('🔄 Switching to Base network...');
+      await switchChain({ chainId: base.id });
+    } catch (error) {
+      console.error('❌ Failed to switch network:', error);
+      setNetworkSwitchError('Failed to switch network. Please try manually switching to Base network in your wallet.');
     }
   };
 
@@ -118,16 +139,25 @@ export default function NFTMintSection({
                   Switch to Base network to mint NFTs
                 </div>
                 <MiniAppButton
-                  onClick={() => {
-                    // This will trigger network switch
-                    console.log('Switch to Base network');
-                  }}
+                  onClick={handleNetworkSwitch}
                   variant="primary"
                   size="md"
+                  disabled={isSwitchingChain}
                   className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:from-blue-700 hover:to-cyan-700 border-0"
                 >
-                  Switch to Base Network
+                  {isSwitchingChain ? 'Switching...' : 'Switch to Base Network'}
                 </MiniAppButton>
+
+                {/* Network Switch Error */}
+                {(networkSwitchError || switchError) && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="mt-2 text-xs text-red-200 bg-red-500/20 rounded p-2"
+                  >
+                    {networkSwitchError || switchError?.message}
+                  </motion.div>
+                )}
               </div>
             ) : isSuccess ? (
               <motion.div
