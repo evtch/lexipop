@@ -919,17 +919,7 @@ Play now! 👇`;
                         onClick={generateTokens}
                         variant="primary"
                         size="md"
-                        disabled={(() => {
-                          const disabled = isGeneratingTokens || requiresNFT() || isLoadingNFT;
-                          console.log('🎮 Reward button state:', {
-                            disabled,
-                            isGeneratingTokens,
-                            requiresNFT: requiresNFT(),
-                            isLoadingNFT,
-                            hasNFTForGame
-                          });
-                          return disabled;
-                        })()}
+                        disabled={isGeneratingTokens || requiresNFT() || isLoadingNFT}
                         className={`w-full text-white border-0 font-semibold ${
                           requiresNFT()
                             ? 'bg-gray-400 hover:bg-gray-500'
