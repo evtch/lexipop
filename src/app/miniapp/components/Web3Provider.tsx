@@ -10,8 +10,7 @@
 import React, { ReactNode } from 'react';
 import { WagmiProvider } from 'wagmi';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import wagmiConfig from '@/lib/web3/config';
-import miniappWagmiConfig from '@/lib/web3/miniapp-config';
+import { wagmiConfig } from '@/lib/web3/config';
 
 // Create a client for React Query
 const queryClient = new QueryClient({
@@ -26,15 +25,12 @@ const queryClient = new QueryClient({
 
 interface Web3ProviderProps {
   children: ReactNode;
-  useMiniappConfig?: boolean; // Flag to use Farcaster miniapp config
 }
 
-export default function Web3Provider({ children, useMiniappConfig = false }: Web3ProviderProps) {
-  // Use miniapp config when in Farcaster context, otherwise use standard config
-  const selectedConfig = useMiniappConfig ? miniappWagmiConfig : wagmiConfig;
-
+export default function Web3Provider({ children }: Web3ProviderProps) {
+  // Use single universal config for all environments (BitWorld approach)
   return (
-    <WagmiProvider config={selectedConfig}>
+    <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
         {children}
       </QueryClientProvider>

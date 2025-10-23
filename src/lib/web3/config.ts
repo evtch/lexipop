@@ -7,8 +7,8 @@
 
 import { createConfig, http } from 'wagmi';
 import { base, baseSepolia } from 'wagmi/chains';
-import { farcasterFrame } from '@farcaster/miniapp-wagmi-connector';
-import { walletConnect, injected, coinbaseWallet } from 'wagmi/connectors';
+import { farcasterMiniApp } from '@farcaster/miniapp-wagmi-connector';
+import { metaMask, walletConnect, coinbaseWallet } from 'wagmi/connectors';
 
 export const wagmiConfig = createConfig({
   chains: [
@@ -19,8 +19,12 @@ export const wagmiConfig = createConfig({
     ...(process.env.NODE_ENV === 'development' ? [baseSepolia] : [])
   ],
   connectors: [
-    farcasterFrame(), // Primary - Farcaster miniapp connector
-    injected(), // Desktop browser wallets (MetaMask, etc.)
+    farcasterMiniApp(), // Primary for Farcaster users (works mobile & desktop)
+    metaMask(), // For MetaMask users
+    coinbaseWallet({
+      appName: 'Lexipop',
+      appLogoUrl: 'https://lexipop.xyz/favicon.ico'
+    }),
     walletConnect({
       projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'a5555da8f7e7a9c0c9b3b2e2c7e2c2c2',
       metadata: {
@@ -29,10 +33,6 @@ export const wagmiConfig = createConfig({
         url: 'https://lexipop.xyz',
         icons: ['https://lexipop.xyz/favicon.ico']
       }
-    }),
-    coinbaseWallet({
-      appName: 'Lexipop',
-      appLogoUrl: 'https://lexipop.xyz/favicon.ico'
     })
   ],
   transports: {

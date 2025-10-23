@@ -69,39 +69,17 @@ export default function NFTMintSection({
     setShowPreview(!showPreview);
   };
 
-  const handleFarcasterWalletConnect = () => {
-    // Debug log available connectors
+  const handleWalletConnect = () => {
+    // BitWorld approach: Try connectors in order
     console.log('🔗 Available connectors:', connectors.map(c => ({ name: c.name, id: c.id })));
 
-    // Find the Farcaster Frame connector first
-    const farcasterConnector = connectors.find(connector =>
-      connector.name.toLowerCase().includes('farcaster') ||
-      connector.id.includes('farcaster')
-    );
-
-    if (farcasterConnector) {
-      console.log('🎯 Using Farcaster connector:', farcasterConnector.name);
-      connect({ connector: farcasterConnector });
+    // Try the first available connector (farcasterMiniApp should be first)
+    const primaryConnector = connectors[0];
+    if (primaryConnector) {
+      console.log('🎯 Using primary connector:', primaryConnector.name);
+      connect({ connector: primaryConnector });
     } else {
-      // Fallback to WalletConnect for desktop users
-      const walletConnectConnector = connectors.find(connector =>
-        connector.name.toLowerCase().includes('walletconnect') ||
-        connector.id.includes('walletconnect')
-      );
-
-      if (walletConnectConnector) {
-        console.log('🔗 Using WalletConnect connector:', walletConnectConnector.name);
-        connect({ connector: walletConnectConnector });
-      } else {
-        // Final fallback to any available connector
-        const anyConnector = connectors[0];
-        if (anyConnector) {
-          console.log('💼 Using fallback connector:', anyConnector.name);
-          connect({ connector: anyConnector });
-        } else {
-          console.error('❌ No connectors available');
-        }
-      }
+      console.error('❌ No connectors available');
     }
   };
 
@@ -126,7 +104,7 @@ export default function NFTMintSection({
                   Connect your wallet
                 </div>
                 <MiniAppButton
-                  onClick={handleFarcasterWalletConnect}
+                  onClick={handleWalletConnect}
                   variant="primary"
                   size="md"
                   className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700 border-0"

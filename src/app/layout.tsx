@@ -126,7 +126,7 @@ export default function RootLayout({
             `
           }} />
           <ClientMiniAppProvider>
-            <Web3Provider useMiniappConfig={true}>
+            <Web3Provider>
               {children}
             </Web3Provider>
           </ClientMiniAppProvider>
