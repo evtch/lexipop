@@ -47,18 +47,20 @@ export function useNFTGating(gameWords: string[]) {
 
   const contractAddress = chainId && SUPPORTED_CHAINS.includes(chainId) ? getContractAddressSafe(chainId) : null;
 
-  // Get user's NFT count
+  // Get user's NFT count - but only when needed to avoid blocking UI
   const {
     data: userTokens,
     isLoading: isLoadingTokens,
-    error: tokenError
+    error: tokenError,
+    refetch: refetchTokens
   } = useReadContract({
     address: contractAddress as `0x${string}` | undefined,
     abi: LEXIPOP_NFT_ABI,
     functionName: 'getPlayerTokens',
     args: address ? [address] : undefined,
     query: {
-      enabled: !!address && !!chainId && !!contractAddress
+      enabled: false, // Don't auto-fetch - only fetch when explicitly needed
+      staleTime: 30000 // Cache for 30 seconds to avoid re-fetching
     }
   });
 
@@ -139,6 +141,22 @@ export function useNFTGating(gameWords: string[]) {
     // Helper methods
     canClaimTokens: () => finalHasNFT,
     requiresNFT: () => !finalHasNFT,
+
+    // Manually trigger NFT check (lazy loading)
+    checkNFT: async () => {
+      if (!address || !chainId || !contractAddress) {
+        return false;
+      }
+
+      try {
+        const result = await refetchTokens();
+        // The useEffect will handle the rest
+        return true;
+      } catch (error) {
+        console.error('Failed to check NFTs:', error);
+        return false;
+      }
+    },
 
     // Refresh check
     refresh: () => {

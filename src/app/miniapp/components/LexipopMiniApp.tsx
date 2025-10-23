@@ -80,7 +80,7 @@ export default function LexipopMiniApp() {
   const { disconnect } = useDisconnect();
   const farcasterAccount = useFarcasterAccount();
 
-  // NFT gating for token claims
+  // NFT gating for token claims (lazy loaded)
   const {
     hasNFTForGame,
     isCheckingNFT,
@@ -89,6 +89,7 @@ export default function LexipopMiniApp() {
     isLoading: isLoadingNFT,
     canClaimTokens: canClaimWithNFT,
     requiresNFT,
+    checkNFT,
     refresh: refreshNFTCheck,
     setHasMintedNFT
   } = useNFTGating(gameState.gameQuestions?.map(q => q.word) || []);
@@ -105,8 +106,12 @@ export default function LexipopMiniApp() {
   useEffect(() => {
     const showNativeFarcasterPopup = async () => {
       try {
-        // Wait for SDKs to be ready
-        await sdk.actions.ready();
+        // Initialize SDK in background - don't block UI
+        sdk.actions.ready().then(() => {
+          console.log('🚀 Farcaster SDK ready');
+        }).catch(err => {
+          console.warn('Farcaster SDK initialization warning:', err);
+        });
 
         if (isSDKLoaded && actions) {
           // Use Neynar's addMiniApp for notification tracking
@@ -149,9 +154,14 @@ export default function LexipopMiniApp() {
     };
 
     // Only show popup if user is authenticated and we haven't shown it yet
+    // Defer this to not block the initial UI render
     if (currentUser?.fid && !currentUser.error && !hasShownNotificationPrompt) {
       setHasShownNotificationPrompt(true);
-      showNativeFarcasterPopup();
+
+      // Defer popup to allow UI to render first
+      setTimeout(() => {
+        showNativeFarcasterPopup();
+      }, 100); // Small delay to ensure UI renders first
     }
   }, [currentUser?.fid, currentUser?.error, isSDKLoaded, actions, hasShownNotificationPrompt]);
 
@@ -390,10 +400,16 @@ export default function LexipopMiniApp() {
     }
   }, [isConfirmed, hash, currentUser?.fid, playRewardClaimSound]);
 
-  const generateTokens = () => {
+  const generateTokens = async () => {
     if (isGeneratingTokens) return;
 
-    // Check NFT ownership first (Hard Gate)
+    // First trigger NFT check if we haven't checked yet
+    if (!hasNFTForGame && !isCheckingNFT) {
+      console.log('🔍 Checking NFTs before token generation...');
+      await checkNFT();
+    }
+
+    // Check NFT ownership (Hard Gate)
     if (!canClaimWithNFT()) {
       setClaimError('You must mint an NFT first before claiming tokens!');
       return;
@@ -776,7 +792,10 @@ Play now! 👇`;
 
 
 
-  if (isLoading) {
+  // Show app immediately, load user in background to improve perceived performance
+  const showLoadingScreen = isLoading && !currentUser.fid && !currentUser.error;
+
+  if (showLoadingScreen) {
     return (
       <div className="h-screen flex flex-col items-center justify-center p-4 text-gray-800">
         <div className="text-center">
@@ -927,7 +946,7 @@ Play now! 👇`;
                         onClick={generateTokens}
                         variant="primary"
                         size="md"
-                        disabled={isGeneratingTokens || requiresNFT() || isLoadingNFT}
+                        disabled={isGeneratingTokens || requiresNFT()}
                         className={`w-full text-white border-0 font-semibold ${
                           requiresNFT()
                             ? 'bg-gray-400 hover:bg-gray-500'

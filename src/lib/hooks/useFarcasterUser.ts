@@ -22,16 +22,38 @@ export function useFarcasterUser(): FarcasterUser {
     isLoading: true,
   });
 
+  // Set loading to false after short delay to prevent infinite loading UI
+  useEffect(() => {
+    const fallbackTimer = setTimeout(() => {
+      setUser(prev => {
+        if (prev.isLoading && !prev.fid) {
+          console.log('⚡ Fast fallback: proceeding without full SDK init');
+          return { ...prev, isLoading: false, error: 'Quick fallback mode' };
+        }
+        return prev;
+      });
+    }, 2000); // Show app after 2 seconds max
+
+    return () => clearTimeout(fallbackTimer);
+  }, []);
+
   useEffect(() => {
     const getFarcasterUser = async () => {
       try {
         setUser(prev => ({ ...prev, isLoading: true, error: undefined }));
 
-        // Wait for SDK to be ready
-        await sdk.actions.ready();
+        // Initialize SDK in background, set timeout to prevent infinite loading
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('SDK initialization timeout')), 8000);
+        });
 
-        // Get user context from Farcaster miniapp
-        const context = await sdk.context;
+        // Try to get user context with timeout
+        const sdkPromise = (async () => {
+          await sdk.actions.ready();
+          return sdk.context;
+        })();
+
+        const context = await Promise.race([sdkPromise, timeoutPromise]) as any;
 
         if (context?.user) {
           const { fid, username, displayName, pfpUrl } = context.user;
