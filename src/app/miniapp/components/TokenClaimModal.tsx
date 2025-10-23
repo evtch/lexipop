@@ -10,7 +10,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Coins, Gift, Sparkles, ExternalLink } from '@/components/icons';
 import WalletConnect from './WalletConnect';
-import { useWallet } from '@/lib/web3/hooks/useWallet';
+import { useAccount } from 'wagmi';
 
 interface TokenClaimModalProps {
   isOpen: boolean;
@@ -29,7 +29,7 @@ export default function TokenClaimModal({
   accuracy,
   gameId
 }: TokenClaimModalProps) {
-  const { isConnected } = useWallet();
+  const { isConnected } = useAccount();
   const [claimed, setClaimed] = useState(false);
   const [claimTxHash, setClaimTxHash] = useState<string | null>(null);
 

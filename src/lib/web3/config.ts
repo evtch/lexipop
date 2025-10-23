@@ -1,52 +1,24 @@
 /**
  * 🌐 WEB3 CONFIGURATION
  *
- * Wagmi and RainbowKit configuration for wallet connections
- * Supports multiple chains and wallet providers
+ * Simplified Wagmi configuration for Farcaster wallet connections
+ * Following BitWorld's approach for better Farcaster frame compatibility
  */
 
-import { createConfig, http, fallback } from 'wagmi';
-import { base, baseSepolia } from 'wagmi/chains';
+import { createConfig, http } from 'wagmi';
+import { base } from 'wagmi/chains';
 import { farcasterMiniApp } from '@farcaster/miniapp-wagmi-connector';
-import { metaMask, walletConnect, coinbaseWallet } from 'wagmi/connectors';
 
+// Pure Farcaster native experience - only Farcaster wallet
 export const wagmiConfig = createConfig({
-  chains: [
-    // Base only - where all contracts are deployed
-    base,
-
-    // Test chains (only in development)
-    ...(process.env.NODE_ENV === 'development' ? [baseSepolia] : [])
-  ],
+  chains: [base],
   connectors: [
-    farcasterMiniApp(), // Primary for Farcaster users
-    metaMask(), // For MetaMask users
-    coinbaseWallet({
-      appName: 'Lexipop',
-      appLogoUrl: 'https://lexipop.xyz/favicon.ico'
-    }),
-    walletConnect({
-      projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'a5555da8f7e7a9c0c9b3b2e2c7e2c2c2',
-      metadata: {
-        name: 'Lexipop',
-        description: 'Vocabulary Learning Game with NFTs',
-        url: 'https://lexipop.xyz',
-        icons: ['https://lexipop.xyz/favicon.ico']
-      }
-    })
+    farcasterMiniApp(), // Native Farcaster wallet only
   ],
   transports: {
-    [base.id]: fallback([
-      http(process.env.NEXT_PUBLIC_BASE_RPC_URL),
-      http('https://mainnet.base.org'),
-      http() // Public fallback
-    ]),
-    [baseSepolia.id]: fallback([
-      http('https://sepolia.base.org'),
-      http() // Public fallback
-    ]),
+    [base.id]: http()
   },
-  ssr: true,
+  ssr: true, // Enable SSR to prevent reconnection issues
 });
 
 // Chain configurations for different environments

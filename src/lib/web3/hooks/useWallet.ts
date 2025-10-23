@@ -5,7 +5,6 @@
  */
 
 import { useAccount, useBalance, useConnect, useDisconnect } from 'wagmi';
-import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { useState, useEffect } from 'react';
 import { tokenContracts, defaultChain } from '../config';
 import { Address } from 'viem';
@@ -40,7 +39,6 @@ export function useWallet(): WalletState {
   // Call all hooks unconditionally - this is critical for React rules
   const account = useAccount();
   const { disconnect } = useDisconnect();
-  const { openConnectModal } = useConnectModal();
   const { isPending: isConnecting } = useConnect();
   const {
     data: balanceData,
@@ -93,7 +91,7 @@ export function useWallet(): WalletState {
     balance: balanceData?.value,
     formattedBalance: balanceData?.formatted,
     isLoadingBalance,
-    openConnectModal,
+    openConnectModal: undefined, // No longer using RainbowKit modal
     disconnect,
     error
   };
@@ -133,11 +131,10 @@ export function useChainValidation() {
  */
 export function useWalletConnection() {
   const account = useAccount();
-  const { openConnectModal } = useConnectModal();
 
   return {
     isConnected: account.isConnected,
     address: account.address,
-    connect: openConnectModal
+    connect: undefined // No longer using RainbowKit modal
   };
 }
