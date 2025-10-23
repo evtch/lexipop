@@ -5,7 +5,7 @@
  * Required before allowing token claims
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useAccount, useReadContract } from 'wagmi';
 import { LEXIPOP_NFT_ABI, getContractAddress } from './contract';
 
@@ -27,6 +27,15 @@ export function useNFTGating(gameWords: string[]) {
 
   // Manual override for immediate updates after minting
   const [manualOverride, setManualOverride] = useState<boolean | null>(null);
+
+  // Track if we've already processed events to prevent spam
+  const lastProcessedMint = useRef<number>(0);
+
+  // Stabilize gameWords to prevent unnecessary re-renders
+  const stableGameWords = useMemo(() => {
+    // Only update if the actual content changes, not just array reference
+    return gameWords.length > 0 ? gameWords.join('|') : '';
+  }, [gameWords.join('|')]);
 
   // Supported chain IDs where NFT contract is deployed
   const SUPPORTED_CHAINS = [8453, 84532]; // Base mainnet and Base Sepolia
@@ -66,7 +75,7 @@ export function useNFTGating(gameWords: string[]) {
 
   // Check if user has NFT for current game words
   useEffect(() => {
-    if (!address || !chainId || !gameWords.length || !userTokens || !contractAddress) {
+    if (!address || !chainId || !stableGameWords || !userTokens || !contractAddress) {
       setGatingState(prev => ({
         ...prev,
         hasNFTForGame: false,
@@ -117,7 +126,7 @@ export function useNFTGating(gameWords: string[]) {
     };
 
     checkGameNFT();
-  }, [address, chainId, gameWords, userTokens]);
+  }, [address, chainId, stableGameWords, userTokens]);
 
   // Handle token loading error
   useEffect(() => {
@@ -167,7 +176,12 @@ export function useNFTGating(gameWords: string[]) {
 
     // Manual override for immediate updates after minting
     setHasMintedNFT: () => {
-      console.log('🎉 NFT minted successfully - enabling token claims immediately');
+      const now = Date.now();
+      // Prevent spam by only logging once per 5 seconds
+      if (now - lastProcessedMint.current > 5000) {
+        console.log('🎉 NFT minted successfully - enabling token claims immediately');
+        lastProcessedMint.current = now;
+      }
       setManualOverride(true);
       setGatingState(prev => ({ ...prev, userNFTCount: prev.userNFTCount + 1 }));
     }

@@ -893,17 +893,11 @@ Play now! 👇`;
                   // Immediately enable token claims
                   setHasMintedNFT();
 
-                  // Refresh NFT check after a short delay to allow blockchain state to update
+                  // Single delayed refresh to allow blockchain state to update
                   setTimeout(() => {
-                    console.log('🔄 Refreshing NFT check after 2s...');
+                    console.log('🔄 Refreshing NFT check after mint...');
                     refreshNFTCheck();
-                  }, 2000); // 2 second delay
-
-                  // Also refresh again after a longer delay to be sure
-                  setTimeout(() => {
-                    console.log('🔄 Final NFT refresh after 5s...');
-                    refreshNFTCheck();
-                  }, 5000); // 5 second delay
+                  }, 3000); // Single 3 second delay
                 }}
               />
 
