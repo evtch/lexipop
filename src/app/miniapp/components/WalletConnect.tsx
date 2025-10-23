@@ -83,7 +83,6 @@ export default function WalletConnect({
   const handleConnect = async () => {
     try {
       console.log('🔗 Connect button clicked');
-      console.log('Available connectors:', connectors.map(c => ({ id: c.id, name: c.name })));
 
       // Check if we have any connectors
       if (connectors.length === 0) {
@@ -93,7 +92,11 @@ export default function WalletConnect({
       }
 
       // For Farcaster frames, use the farcasterMiniApp connector
-      const farcasterConnector = connectors.find(c => c.id === 'farcasterMiniApp' || c.name?.includes('Farcaster'));
+      const farcasterConnector = connectors.find(c => c.id === 'farcasterMiniApp' || c.name?.toLowerCase().includes('farcaster'));
+
+      console.log('Available connectors:', connectors.map(c => ({ id: c.id, name: c.name })));
+      console.log('Farcaster connector:', farcasterConnector ? { id: farcasterConnector.id, name: farcasterConnector.name } : 'not found');
+
       if (farcasterConnector) {
         console.log('🎭 Connecting with Farcaster:', farcasterConnector.id);
         await connect({ connector: farcasterConnector });

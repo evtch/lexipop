@@ -95,33 +95,47 @@ export default function NFTMintSection({
   };
 
   const handleWalletConnect = async () => {
-    console.log('🔗 Available connectors:', connectors.map(c => ({ name: c.name, id: c.id })));
-    console.log('🌐 Environment info:', {
-      userAgent: navigator.userAgent,
-      platform: navigator.platform,
-      isDesktop: window.innerWidth > 768,
-      hasEthereum: !!window.ethereum,
-      hasParentEthereum: !!window.parent?.ethereum
-    });
+    // Filter for farcaster connector only
+    const farcasterConnector = connectors.find(c =>
+      c.id === 'farcasterMiniApp' || c.name?.toLowerCase().includes('farcaster')
+    );
 
-    // Try the first available connector (farcasterMiniApp should be first)
-    const primaryConnector = connectors[0];
-    if (primaryConnector) {
-      console.log('🎯 Using primary connector:', primaryConnector.name);
+    console.log('🔗 Available connectors:', connectors.map(c => ({ name: c.name, id: c.id })));
+    console.log('🎭 Farcaster connector found:', farcasterConnector ? { name: farcasterConnector.name, id: farcasterConnector.id } : 'none');
+
+    // Try the farcaster connector if available
+    if (farcasterConnector) {
+      console.log('🎯 Using Farcaster connector:', farcasterConnector.name);
       try {
-        const result = await connect({ connector: primaryConnector });
+        const result = await connect({ connector: farcasterConnector });
         console.log('✅ Wallet connection successful:', result);
       } catch (error: any) {
         console.error('❌ Wallet connection failed:', {
           message: error?.message,
           code: error?.code,
           details: error?.details,
-          connector: primaryConnector.name
+          connector: farcasterConnector.name
         });
 
-        if (error?.message?.includes('fetch')) {
-          console.error('🔍 Desktop Farcaster wallet connection issues detected');
+        // Fallback to first available connector if farcaster fails
+        if (connectors[0] && connectors[0].id !== farcasterConnector.id) {
+          console.log('🔄 Trying fallback connector:', connectors[0].name);
+          try {
+            const result = await connect({ connector: connectors[0] });
+            console.log('✅ Fallback connection successful:', result);
+          } catch (fallbackError: any) {
+            console.error('❌ Fallback connection also failed:', fallbackError?.message);
+          }
         }
+      }
+    } else if (connectors[0]) {
+      // No farcaster connector, use first available
+      console.log('⚠️ No Farcaster connector found, using:', connectors[0].name);
+      try {
+        const result = await connect({ connector: connectors[0] });
+        console.log('✅ Connection successful:', result);
+      } catch (error: any) {
+        console.error('❌ Connection failed:', error?.message);
       }
     } else {
       console.error('❌ No connectors available');
