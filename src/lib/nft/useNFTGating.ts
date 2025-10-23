@@ -31,11 +31,9 @@ export function useNFTGating(gameWords: string[]) {
   // Track if we've already processed events to prevent spam
   const lastProcessedMint = useRef<number>(0);
 
-  // Stabilize gameWords to prevent unnecessary re-renders
-  const stableGameWords = useMemo(() => {
-    // Only update if the actual content changes, not just array reference
-    return gameWords.length > 0 ? gameWords.join('|') : '';
-  }, [gameWords.join('|')]);
+  // Since we're currently just checking if user has ANY NFT (not specific to game words),
+  // we don't need to depend on gameWords changing
+  const hasGameWords = gameWords.length > 0;
 
   // Supported chain IDs where NFT contract is deployed
   const SUPPORTED_CHAINS = [8453, 84532]; // Base mainnet and Base Sepolia
@@ -73,9 +71,9 @@ export function useNFTGating(gameWords: string[]) {
     }
   });
 
-  // Check if user has NFT for current game words
+  // Check if user has NFT - only run when userTokens actually change
   useEffect(() => {
-    if (!address || !chainId || !stableGameWords || !userTokens || !contractAddress) {
+    if (!address || !chainId || !hasGameWords || !userTokens || !contractAddress) {
       setGatingState(prev => ({
         ...prev,
         hasNFTForGame: false,
@@ -89,7 +87,6 @@ export function useNFTGating(gameWords: string[]) {
       setGatingState(prev => ({ ...prev, isCheckingNFT: true, error: null }));
 
       try {
-        const contractAddress = getContractAddress(chainId);
         const tokenIds = userTokens as bigint[];
 
         // If user has no NFTs, they definitely don't have one for this game
@@ -126,7 +123,7 @@ export function useNFTGating(gameWords: string[]) {
     };
 
     checkGameNFT();
-  }, [address, chainId, stableGameWords, userTokens]);
+  }, [address, chainId, userTokens, contractAddress]);
 
   // Handle token loading error
   useEffect(() => {
@@ -169,9 +166,14 @@ export function useNFTGating(gameWords: string[]) {
 
     // Refresh check
     refresh: () => {
-      // Clear manual override and trigger a re-check
+      // Only refresh if we have the necessary connection info
+      if (!address || !chainId || !contractAddress) {
+        return;
+      }
+
+      // Clear manual override and trigger a re-fetch
       setManualOverride(null);
-      setGatingState(prev => ({ ...prev, isCheckingNFT: true }));
+      refetchTokens();
     },
 
     // Manual override for immediate updates after minting
