@@ -24,7 +24,7 @@ export const wagmiConfig = createConfig({
 // Chain configurations for different environments
 export const supportedChains = {
   production: [base],
-  development: [base, baseSepolia]
+  development: [base]
 };
 
 // Default chain - always Base where contracts are deployed
@@ -34,10 +34,6 @@ export const defaultChain = base;
 export const tokenContracts = {
   [base.id]: {
     lexipopToken: '0xf732f31f73e7DC21299f3ab42BD22E8a7C6b4B07', // LEXIPOP token on Base
-    moneyTree: '0xE636BaaF2c390A591EdbffaF748898EB3f6FF9A1', // MoneyTree distributor
-  },
-  [baseSepolia.id]: {
-    lexipopToken: '0xf732f31f73e7DC21299f3ab42BD22E8a7C6b4B07', // LEXIPOP token on Base Sepolia
     moneyTree: '0xE636BaaF2c390A591EdbffaF748898EB3f6FF9A1', // MoneyTree distributor
   }
 } as const;
