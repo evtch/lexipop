@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { createPublicClient, http, encodePacked, keccak256, hashMessage, type Hex } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
-import { base, baseSepolia } from 'viem/chains';
+import { base } from 'viem/chains';
 import { prisma } from '@/lib/prisma';
 // Server-side token contract addresses (configurable via environment variables)
 const getContractAddresses = () => {
@@ -33,14 +33,9 @@ const getContractAddresses = () => {
   };
 };
 
-// Contract addresses by chain - MoneyTree is deployed on Base mainnet
+// Contract addresses by chain - MoneyTree is deployed on Base mainnet only
 const tokenContracts = {
-  [base.id]: getContractAddresses(),
-  [baseSepolia.id]: {
-    // For testing, we could use different addresses or disable token claiming
-    lexipopToken: '0x0000000000000000000000000000000000000000' as `0x${string}`,
-    moneyTree: '0x0000000000000000000000000000000000000000' as `0x${string}`,
-  }
+  [base.id]: getContractAddresses()
 } as const;
 
 // Use Base mainnet for token claims (where contract is deployed)
@@ -156,8 +151,7 @@ export async function POST(request: NextRequest) {
 
     // Check for required environment variables
     const signerPrivateKey = process.env.PRIVATE_KEY;
-    const rpcUrl = process.env.RPC_URL || (defaultChain.id === base.id ?
-      'https://mainnet.base.org' : 'https://sepolia.base.org');
+    const rpcUrl = process.env.RPC_URL || 'https://mainnet.base.org';
 
     if (!signerPrivateKey || signerPrivateKey === 'your_private_key_here') {
       console.error('❌ PRIVATE_KEY environment variable not set or using placeholder value');

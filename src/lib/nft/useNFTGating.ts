@@ -36,7 +36,7 @@ export function useNFTGating(gameWords: string[]) {
   const hasGameWords = gameWords.length > 0;
 
   // Supported chain IDs where NFT contract is deployed
-  const SUPPORTED_CHAINS = [8453, 84532]; // Base mainnet and Base Sepolia
+  const SUPPORTED_CHAINS = [8453]; // Base mainnet only
 
   // Get contract address safely with error handling
   const getContractAddressSafe = (chainId: number): string | null => {
